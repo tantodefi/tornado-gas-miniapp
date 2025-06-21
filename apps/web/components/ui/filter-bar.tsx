@@ -11,7 +11,8 @@ const FilterBar: React.FC<{
   filters: FilterState;
   onFilterChange: (key: keyof FilterState, value: string) => void;
   poolCount: number;
-}> = ({ filters, onFilterChange, poolCount }) => {
+  isLoading?: boolean;
+}> = ({ filters, onFilterChange, poolCount, isLoading = false }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -41,12 +42,21 @@ const FilterBar: React.FC<{
       <div className="block sm:hidden" ref={dropdownRef}>
         <div className="flex justify-between items-center">
           <div className="text-xs text-slate-400">
-            <span className="text-purple-400 font-semibold">{poolCount}</span>{" "}
-            cards
+            {isLoading ? (
+              <span>Loading cards...</span>
+            ) : (
+              <>
+                <span className="text-purple-400 font-semibold">
+                  {poolCount}
+                </span>{" "}
+                cards
+              </>
+            )}
           </div>
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-slate-200 text-xs font-mono hover:text-purple-400 transition-colors"
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-slate-200 text-xs font-mono hover:text-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span>Filter</span>
             <span
@@ -58,7 +68,7 @@ const FilterBar: React.FC<{
         </div>
 
         {/* Mobile Dropdown */}
-        {isFilterOpen && (
+        {isFilterOpen && !isLoading && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -162,18 +172,25 @@ const FilterBar: React.FC<{
         )}
       </div>
 
-      {/* Desktop Layout (unchanged) */}
+      {/* Desktop Layout */}
       <div className="hidden sm:flex justify-between items-center">
         <div className="text-sm text-slate-400">
-          <span className="text-purple-400 font-semibold">{poolCount}</span>{" "}
-          cards available
+          {isLoading ? (
+            <span>Loading cards...</span>
+          ) : (
+            <>
+              <span className="text-purple-400 font-semibold">{poolCount}</span>{" "}
+              cards available
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-3 lg:gap-4 xl:gap-6">
           <select
             value={filters.sortBy}
             onChange={(e) => onFilterChange("sortBy", e.target.value)}
-            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent"
+            disabled={isLoading}
+            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="newest">Newest</option>
             <option value="amount-high">High Amount</option>
@@ -185,7 +202,8 @@ const FilterBar: React.FC<{
           <select
             value={filters.memberRange}
             onChange={(e) => onFilterChange("memberRange", e.target.value)}
-            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent"
+            disabled={isLoading}
+            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Sizes</option>
             <option value="small">Small</option>
@@ -196,7 +214,8 @@ const FilterBar: React.FC<{
           <select
             value={filters.amountRange}
             onChange={(e) => onFilterChange("amountRange", e.target.value)}
-            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent"
+            disabled={isLoading}
+            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Amounts</option>
             <option value="0-0.01">0-0.01 ETH</option>
@@ -208,7 +227,8 @@ const FilterBar: React.FC<{
           <select
             value={filters.network}
             onChange={(e) => onFilterChange("network", e.target.value)}
-            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent"
+            disabled={isLoading}
+            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">All Networks</option>
             <option value="ethereum">Ethereum</option>
