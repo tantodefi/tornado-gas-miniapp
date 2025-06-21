@@ -102,19 +102,26 @@ const GasCard: React.FC = () => (
 
       <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between">
         <div className="flex justify-between items-start">
-          <div className="text-xs sm:text-sm text-slate-400 font-medium">
-            GAS CREDIT
+          <div className="flex flex-col items-start ">
+            <div className="text-xs sm:text-sm text-pink-500 font-bold">
+              PREPAID
+            </div>
+            <div className="text-xs text-slate-500">GAS CREDIT</div>
           </div>
-          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-500">
-            0.5 ETH
+
+          <div className="flex flex-col items-end">
+            <div className="text-md sm:text-lg lg:text-xl font-bold text-purple-500">
+              0.05 ETH
+            </div>
+            <div className="text-[10px] text-slate-500">847 members</div>
           </div>
         </div>
         <div className="flex justify-between items-end">
           <div className="font-mono text-[10px] sm:text-xs text-slate-500">
             **** **** **** 4337
           </div>
-          <div className="text-[10px] sm:text-xs text-pink-500 font-bold">
-            PREPAID
+          <div className="text-right">
+            <div className="text-xs text-slate-500">Ethereum</div>
           </div>
         </div>
       </div>
