@@ -8,7 +8,7 @@ import CardIssuanceFlow from "@/components/card-issuance-flow";
 import { type IssuedCard } from "@/hooks/use-card-issuance";
 
 // Navigation state types
-type ViewType = 'cards' | 'details' | 'issuance' | 'topup';
+type ViewType = "cards" | "details" | "issuance" | "topup";
 
 interface NavigationState {
   view: ViewType;
@@ -20,47 +20,47 @@ interface NavigationState {
  * Complete app integration component
  * Manages navigation between all major flows:
  * - Cards list view
- * - Card details view  
+ * - Card details view
  * - Card issuance flow
  * - Top-up flow (future)
  */
 const CompleteAppIntegration: React.FC = () => {
   const [navigation, setNavigation] = useState<NavigationState>({
-    view: 'cards'
+    view: "cards",
   });
 
   // Navigation handlers
   const handleViewCardDetails = (poolId: string) => {
     setNavigation({
-      view: 'details',
-      selectedPoolId: poolId
+      view: "details",
+      selectedPoolId: poolId,
     });
   };
 
   const handleBackToCards = () => {
     setNavigation({
-      view: 'cards',
+      view: "cards",
       selectedPoolId: undefined,
-      selectedCardId: undefined
+      selectedCardId: undefined,
     });
   };
 
   const handleNavigateToIssuance = () => {
     setNavigation({
-      view: 'issuance'
+      view: "issuance",
     });
   };
 
   const handleNavigateToTopUp = (cardId?: string) => {
     setNavigation({
-      view: 'topup',
-      selectedCardId: cardId
+      view: "topup",
+      selectedCardId: cardId,
     });
   };
 
   // Card issuance handlers
   const handleCardIssued = (card: IssuedCard) => {
-    console.log('New card issued:', card);
+    console.log("New card issued:", card);
     // Card is automatically stored by the hook
     // Could show a toast notification here
   };
@@ -82,10 +82,10 @@ const CompleteAppIntegration: React.FC = () => {
   // Render views based on navigation state
   const renderCurrentView = () => {
     switch (navigation.view) {
-      case 'details':
+      case "details":
         if (!navigation.selectedPoolId) {
           // Fallback to cards view if no pool selected
-          setNavigation({ view: 'cards' });
+          setNavigation({ view: "cards" });
           return null;
         }
         return (
@@ -96,7 +96,7 @@ const CompleteAppIntegration: React.FC = () => {
           />
         );
 
-      case 'issuance':
+      case "issuance":
         return (
           <CardIssuanceFlow
             onCardIssued={handleCardIssued}
@@ -105,7 +105,7 @@ const CompleteAppIntegration: React.FC = () => {
           />
         );
 
-      case 'topup':
+      case "topup":
         // Future: Top-up flow component
         return (
           <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
@@ -117,7 +117,9 @@ const CompleteAppIntegration: React.FC = () => {
                 >
                   ← Back to Cards
                 </button>
-                <div className="text-xs text-slate-500 font-mono">Top-up Flow</div>
+                <div className="text-xs text-slate-500 font-mono">
+                  Top-up Flow
+                </div>
               </div>
 
               <div className="text-center">
@@ -127,9 +129,16 @@ const CompleteAppIntegration: React.FC = () => {
                   <span className="text-prepaid-gradient-brand">Flow</span>
                 </h1>
                 <p className="text-lg text-slate-300 mb-8 max-w-2xl mx-auto">
-                  This is where the wallet connection and Ethereum transaction flow will be implemented.
+                  This is where the wallet connection and Ethereum transaction
+                  flow will be implemented.
                   {navigation.selectedCardId && (
-                    <><br />Selected card: <span className="text-purple-400 font-mono">{navigation.selectedCardId}</span></>
+                    <>
+                      <br />
+                      Selected card:{" "}
+                      <span className="text-purple-400 font-mono">
+                        {navigation.selectedCardId}
+                      </span>
+                    </>
                   )}
                 </p>
                 <div className="flex gap-4 justify-center">
@@ -142,7 +151,9 @@ const CompleteAppIntegration: React.FC = () => {
                   <button
                     onClick={() => {
                       // Future: Trigger wallet connection
-                      alert('Wallet connection flow will be implemented in Option 3!');
+                      alert(
+                        "Wallet connection flow will be implemented in Option 3!",
+                      );
                     }}
                     className="btn-prepaid-primary btn-lg"
                   >
@@ -154,7 +165,7 @@ const CompleteAppIntegration: React.FC = () => {
           </div>
         );
 
-      case 'cards':
+      case "cards":
       default:
         return (
           <PrepaidCardsPage
@@ -168,15 +179,15 @@ const CompleteAppIntegration: React.FC = () => {
   return (
     <div className="relative">
       {/* Floating Action Button for Card Issuance */}
-      {navigation.view === 'cards' && (
+      {navigation.view === "cards" && (
         <button
           onClick={handleNavigateToIssuance}
           className="fixed bottom-6 right-6 z-50 btn-prepaid-primary btn-lg rounded-full shadow-2xl hover:shadow-purple-500/25 transition-all duration-300"
-          style={{ 
-            minHeight: '56px',
-            minWidth: '56px',
-            borderRadius: '50%',
-            padding: '0 1.5rem'
+          style={{
+            minHeight: "56px",
+            minWidth: "56px",
+            borderRadius: "50%",
+            padding: "0 1.5rem",
           }}
           title="Issue New Card"
         >

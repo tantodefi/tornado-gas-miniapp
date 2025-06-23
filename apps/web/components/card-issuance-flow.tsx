@@ -9,7 +9,7 @@ interface IssuedCard {
   id: string;
   accountNumber: string;
   issuedAt: string;
-  status: 'inactive' | 'active';
+  status: "inactive" | "active";
   network?: {
     name: string;
     icon: string;
@@ -58,7 +58,7 @@ const CardPrintingAnimation: React.FC<{
                 transition={{ duration: 1, repeat: Infinity }}
               />
             </div>
-            
+
             {/* Printer buttons */}
             <div className="absolute top-4 right-4 flex gap-1">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -103,12 +103,12 @@ const CardPrintingAnimation: React.FC<{
             {/* Printer activity lights */}
             <motion.div
               className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-              animate={{ 
+              animate={{
                 boxShadow: [
                   "0 0 0 rgba(139, 69, 19, 0)",
                   "0 0 20px rgba(139, 69, 19, 0.5)",
-                  "0 0 0 rgba(139, 69, 19, 0)"
-                ]
+                  "0 0 0 rgba(139, 69, 19, 0)",
+                ],
               }}
               transition={{ duration: 0.5, repeat: Infinity }}
             >
@@ -124,7 +124,9 @@ const CardPrintingAnimation: React.FC<{
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <h3 className="text-xl font-bold mb-2 text-purple-400">Issuing Your Card</h3>
+          <h3 className="text-xl font-bold mb-2 text-purple-400">
+            Issuing Your Card
+          </h3>
           <motion.p
             className="text-slate-300"
             animate={{ opacity: [1, 0.5, 1] }}
@@ -139,14 +141,14 @@ const CardPrintingAnimation: React.FC<{
               <motion.div
                 key={i}
                 className="w-2 h-2 bg-purple-500 rounded-full"
-                animate={{ 
+                animate={{
                   scale: [1, 1.5, 1],
-                  opacity: [0.5, 1, 0.5]
+                  opacity: [0.5, 1, 0.5],
                 }}
-                transition={{ 
+                transition={{
                   duration: 1,
                   repeat: Infinity,
-                  delay: i * 0.2
+                  delay: i * 0.2,
                 }}
               />
             ))}
@@ -175,7 +177,9 @@ const InactiveCard: React.FC<{
           <div className="text-center">
             <div className="text-4xl mb-2">🔒</div>
             <div className="text-sm font-bold text-red-400 mb-1">INACTIVE</div>
-            <div className="text-xs text-slate-400">Requires top-up to activate</div>
+            <div className="text-xs text-slate-400">
+              Requires top-up to activate
+            </div>
           </div>
         </div>
 
@@ -193,7 +197,9 @@ const InactiveCard: React.FC<{
           </div>
 
           <div className="flex justify-between items-end">
-            <div className="font-mono text-sm text-slate-500">{card.accountNumber}</div>
+            <div className="font-mono text-sm text-slate-500">
+              {card.accountNumber}
+            </div>
             <div className="text-sm text-slate-500 px-2 py-1 rounded bg-slate-700">
               🔄 Pending
             </div>
@@ -203,8 +209,12 @@ const InactiveCard: React.FC<{
         {/* Pulse effect for inactive state */}
         <motion.div
           className="absolute inset-0 border-2 border-red-500/30 rounded-2xl"
-          animate={{ 
-            borderColor: ["rgba(239, 68, 68, 0.3)", "rgba(239, 68, 68, 0.1)", "rgba(239, 68, 68, 0.3)"]
+          animate={{
+            borderColor: [
+              "rgba(239, 68, 68, 0.3)",
+              "rgba(239, 68, 68, 0.1)",
+              "rgba(239, 68, 68, 0.3)",
+            ],
           }}
           transition={{ duration: 2, repeat: Infinity }}
         />
@@ -217,10 +227,7 @@ const InactiveCard: React.FC<{
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
       >
-        <button
-          onClick={onTopUp}
-          className="btn-prepaid-primary btn-lg mb-3"
-        >
+        <button onClick={onTopUp} className="btn-prepaid-primary btn-lg mb-3">
           Top Up & Activate Card →
         </button>
         <p className="text-xs text-slate-400">
@@ -252,9 +259,12 @@ const CardIssuedSuccess: React.FC<{
         transition={{ duration: 0.5, delay: 0.2 }}
       >
         <div className="text-6xl mb-4">✨</div>
-        <h2 className="text-2xl font-bold text-green-400 mb-2">Card Issued Successfully!</h2>
+        <h2 className="text-2xl font-bold text-green-400 mb-2">
+          Card Issued Successfully!
+        </h2>
         <p className="text-slate-300 max-w-md mx-auto">
-          Your new prepaid gas card is ready. Top it up to start using it for anonymous transactions.
+          Your new prepaid gas card is ready. Top it up to start using it for
+          anonymous transactions.
         </p>
       </motion.div>
 
@@ -286,11 +296,15 @@ const CardIssuedSuccess: React.FC<{
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Issued:</span>
-            <span className="text-white">{new Date(card.issuedAt).toLocaleString()}</span>
+            <span className="text-white">
+              {new Date(card.issuedAt).toLocaleString()}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Expires:</span>
-            <span className="text-white">{new Date(card.expiresAt).toLocaleDateString()}</span>
+            <span className="text-white">
+              {new Date(card.expiresAt).toLocaleDateString()}
+            </span>
           </div>
         </div>
       </motion.div>
@@ -302,16 +316,10 @@ const CardIssuedSuccess: React.FC<{
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
-        <button
-          onClick={onIssueAnother}
-          className="btn-prepaid-outline btn-md"
-        >
+        <button onClick={onIssueAnother} className="btn-prepaid-outline btn-md">
           Issue Another Card
         </button>
-        <button
-          onClick={onTopUp}
-          className="btn-prepaid-primary btn-md"
-        >
+        <button onClick={onTopUp} className="btn-prepaid-primary btn-md">
           Top Up Now →
         </button>
       </motion.div>
@@ -323,32 +331,30 @@ const CardIssuedSuccess: React.FC<{
 const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
   onCardIssued,
   onTopUpCard,
-  onBack
+  onBack,
 }) => {
-  const { 
-    issuedCards, 
-    isIssuing, 
-    issueNewCard, 
-    getCardById 
-  } = useCardIssuance();
-  
+  const { issuedCards, isIssuing, issueNewCard, getCardById } =
+    useCardIssuance();
+
   const [showAnimation, setShowAnimation] = useState(false);
   const [currentCard, setCurrentCard] = useState<IssuedCard | null>(null);
-  const [flowState, setFlowState] = useState<'initial' | 'issuing' | 'success'>('initial');
+  const [flowState, setFlowState] = useState<"initial" | "issuing" | "success">(
+    "initial",
+  );
 
   const handleIssueCard = async () => {
-    setFlowState('issuing');
+    setFlowState("issuing");
     setShowAnimation(true);
   };
 
   const handleAnimationComplete = async () => {
     setShowAnimation(false);
-    
+
     // Issue the card
     const newCard = await issueNewCard();
     setCurrentCard(newCard);
-    setFlowState('success');
-    
+    setFlowState("success");
+
     // Notify parent component
     onCardIssued?.(newCard);
   };
@@ -361,7 +367,7 @@ const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
 
   const handleIssueAnother = () => {
     setCurrentCard(null);
-    setFlowState('initial');
+    setFlowState("initial");
   };
 
   const handleBack = () => {
@@ -384,7 +390,7 @@ const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
 
         {/* Content based on flow state */}
         <AnimatePresence mode="wait">
-          {flowState === 'initial' && (
+          {flowState === "initial" && (
             <motion.div
               key="initial"
               className="text-center"
@@ -402,15 +408,16 @@ const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
                 <span className="text-prepaid-gradient-white">Get Your </span>
                 <span className="text-prepaid-gradient-brand">Gas Card</span>
               </motion.h1>
-              
+
               <motion.p
                 className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-12 leading-relaxed"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.2 }}
               >
-                Issue a new prepaid gas card instantly. No network calls required - 
-                your card is generated locally with a unique secure ID.
+                Issue a new prepaid gas card instantly. No network calls
+                required - your card is generated locally with a unique secure
+                ID.
               </motion.p>
 
               {/* Issue card button */}
@@ -425,10 +432,11 @@ const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
                   disabled={isIssuing}
                   className="btn-prepaid-primary btn-lg"
                 >
-                  {isIssuing ? 'Issuing Card...' : 'Issue New Card ✨'}
+                  {isIssuing ? "Issuing Card..." : "Issue New Card ✨"}
                 </button>
                 <p className="text-xs text-slate-400 mt-3">
-                  Instant issuance • No network required • Secure local generation
+                  Instant issuance • No network required • Secure local
+                  generation
                 </p>
               </motion.div>
 
@@ -440,7 +448,9 @@ const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7, delay: 0.6 }}
                 >
-                  <h3 className="text-xl font-bold text-white mb-6 text-center">Your Issued Cards</h3>
+                  <h3 className="text-xl font-bold text-white mb-6 text-center">
+                    Your Issued Cards
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {issuedCards.map((card, index) => (
                       <motion.div
@@ -452,23 +462,29 @@ const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
                       >
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <div className="text-sm font-bold text-purple-400">{card.id}</div>
-                            <div className="text-xs text-slate-400 font-mono">{card.accountNumber}</div>
+                            <div className="text-sm font-bold text-purple-400">
+                              {card.id}
+                            </div>
+                            <div className="text-xs text-slate-400 font-mono">
+                              {card.accountNumber}
+                            </div>
                           </div>
-                          <div className={`text-xs px-2 py-1 rounded font-bold ${
-                            card.status === 'active' 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
+                          <div
+                            className={`text-xs px-2 py-1 rounded font-bold ${
+                              card.status === "active"
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-red-500/20 text-red-400"
+                            }`}
+                          >
                             {card.status.toUpperCase()}
                           </div>
                         </div>
-                        
+
                         <div className="text-xs text-slate-500 mb-3">
                           Issued: {new Date(card.issuedAt).toLocaleDateString()}
                         </div>
-                        
-                        {card.status === 'inactive' && (
+
+                        {card.status === "inactive" && (
                           <button
                             onClick={() => onTopUpCard?.(card.id)}
                             className="btn-prepaid-primary btn-sm w-full"
@@ -484,7 +500,7 @@ const CardIssuanceFlow: React.FC<CardIssuanceFlowProps> = ({
             </motion.div>
           )}
 
-          {flowState === 'success' && currentCard && (
+          {flowState === "success" && currentCard && (
             <motion.div
               key="success"
               initial={{ opacity: 0, y: 30 }}

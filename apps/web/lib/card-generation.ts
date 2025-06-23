@@ -8,9 +8,9 @@
  * @returns {string} Unique card ID
  */
 export const generateCardId = (): string => {
-    const timestamp = Date.now().toString(36);
-    const randomPart = Math.random().toString(36).substr(2, 4).toUpperCase();
-    return `PG-${timestamp.slice(-4).toUpperCase()}${randomPart}`;
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substr(2, 4).toUpperCase();
+  return `PG-${timestamp.slice(-4).toUpperCase()}${randomPart}`;
 };
 
 /**
@@ -20,14 +20,14 @@ export const generateCardId = (): string => {
  * @returns {string} Full account number
  */
 export const generateAccountNumber = (): string => {
-    const segments = [];
-    for (let i = 0; i < 4; i++) {
-        const segment = Math.floor(Math.random() * 10000)
-            .toString()
-            .padStart(4, "0");
-        segments.push(segment);
-    }
-    return segments.join(" ");
+  const segments = [];
+  for (let i = 0; i < 4; i++) {
+    const segment = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
+    segments.push(segment);
+  }
+  return segments.join(" ");
 };
 
 /**
@@ -39,11 +39,11 @@ export const generateAccountNumber = (): string => {
  * @returns {string} Masked account number for display
  */
 export const formatAccountNumber = (accountNumber: string): string => {
-    const segments = accountNumber.split(" ");
-    if (segments.length !== 4) {
-        throw new Error("Invalid account number format");
-    }
-    return `**** **** **** ${segments[segments.length - 1]}`;
+  const segments = accountNumber.split(" ");
+  if (segments.length !== 4) {
+    throw new Error("Invalid account number format");
+  }
+  return `**** **** **** ${segments[segments.length - 1]}`;
 };
 
 /**
@@ -54,12 +54,12 @@ export const formatAccountNumber = (accountNumber: string): string => {
  * @returns {string} Random hex string
  */
 export const generateSecureRandom = (length: number = 16): string => {
-    const chars = "0123456789ABCDEF";
-    let result = "";
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+  const chars = "0123456789ABCDEF";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 };
 
 /**
@@ -70,8 +70,8 @@ export const generateSecureRandom = (length: number = 16): string => {
  * @returns {boolean} True if valid format
  */
 export const isValidCardId = (cardId: string): boolean => {
-    const cardIdPattern = /^PG-[A-Z0-9]{8}$/;
-    return cardIdPattern.test(cardId);
+  const cardIdPattern = /^PG-[A-Z0-9]{8}$/;
+  return cardIdPattern.test(cardId);
 };
 
 /**
@@ -82,8 +82,8 @@ export const isValidCardId = (cardId: string): boolean => {
  * @returns {boolean} True if valid format
  */
 export const isValidAccountNumber = (accountNumber: string): boolean => {
-    const accountPattern = /^\*{4} \*{4} \*{4} \d{4}$/;
-    return accountPattern.test(accountNumber);
+  const accountPattern = /^\*{4} \*{4} \*{4} \d{4}$/;
+  return accountPattern.test(accountNumber);
 };
 
 /**
@@ -94,19 +94,20 @@ export const isValidAccountNumber = (accountNumber: string): boolean => {
  * @returns {string} Last 4 digits
  */
 export const getAccountLastFour = (accountNumber: string): string => {
-    const segments = accountNumber.split(" ");
-    return segments[segments.length - 1];
+  const segments = accountNumber.split(" ");
+  const last = segments[segments.length - 1];
+  if (typeof last !== "string") {
+    throw new Error("Invalid account number format");
+  }
+  return last;
 };
-
-/**
- * Generates card expiration date (2 years from now)
- *
+/*
  * @returns {string} ISO string of expiration date
  */
 export const generateExpirationDate = (): string => {
-    const expirationDate = new Date();
-    expirationDate.setFullYear(expirationDate.getFullYear() + 2);
-    return expirationDate.toISOString();
+  const expirationDate = new Date();
+  expirationDate.setFullYear(expirationDate.getFullYear() + 2);
+  return expirationDate.toISOString();
 };
 
 /**
@@ -116,7 +117,7 @@ export const generateExpirationDate = (): string => {
  * @returns {boolean} True if card is expired
  */
 export const isCardExpired = (expiresAt: string): boolean => {
-    return new Date(expiresAt) < new Date();
+  return new Date(expiresAt) < new Date();
 };
 
 /**
@@ -127,11 +128,11 @@ export const isCardExpired = (expiresAt: string): boolean => {
  * @returns {string} Human-readable card name
  */
 export const generateCardDisplayName = (cardId: string): string => {
-    if (!isValidCardId(cardId)) {
-        throw new Error("Invalid card ID format");
-    }
-    const shortId = cardId.replace("PG-", "").slice(0, 4);
-    return `Gas Card ${shortId}`;
+  if (!isValidCardId(cardId)) {
+    throw new Error("Invalid card ID format");
+  }
+  const shortId = cardId.replace("PG-", "").slice(0, 4);
+  return `Gas Card ${shortId}`;
 };
 
 /**
@@ -139,39 +140,39 @@ export const generateCardDisplayName = (cardId: string): string => {
  * Used for monitoring and debugging
  */
 export const getGenerationStats = () => {
-    const testIterations = 1000;
-    const generatedIds = new Set<string>();
-    const generatedAccounts = new Set<string>();
+  const testIterations = 1000;
+  const generatedIds = new Set<string>();
+  const generatedAccounts = new Set<string>();
 
-    // Test uniqueness
-    for (let i = 0; i < testIterations; i++) {
-        generatedIds.add(generateCardId());
-        generatedAccounts.add(generateAccountNumber());
-    }
+  // Test uniqueness
+  for (let i = 0; i < testIterations; i++) {
+    generatedIds.add(generateCardId());
+    generatedAccounts.add(generateAccountNumber());
+  }
 
-    const idUniqueness = (generatedIds.size / testIterations) * 100;
-    const accountUniqueness = (generatedAccounts.size / testIterations) * 100;
+  const idUniqueness = (generatedIds.size / testIterations) * 100;
+  const accountUniqueness = (generatedAccounts.size / testIterations) * 100;
 
-    return {
-        idUniqueness: `${idUniqueness.toFixed(2)}%`,
-        accountUniqueness: `${accountUniqueness.toFixed(2)}%`,
-        testIterations,
-        sampleCardId: generateCardId(),
-        sampleAccountNumber: formatAccountNumber(generateAccountNumber()),
-    };
+  return {
+    idUniqueness: `${idUniqueness.toFixed(2)}%`,
+    accountUniqueness: `${accountUniqueness.toFixed(2)}%`,
+    testIterations,
+    sampleCardId: generateCardId(),
+    sampleAccountNumber: formatAccountNumber(generateAccountNumber()),
+  };
 };
 
 // Export all functions as a namespace for easier imports
 export const CardGeneration = {
-    generateCardId,
-    generateAccountNumber,
-    formatAccountNumber,
-    generateSecureRandom,
-    isValidCardId,
-    isValidAccountNumber,
-    getAccountLastFour,
-    generateExpirationDate,
-    isCardExpired,
-    generateCardDisplayName,
-    getGenerationStats,
+  generateCardId,
+  generateAccountNumber,
+  formatAccountNumber,
+  generateSecureRandom,
+  isValidCardId,
+  isValidAccountNumber,
+  getAccountLastFour,
+  generateExpirationDate,
+  isCardExpired,
+  generateCardDisplayName,
+  getGenerationStats,
 };
