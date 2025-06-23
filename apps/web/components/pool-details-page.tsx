@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { useCardDetails } from "@/hooks/use-card-details";
+import { usePoolDetails } from "@/hooks/use-pool-details";
 import PrepaidPoolCard from "./ui/prepaid-pool-card";
 
 // Types following our established patterns
@@ -41,7 +41,7 @@ interface Transaction {
   member: string;
 }
 
-interface CardDetailsPageProps {
+interface PoolDetailsPageProps {
   poolId: string;
   onBack: () => void;
   onJoinPool: (poolId: string) => void;
@@ -166,13 +166,13 @@ const RecentTransactions: React.FC<{ transactions: Transaction[] }> = ({
   );
 };
 
-// Main card details page component
-const CardDetailsPage: React.FC<CardDetailsPageProps> = ({
+// Main pool details page component
+const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({
   poolId,
   onBack,
   onJoinPool,
 }) => {
-  const { pool, isLoading, error, refetch } = useCardDetails(poolId);
+  const { pool, isLoading, error, refetch } = usePoolDetails(poolId);
 
   const handleJoinClick = () => {
     onJoinPool(poolId);
@@ -220,7 +220,7 @@ const CardDetailsPage: React.FC<CardDetailsPageProps> = ({
                 Try Again
               </button>
               <button onClick={onBack} className="btn-prepaid-outline btn-md">
-                Back to Cards
+                Back to Pools
               </button>
             </div>
           </motion.div>
@@ -240,7 +240,7 @@ const CardDetailsPage: React.FC<CardDetailsPageProps> = ({
             onClick={onBack}
             className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono"
           >
-            ← Back to Cards
+            ← Back to Pools
           </button>
           <div className="text-xs text-slate-500 font-mono">Pool Details</div>
         </div>
@@ -264,12 +264,12 @@ const CardDetailsPage: React.FC<CardDetailsPageProps> = ({
         </div>
 
         {/* Stats Grid */}
-        <div className="mb-12">
+        {/* <div className="mb-12">
           <StatsGrid pool={pool} />
-        </div>
+        </div> */}
 
         {/* Join Pool CTA */}
-        {pool.status === "active" && pool.members < pool.maxMembers && (
+        {/* {pool.status === "active" && pool.members < pool.maxMembers && (
           <motion.div
             className="text-center mb-12"
             initial={{ opacity: 0, y: 20 }}
@@ -286,10 +286,10 @@ const CardDetailsPage: React.FC<CardDetailsPageProps> = ({
               Join this pool to start using prepaid gas credits
             </p>
           </motion.div>
-        )}
+        )} */}
 
         {/* Recent Transactions */}
-        <motion.section
+        {/* <motion.section
           className="mb-12"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -301,7 +301,7 @@ const CardDetailsPage: React.FC<CardDetailsPageProps> = ({
           <div className="card-prepaid-glass card-content-md">
             <RecentTransactions transactions={pool.recentTransactions} />
           </div>
-        </motion.section>
+        </motion.section> */}
 
         {/* Footer */}
         <div className="text-center text-slate-400 text-sm">
@@ -312,4 +312,4 @@ const CardDetailsPage: React.FC<CardDetailsPageProps> = ({
   );
 };
 
-export default CardDetailsPage;
+export default PoolDetailsPage;

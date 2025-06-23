@@ -13,13 +13,21 @@ export interface ApiResponse<T = any> {
     page: number;
     limit: number;
     total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+    hasMore: boolean;
+    requestedFields?: string[];
   };
   meta?: {
-    filters?: Record<string, any>;
-    timestamp?: string;
+    network: string;
+    chainId: number;
+    chainName: string;
+    networkName: string;
+    contracts: {
+      paymaster: string;
+      verifier?: string;
+    };
+    requestId: string;
+    processingTime: number;
+    cached?: boolean;
   };
 }
 
@@ -155,58 +163,69 @@ class ApiClient {
 // Create singleton instance
 export const apiClient = new ApiClient();
 
-// Specific API functions
+// ✅ Updated Pool interface to match actual PoolData from SDK
 export interface Pool {
-  id: string;
-  amount: number;
-  members: number;
+  poolId: string;
+  joiningFee: string; // ✅ BigInt string from subgraph
+  merkleTreeDuration: string;
+  totalDeposits: string;
+  currentMerkleTreeRoot: string;
+  membersCount: string; // ✅ BigInt string from subgraph
+  merkleTreeDepth: string;
+  createdAt: string;
+  createdAtBlock: string;
+  currentRootIndex: number;
+  rootHistoryCount: number;
+
+  // ✅ Add network info for UI components
   network: {
     name: string;
-    icon: string;
-    color: string;
+    chainId: number;
+    chainName: string;
+    networkName: string;
+    contracts: {
+      paymaster: string;
+      verifier?: string;
+    };
   };
-  createdAt?: string;
-  status?: "active" | "full" | "low";
 }
 
-export interface FilterParams {
-  network?: string;
-  amountRange?: string;
-  memberRange?: string;
-  sortBy?: string;
+// ✅ Updated FilterParams to match actual route parameters
+export interface PoolFilterParams {
   page?: number;
   limit?: number;
+  maxResults?: number;
+  paginated?: boolean;
+  fields?: string; // Comma-separated field names
 }
 
-// Prepaid Cards API
-export const prepaidCardsApi = {
-  // Get all cards with optional filtering
-  async getCards(filters?: FilterParams): Promise<{
+// ✅ Updated Prepaid Pools API
+export const prepaidPoolsApi = {
+  // Get all pools with optional filtering
+  async getPools(filters?: PoolFilterParams): Promise<{
     pools: Pool[];
     pagination: any;
     meta: any;
   }> {
     const response = await apiClient.get<Pool[]>("/api/prepaid-pools", filters);
 
+    // ✅ Transform pools to include network info from meta
+    const transformedPools = (response.data || []).map((pool) => ({
+      ...pool,
+      network: {
+        name: response.meta?.chainName || "Unknown",
+        chainId: response.meta?.chainId || 0,
+        chainName: response.meta?.chainName || "Unknown",
+        networkName: response.meta?.networkName || "Unknown",
+        contracts: response.meta?.contracts || { paymaster: "" },
+      },
+    }));
+
     return {
-      pools: response.data || [],
+      pools: transformedPools,
       pagination: response.pagination || {},
       meta: response.meta || {},
     };
-  },
-
-  // Create a new pool
-  async createPool(poolData: {
-    amount: number;
-    networkId: string;
-  }): Promise<Pool> {
-    const response = await apiClient.post<Pool>("/api/prepaid-cards", poolData);
-
-    if (!response.data) {
-      throw new ApiError("No data returned from create pool", "NO_DATA");
-    }
-
-    return response.data;
   },
 
   // Join a pool (future feature)
@@ -214,7 +233,7 @@ export const prepaidCardsApi = {
     poolId: string,
   ): Promise<{ success: boolean; message: string }> {
     const response = await apiClient.post<{ message: string }>(
-      `/api/prepaid-cards/${poolId}/join`,
+      `/api/prepaid-pools/${poolId}/join`, // ✅ Correct endpoint
     );
 
     return {
@@ -223,19 +242,49 @@ export const prepaidCardsApi = {
     };
   },
 
-  // Get pool details (future feature)
+  // Get pool details
   async getPoolDetails(
     poolId: string,
   ): Promise<Pool & { members: any[]; transactions: any[] }> {
     const response = await apiClient.get<
       Pool & { members: any[]; transactions: any[] }
-    >(`/api/prepaid-cards/${poolId}`);
+    >(`/api/prepaid-pools/${poolId}`); // ✅ Correct endpoint
 
     if (!response.data) {
       throw new ApiError("Pool not found", "POOL_NOT_FOUND", 404);
     }
 
     return response.data;
+  },
+
+  // ✅ New method: Get pools with specific fields
+  async getPoolsWithFields(
+    fields: string[],
+    options?: {
+      page?: number;
+      limit?: number;
+      paginated?: boolean;
+    },
+  ): Promise<{
+    pools: Partial<Pool>[];
+    pagination: any;
+    meta: any;
+  }> {
+    const params: PoolFilterParams = {
+      fields: fields.join(","),
+      ...options,
+    };
+
+    const response = await apiClient.get<Partial<Pool>[]>(
+      "/api/prepaid-pools",
+      params,
+    );
+
+    return {
+      pools: response.data || [],
+      pagination: response.pagination || {},
+      meta: response.meta || {},
+    };
   },
 };
 

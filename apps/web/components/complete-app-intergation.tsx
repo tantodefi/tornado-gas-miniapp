@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState } from "react";
-import PrepaidCardsPage from "@/components/prepaid-cards-page";
-import CardDetailsPage from "@/components/card-details-page";
+import PrepaidPoolsPage from "@/components/prepaid-pools-page";
+import PoolDetailsPage from "@/components/pool-details-page";
 import CardIssuanceFlow from "@/components/card-issuance-flow";
 import { type IssuedCard } from "@/hooks/use-card-issuance";
 
@@ -89,7 +89,7 @@ const CompleteAppIntegration: React.FC = () => {
           return null;
         }
         return (
-          <CardDetailsPage
+          <PoolDetailsPage
             poolId={navigation.selectedPoolId}
             onBack={handleBackToCards}
             onJoinPool={handleJoinPool}
@@ -168,7 +168,7 @@ const CompleteAppIntegration: React.FC = () => {
       case "cards":
       default:
         return (
-          <PrepaidCardsPage
+          <PrepaidPoolsPage
             onCardClick={handleViewCardDetails}
             onViewDetails={handleViewCardDetails}
           />

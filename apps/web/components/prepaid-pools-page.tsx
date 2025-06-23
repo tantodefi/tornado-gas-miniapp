@@ -1,9 +1,9 @@
-// components/prepaid-cards-page.tsx (Updated with navigation props)
+// components/prepaid-pools-page.tsx (Updated with navigation props)
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { prepaidCardsApi, ApiError, type Pool } from "@/lib/api-client";
+import { prepaidPoolsApi, ApiError, type Pool } from "@/lib/api-client";
 import PrepaidPoolCard from "./ui/prepaid-pool-card";
 import FilterBar from "./ui/filter-bar";
 
@@ -15,7 +15,7 @@ interface FilterState {
 }
 
 // Updated interface with navigation props
-interface PrepaidCardsPageProps {
+interface PrepaidPoolsPageProps {
   onCardClick?: (poolId: string) => void;
   onViewDetails?: (poolId: string) => void;
 }
@@ -42,8 +42,8 @@ const CardSkeleton: React.FC = () => (
   </div>
 );
 
-// Main PrepaidCardsPage Component with navigation props
-const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
+// Main PrepaidPoolsPage Component with navigation props
+const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = ({
   onCardClick,
   onViewDetails,
 }) => {
@@ -62,7 +62,7 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
   });
 
   // Fetch cards data with real API
-  const loadCards = async (currentFilters: FilterState) => {
+  const loadPools = async (currentFilters: FilterState) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -71,7 +71,7 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
         pools: cardsData,
         pagination: paginationData,
         meta,
-      } = await prepaidCardsApi.getCards(currentFilters);
+      } = await prepaidPoolsApi.getPools();
 
       setPools(cardsData);
       setPagination(paginationData);
@@ -104,13 +104,13 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
 
   // Initial load
   useEffect(() => {
-    loadCards(filters);
+    loadPools(filters);
   }, []);
 
   // Reload when filters change (debounced)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      loadCards(filters);
+      loadPools(filters);
     }, 300);
 
     return () => clearTimeout(timeoutId);
@@ -125,7 +125,7 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
   };
 
   const handleRetry = () => {
-    loadCards(filters);
+    loadPools(filters);
   };
 
   return (
@@ -191,7 +191,7 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
           >
             <div className="text-4xl mb-4">⚠️</div>
             <h3 className="text-xl font-semibold text-red-400 mb-2">
-              Error Loading Cards
+              Error Loading Pools
             </h3>
             <p className="text-slate-400 mb-6 max-w-md mx-auto">{error}</p>
             <div className="flex gap-3 justify-center">
@@ -234,7 +234,7 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
               {pools.map((pool, index) => (
                 <motion.div
-                  key={pool.id}
+                  key={pool.poolId}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -275,12 +275,12 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
           >
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-white mb-2">
-              No Cards Found
+              No Pools Found
             </h3>
             <p className="text-slate-400 mb-6">
               {Object.values(filters).some((f) => f && f !== "newest")
                 ? "Try adjusting your filters to see more results"
-                : "No gas credit pools are currently available"}
+                : "No gas pools are currently available"}
             </p>
             <div className="flex gap-3 justify-center">
               {Object.values(filters).some((f) => f && f !== "newest") && (
@@ -325,4 +325,4 @@ const PrepaidCardsPage: React.FC<PrepaidCardsPageProps> = ({
   );
 };
 
-export default PrepaidCardsPage;
+export default PrepaidPoolsPage;

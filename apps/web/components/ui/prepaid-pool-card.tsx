@@ -3,22 +3,24 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Pool } from "@/lib/api-client";
+import { formatEther } from "viem";
 
-// Types
-interface PrepaidPoolCardProps {
-  pool: {
-    id: string;
-    amount: number;
-    members: number;
-    network: {
-      name: string;
-      icon: string;
-      color: string;
-    };
-  };
-  onJoin: (poolId: string) => void;
-  onViewDetails: (poolId: string) => void;
-}
+const formatJoiningFee = (joiningFeeWei: string): string => {
+  try {
+    return formatEther(BigInt(joiningFeeWei));
+  } catch {
+    return "0";
+  }
+};
+
+const formatMembersCount = (membersCountStr: string): string => {
+  try {
+    const count = parseInt(membersCountStr);
+    return count.toLocaleString();
+  } catch {
+    return "0";
+  }
+};
 
 const PrepaidPoolCard: React.FC<{
   pool: Pool;
@@ -26,15 +28,15 @@ const PrepaidPoolCard: React.FC<{
   onViewDetails?: (poolId: string) => void;
 }> = ({ pool, onCardClick, onViewDetails }) => {
   const handleCardClick = () => {
-    onCardClick?.(pool.id);
+    onCardClick?.(pool.poolId);
   };
 
   const handleDetailsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onViewDetails?.(pool.id);
+    onViewDetails?.(pool.poolId);
   };
 
-  const accountNumber = `**** **** **** ${pool.id.slice(-4)}`;
+  const accountNumber = `**** **** **** ${pool.poolId.slice(-4).padStart(4, "0")}`;
 
   return (
     <motion.div
@@ -67,10 +69,10 @@ const PrepaidPoolCard: React.FC<{
 
             <div className="flex flex-col items-end">
               <div className="text-md sm:text-lg lg:text-xl font-bold text-purple-500">
-                {pool.amount} ETH
+                {formatJoiningFee(pool.joiningFee)} ETH
               </div>
               <div className="text-[10px] text-slate-500">
-                {pool.members.toLocaleString()} members
+                {formatMembersCount(pool.membersCount)} members
               </div>
             </div>
           </div>
