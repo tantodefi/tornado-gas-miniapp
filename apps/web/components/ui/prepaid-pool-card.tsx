@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { Pool } from "@/lib/api-client";
 
 // Types
 interface PrepaidPoolCardProps {
@@ -19,21 +20,20 @@ interface PrepaidPoolCardProps {
   onViewDetails: (poolId: string) => void;
 }
 
-const PrepaidPoolCard: React.FC<PrepaidPoolCardProps> = ({
-  pool,
-  onJoin,
-  onViewDetails,
-}) => {
-  const handleJoinClick = () => {
-    onJoin(pool.id);
+const PrepaidPoolCard: React.FC<{
+  pool: Pool;
+  onCardClick?: (poolId: string) => void;
+  onViewDetails?: (poolId: string) => void;
+}> = ({ pool, onCardClick, onViewDetails }) => {
+  const handleCardClick = () => {
+    onCardClick?.(pool.id);
   };
 
   const handleDetailsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onViewDetails(pool.id);
+    onViewDetails?.(pool.id);
   };
 
-  // Generate account number from pool ID
   const accountNumber = `**** **** **** ${pool.id.slice(-4)}`;
 
   return (
@@ -41,7 +41,9 @@ const PrepaidPoolCard: React.FC<PrepaidPoolCardProps> = ({
       className="perspective-1000 cursor-pointer"
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      onClick={handleJoinClick}
+      onClick={handleCardClick}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
     >
       <motion.div
         className="w-[250px] h-[150px] sm:w-[280px] sm:h-[168px] lg:w-[320px] lg:h-[192px] mx-auto bg-gradient-to-br from-slate-800 to-slate-600 rounded-xl lg:rounded-2xl border border-purple-500/30 relative shadow-2xl"
@@ -51,7 +53,7 @@ const PrepaidPoolCard: React.FC<PrepaidPoolCardProps> = ({
           ease: "easeInOut",
         }}
       >
-        {/* Subtle gradient overlay instead of shine */}
+        {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-xl lg:rounded-2xl" />
 
         <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between">
