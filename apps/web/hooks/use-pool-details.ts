@@ -1,23 +1,24 @@
-// hooks/use-pool-details.ts
-import { useState, useEffect, useCallback } from "react";
-import { ApiError } from "@/lib/api-client";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { prepaidPoolsApi, ApiError } from "@/lib/api-client";
 
-// ✅ Updated types to match actual PoolData from SDK
+/**
+ * Pool details from our API (serialized format)
+ */
 interface DetailedPool {
   id: string;
   poolId: string;
-  joiningFee: string; // ✅ BigInt from subgraph
-  merkleTreeDuration: string; // ✅ BigInt from subgraph
-  totalDeposits: string; // ✅ BigInt from subgraph
-  currentMerkleTreeRoot: string; // ✅ BigInt from subgraph
-  membersCount: string; // ✅ BigInt from subgraph (renamed from members)
-  merkleTreeDepth: string; // ✅ BigInt from subgraph
-  createdAt: string; // ✅ BigInt timestamp from subgraph
-  createdAtBlock: string; // ✅ BigInt from subgraph
-  currentRootIndex: number; // ✅ Int from subgraph
-  rootHistoryCount: number; // ✅ Int from subgraph
+  joiningFee: string; // String from API serialization
+  merkleTreeDuration: string;
+  totalDeposits: string;
+  currentMerkleTreeRoot: string;
+  membersCount: string;
+  merkleTreeDepth: string;
+  createdAt: string;
+  createdAtBlock: string;
+  currentRootIndex: number;
+  rootHistoryCount: number;
 
-  // ✅ Network metadata (required for every pool)
+  // Network metadata from API
   network: {
     name: string;
     chainId: number;
@@ -29,127 +30,35 @@ interface DetailedPool {
     };
   };
 
-  // Additional data that might be fetched
-  memberList?: PoolMember[];
+  // Additional data from detailed endpoint
+  members?: PoolMember[];
   rootHistory?: MerkleRootHistory[];
 }
 
-// ✅ Updated PoolMember to match actual subgraph schema
+/**
+ * Pool member from API
+ */
 interface PoolMember {
-  id: string; // poolId-memberIndex
-  identityCommitment: string; // The actual identity commitment
-  memberIndex: string; // Member's index in the pool
-  joinedAt: string; // Timestamp when joined
-  joinedAtBlock: string; // Block number when joined
-  isActive: boolean; // Whether member is still active
+  id: string;
+  identityCommitment: string;
+  memberIndex: string;
+  joinedAt: string;
+  joinedAtBlock: string;
+  isActive: boolean;
 }
 
-// ✅ Updated MerkleRootHistory to match subgraph schema
+/**
+ * Merkle root history from API
+ */
 interface MerkleRootHistory {
-  id: string; // poolId-index
-  index: number; // Root index in history
-  merkleRoot: string; // The merkle root value (BigInt)
-  createdAt: string; // Timestamp when created (BigInt)
-  createdAtBlock: string; // Block number when created (BigInt)
-  isValid: boolean; // Whether root is still in valid window
-  transactionHash: string; // Transaction hash where root was created
+  id: string;
+  index: number;
+  merkleRoot: string;
+  createdAt: string;
+  createdAtBlock: string;
+  isValid: boolean;
+  transactionHash: string;
 }
-
-// ✅ API response structure - Use the same ApiResponse from api-client
-interface PoolDetailsResponse {
-  success: boolean;
-  data?: DetailedPool;
-  error?: {
-    message: string;
-    code: string;
-    timestamp?: string;
-  };
-  meta?: {
-    network: string;
-    chainId: number;
-    chainName: string;
-    networkName: string;
-    contracts: {
-      paymaster: string;
-      verifier?: string;
-    };
-    requestId: string;
-    processingTime: number;
-  };
-}
-
-// API function for fetching pool details
-const fetchPoolDetails = async (poolId: string): Promise<DetailedPool> => {
-  try {
-    const response = await fetch(`/api/prepaid-pools/${poolId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.error?.message ||
-          `HTTP ${response.status}: ${response.statusText}`,
-        errorData.error?.code || "HTTP_ERROR",
-        response.status,
-      );
-    }
-
-    const data: PoolDetailsResponse = await response.json();
-
-    if (!data.success) {
-      throw new ApiError(
-        data.error?.message || "Failed to fetch pool details",
-        data.error?.code || "API_ERROR",
-        response.status,
-      );
-    }
-
-    if (!data.data) {
-      throw new ApiError("No pool data received", "NO_DATA", response.status);
-    }
-
-    if (!data.meta) {
-      throw new ApiError(
-        "No network metadata received",
-        "NO_META",
-        response.status,
-      );
-    }
-
-    // ✅ Always include network metadata with pool data
-    return {
-      ...data.data,
-      network: {
-        name: data.meta.chainName,
-        chainId: data.meta.chainId,
-        chainName: data.meta.chainName,
-        networkName: data.meta.networkName,
-        contracts: data.meta.contracts,
-      },
-    };
-  } catch (error) {
-    if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new ApiError(
-        "Network error: Unable to connect to the server",
-        "NETWORK_ERROR",
-      );
-    }
-
-    if (error instanceof ApiError) {
-      throw error;
-    }
-
-    throw new ApiError(
-      error instanceof Error ? error.message : "Unknown error occurred",
-      "UNKNOWN_ERROR",
-    );
-  }
-};
 
 // Custom hook for managing pool details state
 export const usePoolDetails = (poolId: string) => {
@@ -157,28 +66,49 @@ export const usePoolDetails = (poolId: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Add request deduplication
+  const isRequestInProgress = useRef(false);
+  const currentPoolId = useRef<string | null>(null);
+
   const loadPoolDetails = useCallback(async () => {
+    // Prevent duplicate requests for the same pool
+    if (isRequestInProgress.current && currentPoolId.current === poolId) {
+      console.log(
+        `🔄 Request for pool ${poolId} already in progress, skipping...`,
+      );
+      return;
+    }
+
     try {
+      isRequestInProgress.current = true;
+      currentPoolId.current = poolId;
       setIsLoading(true);
       setError(null);
 
-      const poolData = await fetchPoolDetails(poolId);
-      setPool(poolData);
+      console.log(`🔍 Loading pool details for ID: ${poolId}`);
+
+      const response = await prepaidPoolsApi.getPoolDetails(poolId);
+
+      if (!response.success || !response.data) {
+        throw new Error(`Pool ${poolId} not found`);
+      }
+
+      console.log(`✅ Pool details loaded for ${poolId}`);
+      setPool(response.data as DetailedPool);
     } catch (err) {
-      let errorMessage = "Failed to load pool details.";
+      let errorMessage = "Failed to load pool details. Please try again.";
 
       if (err instanceof ApiError) {
         switch (err.code) {
           case "NETWORK_ERROR":
             errorMessage =
-              "Unable to connect to server. Please check your connection.";
+              "Unable to connect to server. Please check your internet connection.";
             break;
-          case "HTTP_ERROR":
-            if (err.status === 404) {
-              errorMessage = "Pool not found. It may have been removed.";
-            } else {
-              errorMessage = `Server error (${err.status}). Please try again later.`;
-            }
+          case "NOT_FOUND":
+            errorMessage = `Pool ${poolId} not found. It may have been removed or the ID is incorrect.`;
+            break;
+          case "REQUEST_TIMEOUT":
+            errorMessage = "Request timed out. Please try again.";
             break;
           default:
             errorMessage = err.message;
@@ -187,16 +117,18 @@ export const usePoolDetails = (poolId: string) => {
         errorMessage = err.message;
       }
 
+      console.error(`❌ Error loading pool ${poolId}:`, err);
       setError(errorMessage);
-      console.error("Error fetching pool details:", err);
     } finally {
       setIsLoading(false);
+      isRequestInProgress.current = false;
     }
   }, [poolId]);
 
-  // Load data on mount and when poolId changes
+  // Load data when poolId changes (only if different)
   useEffect(() => {
-    if (poolId) {
+    if (poolId && poolId !== currentPoolId.current) {
+      currentPoolId.current = null; // Reset to allow new request
       loadPoolDetails();
     }
   }, [poolId, loadPoolDetails]);

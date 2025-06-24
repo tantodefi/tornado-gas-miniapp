@@ -1,26 +1,15 @@
-// components/prepaid-pools-page.tsx (Updated with navigation props)
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { motion } from "framer-motion";
-import { prepaidPoolsApi, ApiError, type Pool } from "@/lib/api-client";
+import { usePoolsData } from "@/hooks/data/use-pools-data";
+import { usePoolsFilter } from "@/hooks/business/use-pools-filter";
+import { useApiError } from "@/hooks/business/use-api-error";
 import PrepaidPoolCard from "./ui/prepaid-pool-card";
 import FilterBar from "./ui/filter-bar";
+import { useRouter } from "next/navigation";
 
-interface FilterState {
-  network: string;
-  amountRange: string;
-  memberRange: string;
-  sortBy: string;
-}
-
-// Updated interface with navigation props
-interface PrepaidPoolsPageProps {
-  onCardClick?: (poolId: string) => void;
-  onViewDetails?: (poolId: string) => void;
-}
-
-// Card Skeleton Loader Component (unchanged)
+// Card Skeleton Loader Component
 const CardSkeleton: React.FC = () => (
   <div className="w-[250px] h-[150px] sm:w-[280px] sm:h-[168px] lg:w-[320px] lg:h-[192px] mx-auto bg-slate-800/50 rounded-xl lg:rounded-2xl border border-slate-600/30 relative animate-pulse">
     <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between">
@@ -42,96 +31,54 @@ const CardSkeleton: React.FC = () => (
   </div>
 );
 
-// Main PrepaidPoolsPage Component with navigation props
-const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = ({
-  onCardClick,
-  onViewDetails,
-}) => {
-  const [pools, setPools] = useState<Pool[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<any>({});
-  const [lastFetchTime, setLastFetchTime] = useState<string>("");
+interface PrepaidPoolsPageProps {
+  // No props needed anymore
+}
 
-  // Filter state
-  const [filters, setFilters] = useState<FilterState>({
-    network: "",
-    amountRange: "",
-    memberRange: "",
-    sortBy: "newest",
-  });
+/**
+ * Prepaid Pools Page Component
+ * Single responsibility: Present pools data with filtering UI
+ * Uses Next.js useRouter for navigation
+ */
+const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
+  const router = useRouter();
 
-  // Fetch cards data with real API
-  const loadPools = async (currentFilters: FilterState) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  // Data fetching (pure data concern)
+  const { pools, isLoading, error, lastFetchTime, refetch } = usePoolsData();
 
-      const {
-        pools: cardsData,
-        pagination: paginationData,
-        meta,
-      } = await prepaidPoolsApi.getPools();
+  // Business logic (filtering and sorting)
+  const { filteredPools, filters, setFilter, resetFilters, poolCount } =
+    usePoolsFilter(pools);
 
-      setPools(cardsData);
-      setPagination(paginationData);
-      setLastFetchTime(meta.timestamp || new Date().toISOString());
-    } catch (err) {
-      let errorMessage = "Failed to load cards. Please try again.";
+  // Error handling (standardized error management)
+  const { displayError, retry, isRetrying } = useApiError(error, refetch);
 
-      if (err instanceof ApiError) {
-        switch (err.code) {
-          case "NETWORK_ERROR":
-            errorMessage =
-              "Unable to connect to server. Please check your internet connection.";
-            break;
-          case "HTTP_ERROR":
-            errorMessage = `Server error (${err.status}). Please try again later.`;
-            break;
-          default:
-            errorMessage = err.message;
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-      console.error("Error fetching cards:", err);
-    } finally {
-      setIsLoading(false);
-    }
+  // Navigation handlers using Next.js router
+  const handleCardClick = (poolId: string) => {
+    router.push(`/pools/${poolId}`);
   };
 
-  // Initial load
-  useEffect(() => {
-    loadPools(filters);
-  }, []);
-
-  // Reload when filters change (debounced)
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadPools(filters);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [filters]);
-
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+  const handleViewDetails = (poolId: string) => {
+    router.push(`/pools/${poolId}`);
   };
 
   const handleBackToHome = () => {
-    window.history.back();
+    router.push("/");
   };
 
   const handleRetry = () => {
-    loadPools(filters);
+    if (isRetrying) return;
+    retry();
+  };
+
+  const handleResetFilters = () => {
+    resetFilters();
   };
 
   return (
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header with Back Button */}
+        {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-between items-center mb-6">
             <button
@@ -160,29 +107,27 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = ({
             <span className="text-prepaid-gradient-white">Prepaid Gas </span>
             <span className="text-prepaid-gradient-brand">Cards</span>
           </motion.h1>
+
           <motion.p
             className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            Join anonymous gas credit pools.
-            {onCardClick
-              ? " Click any card to view details."
-              : " Select card to purchase prepaid gas credits."}
+            Join anonymous gas credit pools. Click any card to view details.
           </motion.p>
         </div>
 
         {/* Filter Bar */}
         <FilterBar
           filters={filters}
-          onFilterChange={handleFilterChange}
-          poolCount={pools.length}
+          onFilterChange={setFilter}
+          poolCount={poolCount}
           isLoading={isLoading}
         />
 
         {/* Error State */}
-        {error && (
+        {displayError && (
           <motion.div
             className="text-center py-12"
             initial={{ opacity: 0 }}
@@ -193,14 +138,16 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = ({
             <h3 className="text-xl font-semibold text-red-400 mb-2">
               Error Loading Pools
             </h3>
-            <p className="text-slate-400 mb-6 max-w-md mx-auto">{error}</p>
+            <p className="text-slate-400 mb-6 max-w-md mx-auto">
+              {displayError}
+            </p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={handleRetry}
                 className="btn-prepaid-primary btn-md"
-                disabled={isLoading}
+                disabled={isRetrying}
               >
-                {isLoading ? "Retrying..." : "Try Again"}
+                {isRetrying ? "Retrying..." : "Try Again"}
               </button>
               <button
                 onClick={handleBackToHome}
@@ -213,7 +160,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = ({
         )}
 
         {/* Loading State */}
-        {isLoading && !error && (
+        {isLoading && !displayError && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
             {[...Array(6)].map((_, index) => (
               <motion.div
@@ -229,88 +176,54 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = ({
         )}
 
         {/* Cards Grid */}
-        {!isLoading && !error && pools.length > 0 && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
-              {pools.map((pool, index) => (
-                <motion.div
-                  key={pool.poolId}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <PrepaidPoolCard
-                    pool={pool}
-                    onCardClick={onCardClick}
-                    onViewDetails={onViewDetails}
-                  />
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Pagination Info */}
-            {pagination.total > 0 && (
-              <div className="text-center mt-12 text-slate-400 text-sm">
-                <p>
-                  Showing {pools.length} of {pagination.total} cards
-                  {pagination.totalPages > 1 && (
-                    <span>
-                      {" "}
-                      • Page {pagination.page} of {pagination.totalPages}
-                    </span>
-                  )}
-                </p>
-              </div>
-            )}
-          </>
+        {!isLoading && !displayError && filteredPools.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
+            {filteredPools.map((pool, index) => (
+              <motion.div
+                key={pool.poolId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <PrepaidPoolCard
+                  pool={pool}
+                  onCardClick={handleCardClick}
+                  onViewDetails={handleViewDetails}
+                />
+              </motion.div>
+            ))}
+          </div>
         )}
 
         {/* No Results State */}
-        {!isLoading && !error && pools.length === 0 && (
-          <motion.div
-            className="text-center py-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-white mb-2">
-              No Pools Found
-            </h3>
-            <p className="text-slate-400 mb-6">
-              {Object.values(filters).some((f) => f && f !== "newest")
-                ? "Try adjusting your filters to see more results"
-                : "No gas pools are currently available"}
-            </p>
-            <div className="flex gap-3 justify-center">
-              {Object.values(filters).some((f) => f && f !== "newest") && (
-                <button
-                  onClick={() => {
-                    setFilters({
-                      network: "",
-                      amountRange: "",
-                      memberRange: "",
-                      sortBy: "newest",
-                    });
-                  }}
-                  className="btn-prepaid-outline btn-md"
-                >
-                  Reset Filters
-                </button>
-              )}
+        {!isLoading &&
+          !displayError &&
+          filteredPools.length === 0 &&
+          pools.length > 0 && (
+            <motion.div
+              className="text-center py-16"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-semibold text-white mb-2">
+                No Pools Found
+              </h3>
+              <p className="text-slate-400 mb-6">
+                Try adjusting your filters to see more results
+              </p>
               <button
-                onClick={handleRetry}
-                className="btn-prepaid-primary btn-md"
-                disabled={isLoading}
+                onClick={handleResetFilters}
+                className="btn-prepaid-outline btn-md"
               >
-                Refresh
+                Reset Filters
               </button>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
 
         {/* Footer Info */}
-        {!isLoading && !error && pools.length > 0 && (
+        {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="text-center mt-16 text-slate-400 text-sm">
             <p>🔒 All transactions are private and unlinkable</p>
             {lastFetchTime && (

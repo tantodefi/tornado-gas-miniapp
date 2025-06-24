@@ -1,18 +1,53 @@
+// app/components/ui/prepaid-pool-card.tsx
 "use client";
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Pool } from "@/lib/api-client";
-import { formatEther } from "viem";
 
-const formatJoiningFee = (joiningFeeWei: string): string => {
+// Use our own Pool interface that matches API response
+interface Pool {
+  id: string;
+  poolId: string;
+  joiningFee: string; // String from API serialization
+  merkleTreeDuration: string;
+  totalDeposits: string;
+  currentMerkleTreeRoot: string;
+  membersCount: string;
+  merkleTreeDepth: string;
+  createdAt: string;
+  createdAtBlock: string;
+  currentRootIndex: number;
+  rootHistoryCount: number;
+
+  // Network metadata from API
+  network: {
+    name: string;
+    chainId: number;
+    chainName: string;
+    networkName: string;
+    contracts: {
+      paymaster: string;
+      verifier?: string;
+    };
+  };
+}
+
+// Helper function to format joining fee (already a string from API)
+const formatJoiningFee = (joiningFeeStr: string): string => {
   try {
-    return formatEther(BigInt(joiningFeeWei));
+    // If it's already in ETH format, return as is
+    if (joiningFeeStr.includes(".")) {
+      return joiningFeeStr;
+    }
+    // If it's in wei (large number), convert to ETH
+    const wei = BigInt(joiningFeeStr);
+    return (Number(wei) / 1e18).toString();
   } catch {
     return "0";
   }
 };
 
+// Helper function to format members count (already a string from API)
 const formatMembersCount = (membersCountStr: string): string => {
   try {
     const count = parseInt(membersCountStr);

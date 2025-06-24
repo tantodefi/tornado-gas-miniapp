@@ -2,10 +2,12 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { usePoolDetails } from "@/hooks/use-pool-details";
 import PrepaidPoolCard from "./ui/prepaid-pool-card";
+import { LabelHeader } from "./ui/page-header";
 
-// Types following our established patterns
+// Keep existing interfaces exactly the same
 interface DetailedPool {
   id: string;
   amount: number;
@@ -41,13 +43,12 @@ interface Transaction {
   member: string;
 }
 
+// Remove the props interface and update it
 interface PoolDetailsPageProps {
   poolId: string;
-  onBack: () => void;
-  onJoinPool: (poolId: string) => void;
 }
 
-// Stats grid component
+// Keep StatsGrid component exactly the same
 const StatsGrid: React.FC<{ pool: DetailedPool }> = ({ pool }) => {
   const stats = [
     {
@@ -93,7 +94,7 @@ const StatsGrid: React.FC<{ pool: DetailedPool }> = ({ pool }) => {
   );
 };
 
-// Recent transactions component
+// Keep RecentTransactions component exactly the same
 const RecentTransactions: React.FC<{ transactions: Transaction[] }> = ({
   transactions,
 }) => {
@@ -166,16 +167,18 @@ const RecentTransactions: React.FC<{ transactions: Transaction[] }> = ({
   );
 };
 
-// Main pool details page component
-const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({
-  poolId,
-  onBack,
-  onJoinPool,
-}) => {
+// Main pool details page component - UPDATED to use Next.js router
+const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
+  const router = useRouter();
   const { pool, isLoading, error, refetch } = usePoolDetails(poolId);
 
-  const handleJoinClick = () => {
-    onJoinPool(poolId);
+  // Navigation handlers using Next.js router
+  const handleBack = () => {
+    router.push("/pools");
+  };
+
+  const handleJoinPool = (poolId: string) => {
+    router.push(`/cards/topup?pool=${poolId}`);
   };
 
   if (isLoading) {
@@ -219,7 +222,10 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({
               <button onClick={refetch} className="btn-prepaid-primary btn-md">
                 Try Again
               </button>
-              <button onClick={onBack} className="btn-prepaid-outline btn-md">
+              <button
+                onClick={handleBack}
+                className="btn-prepaid-outline btn-md"
+              >
                 Back to Pools
               </button>
             </div>
@@ -235,15 +241,11 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <button
-            onClick={onBack}
-            className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono"
-          >
-            ← Back to Pools
-          </button>
-          <div className="text-xs text-slate-500 font-mono">Pool Details</div>
-        </div>
+        <LabelHeader
+          backText="← Back to Pools"
+          onBack={() => router.push("/pools")}
+          label="Pool Details"
+        />
 
         {/* Pool Title */}
         <motion.div
@@ -254,7 +256,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({
         >
           <h1 className="heading-prepaid-section mb-4">
             <span className="text-prepaid-gradient-white">Pool </span>
-            <span className="text-prepaid-gradient-brand">{pool.id}</span>
+            <span className="text-prepaid-gradient-brand">{pool.poolId}</span>
           </h1>
         </motion.div>
 
@@ -262,46 +264,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({
         <div className="mb-12">
           <PrepaidPoolCard pool={pool} />
         </div>
-
-        {/* Stats Grid */}
-        {/* <div className="mb-12">
-          <StatsGrid pool={pool} />
-        </div> */}
-
-        {/* Join Pool CTA */}
-        {/* {pool.status === "active" && pool.members < pool.maxMembers && (
-          <motion.div
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <button
-              onClick={handleJoinClick}
-              className="btn-prepaid-primary btn-lg"
-            >
-              Join Pool for {pool.amount} ETH →
-            </button>
-            <p className="text-xs text-slate-400 mt-2">
-              Join this pool to start using prepaid gas credits
-            </p>
-          </motion.div>
-        )} */}
-
-        {/* Recent Transactions */}
-        {/* <motion.section
-          className="mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <h2 className="text-xl font-bold text-white mb-6 text-center">
-            Recent Activity
-          </h2>
-          <div className="card-prepaid-glass card-content-md">
-            <RecentTransactions transactions={pool.recentTransactions} />
-          </div>
-        </motion.section> */}
 
         {/* Footer */}
         <div className="text-center text-slate-400 text-sm">

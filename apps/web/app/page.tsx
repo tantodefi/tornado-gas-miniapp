@@ -2,9 +2,10 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 
-// Types
+// Types (keeping existing ones)
 interface FeatureCardProps {
   icon: string;
   title: string;
@@ -24,7 +25,10 @@ interface StatItemProps {
   label: string;
 }
 
-// Floating Background Component
+// All existing components stay the same (FloatingBackground, Header, GasCard, FeatureCard, ProcessStep, StatItem)
+// ... (keeping all the existing component code exactly the same)
+
+// Floating Background Component (unchanged)
 const FloatingBackground: React.FC = () => {
   const positions = [
     { top: "20%", left: "10%", delay: 0 },
@@ -63,7 +67,7 @@ const FloatingBackground: React.FC = () => {
   );
 };
 
-// Header Component
+// Header Component (unchanged)
 const Header: React.FC = () => (
   <header className="p-4 sm:p-6 lg:p-8 flex justify-between items-center relative z-10">
     <div className="font-semibold text-slate-200 font-mono text-sm sm:text-base">
@@ -73,7 +77,7 @@ const Header: React.FC = () => (
   </header>
 );
 
-// Gas Card Component
+// GasCard Component (unchanged)
 const GasCard: React.FC = () => (
   <div className="mx-auto perspective-1000">
     <motion.div
@@ -88,7 +92,6 @@ const GasCard: React.FC = () => (
         ease: "easeInOut",
       }}
     >
-      {/* Card shine effect */}
       <motion.div
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-xl lg:rounded-2xl"
         initial={{ x: "-100%" }}
@@ -129,7 +132,7 @@ const GasCard: React.FC = () => (
   </div>
 );
 
-// Feature Card Component
+// Feature Card Component (unchanged)
 const FeatureCard: React.FC<FeatureCardProps> = ({
   icon,
   title,
@@ -166,7 +169,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   );
 };
 
-// Process Step Component
+// Process Step Component (unchanged)
 const ProcessStep: React.FC<ProcessStepProps> = ({
   stepNumber,
   icon,
@@ -191,7 +194,7 @@ const ProcessStep: React.FC<ProcessStepProps> = ({
   </motion.div>
 );
 
-// Stat Item Component
+// Stat Item Component (unchanged)
 const StatItem: React.FC<StatItemProps> = ({ number, label }) => (
   <motion.div
     className="stat-prepaid"
@@ -205,7 +208,7 @@ const StatItem: React.FC<StatItemProps> = ({ number, label }) => (
   </motion.div>
 );
 
-// Hero Section Component
+// Hero Section Component - UPDATED with Next.js Links
 const Hero: React.FC = () => (
   <section className="section-prepaid text-center relative z-10">
     <motion.div
@@ -245,7 +248,9 @@ const Hero: React.FC = () => (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.6 }}
     >
-      <Button className="btn-prepaid-primary btn-lg">Launch App →</Button>
+      <Link href="/pools">
+        <Button className="btn-prepaid-primary btn-lg">Launch App →</Button>
+      </Link>
       <Button className="btn-prepaid-outline btn-lg">View Docs</Button>
     </motion.div>
 
@@ -260,7 +265,10 @@ const Hero: React.FC = () => (
   </section>
 );
 
-// Features Section Component
+// All other sections stay exactly the same (Features, Process, Stats)
+// ... (keeping existing code for Features, Process, Stats, CTA)
+
+// Features Section Component (unchanged)
 const Features: React.FC = () => {
   const features = [
     {
@@ -313,7 +321,7 @@ const Features: React.FC = () => {
   );
 };
 
-// Process Section Component
+// Process Section Component (unchanged)
 const Process: React.FC = () => {
   const steps = [
     {
@@ -362,7 +370,7 @@ const Process: React.FC = () => {
   );
 };
 
-// Stats Section Component
+// Stats Section Component (unchanged)
 const Stats: React.FC = () => {
   const stats = [
     { number: "847", label: "Active Gas Cards" },
@@ -382,7 +390,7 @@ const Stats: React.FC = () => {
   );
 };
 
-// CTA Section Component
+// CTA Section Component - UPDATED with Next.js Link
 const CTA: React.FC = () => (
   <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 text-center bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-t border-purple-500/20">
     <motion.div
@@ -399,7 +407,11 @@ const CTA: React.FC = () => (
         Get your anonymous gas credit. Buy once, spend many times - just like
         prepaid mobile, but for blockchain transactions.
       </p>
-      <Button className="btn-prepaid-primary btn-lg">Launch Protocol →</Button>
+      <Link href="/pools">
+        <Button className="btn-prepaid-primary btn-lg">
+          Launch Protocol →
+        </Button>
+      </Link>
       <div className="text-xs sm:text-sm text-slate-400 font-mono mt-4 sm:mt-6 px-4">
         Anonymous Credit • Unlinkable Spending • ERC-4337 Compatible
       </div>
@@ -407,7 +419,7 @@ const CTA: React.FC = () => (
   </section>
 );
 
-// Main Page Component
+// Main Page Component - UPDATED to use Next.js routing
 const PrepaidGasLanding: React.FC = () => (
   <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
     <FloatingBackground />

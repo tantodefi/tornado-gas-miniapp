@@ -1,36 +1,9 @@
-// lib/api-client.ts
-// Centralized API client for consistent error handling and request formatting
+import { ApiResponse } from "./api/response";
 
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: {
-    message: string;
-    code: string;
-    timestamp?: string;
-  };
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    hasMore: boolean;
-    requestedFields?: string[];
-  };
-  meta?: {
-    network: string;
-    chainId: number;
-    chainName: string;
-    networkName: string;
-    contracts: {
-      paymaster: string;
-      verifier?: string;
-    };
-    requestId: string;
-    processingTime: number;
-    cached?: boolean;
-  };
-}
-
+/**
+ * Clean HTTP client for frontend API communication
+ * Focused only on HTTP concerns, not business logic
+ */
 export class ApiError extends Error {
   public code: string;
   public status?: number;
@@ -43,6 +16,9 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Clean HTTP client - only handles HTTP communication
+ */
 class ApiClient {
   private baseUrl: string;
 
@@ -163,35 +139,10 @@ class ApiClient {
 // Create singleton instance
 export const apiClient = new ApiClient();
 
-// ✅ Updated Pool interface to match actual PoolData from SDK
-export interface Pool {
-  poolId: string;
-  joiningFee: string; // ✅ BigInt string from subgraph
-  merkleTreeDuration: string;
-  totalDeposits: string;
-  currentMerkleTreeRoot: string;
-  membersCount: string; // ✅ BigInt string from subgraph
-  merkleTreeDepth: string;
-  createdAt: string;
-  createdAtBlock: string;
-  currentRootIndex: number;
-  rootHistoryCount: number;
-
-  // ✅ Add network info for UI components
-  network: {
-    name: string;
-    chainId: number;
-    chainName: string;
-    networkName: string;
-    contracts: {
-      paymaster: string;
-      verifier?: string;
-    };
-  };
-}
-
-// ✅ Updated FilterParams to match actual route parameters
-export interface PoolFilterParams {
+/**
+ * Pool query parameters for frontend
+ */
+export interface PoolQueryParams {
   page?: number;
   limit?: number;
   maxResults?: number;
@@ -199,92 +150,35 @@ export interface PoolFilterParams {
   fields?: string; // Comma-separated field names
 }
 
-// ✅ Updated Prepaid Pools API
+/**
+ * Simple frontend API helpers - just HTTP calls, no business logic
+ */
 export const prepaidPoolsApi = {
-  // Get all pools with optional filtering
-  async getPools(filters?: PoolFilterParams): Promise<{
-    pools: Pool[];
-    pagination: any;
-    meta: any;
-  }> {
-    const response = await apiClient.get<Pool[]>("/api/prepaid-pools", filters);
-
-    // ✅ Transform pools to include network info from meta
-    const transformedPools = (response.data || []).map((pool) => ({
-      ...pool,
-      network: {
-        name: response.meta?.chainName || "Unknown",
-        chainId: response.meta?.chainId || 0,
-        chainName: response.meta?.chainName || "Unknown",
-        networkName: response.meta?.networkName || "Unknown",
-        contracts: response.meta?.contracts || { paymaster: "" },
-      },
-    }));
-
-    return {
-      pools: transformedPools,
-      pagination: response.pagination || {},
-      meta: response.meta || {},
-    };
+  /**
+   * Get all pools - simple HTTP call
+   */
+  async getPools(params?: PoolQueryParams) {
+    return apiClient.get("/api/prepaid-pools", params);
   },
 
-  // Join a pool (future feature)
-  async joinPool(
-    poolId: string,
-  ): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.post<{ message: string }>(
-      `/api/prepaid-pools/${poolId}/join`, // ✅ Correct endpoint
-    );
-
-    return {
-      success: true,
-      message: response.data?.message || "Successfully joined pool",
-    };
+  /**
+   * Get pool details - simple HTTP call
+   */
+  async getPoolDetails(poolId: string) {
+    return apiClient.get(`/api/prepaid-pools/${poolId}`);
   },
 
-  // Get pool details
-  async getPoolDetails(
-    poolId: string,
-  ): Promise<Pool & { members: any[]; transactions: any[] }> {
-    const response = await apiClient.get<
-      Pool & { members: any[]; transactions: any[] }
-    >(`/api/prepaid-pools/${poolId}`); // ✅ Correct endpoint
-
-    if (!response.data) {
-      throw new ApiError("Pool not found", "POOL_NOT_FOUND", 404);
-    }
-
-    return response.data;
-  },
-
-  // ✅ New method: Get pools with specific fields
+  /**
+   * Get pools with specific fields - simple HTTP call
+   */
   async getPoolsWithFields(
     fields: string[],
-    options?: {
-      page?: number;
-      limit?: number;
-      paginated?: boolean;
-    },
-  ): Promise<{
-    pools: Partial<Pool>[];
-    pagination: any;
-    meta: any;
-  }> {
-    const params: PoolFilterParams = {
+    options?: Omit<PoolQueryParams, "fields">,
+  ) {
+    return apiClient.get("/api/prepaid-pools", {
       fields: fields.join(","),
       ...options,
-    };
-
-    const response = await apiClient.get<Partial<Pool>[]>(
-      "/api/prepaid-pools",
-      params,
-    );
-
-    return {
-      pools: response.data || [],
-      pagination: response.pagination || {},
-      meta: response.meta || {},
-    };
+    });
   },
 };
 
