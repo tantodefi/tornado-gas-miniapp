@@ -3,12 +3,21 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
-    "source.organizeImports": "explicit"
+    "source.organizeImports": "never"
   },
+  "eslint.workingDirectories": [
+    "./apps/web",
+    "./packages/ui",
+    "./packages/core",
+    "./packages/data"
+  ],
+  "typescript.preferences.includePackageJsonAutoImports": "on",
   "typescript.preferences.importModuleSpecifier": "relative",
-  "typescript.suggest.autoImports": true,
-  "eslint.workingDirectories": ["apps/*", "packages/*"],
   "files.associations": {
     "*.css": "tailwindcss"
+  },
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
   }
 }

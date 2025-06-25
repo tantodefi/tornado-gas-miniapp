@@ -1,5 +1,5 @@
 {
-  "name": "shadcn-ui-monorepo",
+  "name": "sprepaid-gas-ui-monorepo",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "lint": "turbo lint --filter='!@workspace/*-config'",
     "lint:fix": "turbo lint:fix --filter='!@workspace/*-config'",
     "typecheck": "turbo typecheck --filter='!@workspace/*-config'",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,css,md}\" --ignore-path .gitignore",
     "check-all": "pnpm typecheck && pnpm lint && pnpm format:check"
   },
   "devDependencies": {

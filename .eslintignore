@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Generated files
+.turbo/
+.vercel/
+
+# Environment files
+.env*
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
