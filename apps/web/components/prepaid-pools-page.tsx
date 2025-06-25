@@ -8,8 +8,9 @@ import { useApiError } from "@/hooks/business/use-api-error";
 import PrepaidPoolCard from "./ui/prepaid-pool-card";
 import FilterBar from "./ui/filter-bar";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-// Card Skeleton Loader Component
+// Card Skeleton Loader Component (unchanged)
 const CardSkeleton: React.FC = () => (
   <div className="w-[250px] h-[150px] sm:w-[280px] sm:h-[168px] lg:w-[320px] lg:h-[192px] mx-auto bg-slate-800/50 rounded-xl lg:rounded-2xl border border-slate-600/30 relative animate-pulse">
     <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between">
@@ -36,7 +37,7 @@ interface PrepaidPoolsPageProps {
 }
 
 /**
- * Prepaid Pools Page Component
+ * Prepaid Pools Page Component - UPDATED with navigation links
  * Single responsibility: Present pools data with filtering UI
  * Uses Next.js useRouter for navigation
  */
@@ -78,7 +79,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
   return (
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
+        {/* UPDATED Header with Navigation */}
         <div className="text-center mb-12">
           <div className="flex justify-between items-center mb-6">
             <button
@@ -87,14 +88,24 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
             >
               ← Back to Home
             </button>
-            <div className="text-xs text-slate-500 font-mono">
-              {lastFetchTime && (
-                <span
-                  title={`Last updated: ${new Date(lastFetchTime).toLocaleString()}`}
-                >
-                  v0.1 • {new Date(lastFetchTime).toLocaleTimeString()}
-                </span>
-              )}
+
+            {/* NEW: Navigation Links */}
+            <div className="flex items-center gap-4">
+              <Link
+                href="/cards/pending"
+                className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono flex items-center gap-2"
+              >
+                💳 My Cards
+              </Link>
+              <div className="text-xs text-slate-500 font-mono">
+                {lastFetchTime && (
+                  <span
+                    title={`Last updated: ${new Date(lastFetchTime).toLocaleString()}`}
+                  >
+                    v0.1 • {new Date(lastFetchTime).toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -118,7 +129,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
           </motion.p>
         </div>
 
-        {/* Filter Bar */}
+        {/* Filter Bar (unchanged) */}
         <FilterBar
           filters={filters}
           onFilterChange={setFilter}
@@ -126,7 +137,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
           isLoading={isLoading}
         />
 
-        {/* Error State */}
+        {/* Error State (unchanged) */}
         {displayError && (
           <motion.div
             className="text-center py-12"
@@ -159,7 +170,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
           </motion.div>
         )}
 
-        {/* Loading State */}
+        {/* Loading State (unchanged) */}
         {isLoading && !displayError && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
             {[...Array(6)].map((_, index) => (
@@ -175,7 +186,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
           </div>
         )}
 
-        {/* Cards Grid */}
+        {/* Cards Grid (unchanged) */}
         {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
             {filteredPools.map((pool, index) => (
@@ -195,7 +206,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
           </div>
         )}
 
-        {/* No Results State */}
+        {/* No Results State (unchanged) */}
         {!isLoading &&
           !displayError &&
           filteredPools.length === 0 &&
@@ -222,7 +233,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
             </motion.div>
           )}
 
-        {/* Footer Info */}
+        {/* Footer Info (unchanged) */}
         {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="text-center mt-16 text-slate-400 text-sm">
             <p>🔒 All transactions are private and unlinkable</p>

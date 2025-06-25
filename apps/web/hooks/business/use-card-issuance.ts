@@ -1,172 +1,184 @@
+// hooks/use-card-issuance.ts
 import { useState, useEffect, useCallback } from "react";
 import {
-  loadCardsFromStorage,
-  addCardToStorage,
-  updateCardInStorage,
-  removeCardFromStorage,
-  generateNewCard,
-  getCardStatsFromStorage,
-  findCardInStorage,
-  type IssuedCard,
-} from "@/lib/storage/card-storage";
-import { isCardExpired } from "@/lib/card-generation";
+  loadCardsFromIndexedDB,
+  saveCardToIndexedDB,
+  updateCardInIndexedDB,
+  deleteCardFromIndexedDB,
+  getCardsByStatus,
+  getCardStatsFromIndexedDB,
+  findCardInIndexedDB,
+  type PoolCard,
+} from "@/lib/storage/indexed-db-storage";
 
 interface UseCardIssuanceResult {
   // State
-  issuedCards: IssuedCard[];
-  isIssuing: boolean;
+  allCards: PoolCard[];
+  pendingCards: PoolCard[];
+  activeCards: PoolCard[];
+  isLoading: boolean;
 
   // Actions
-  issueNewCard: () => Promise<IssuedCard>;
-  activateCard: (
-    cardId: string,
-    network: IssuedCard["network"],
-    amount: number,
-  ) => void;
-  deactivateCard: (cardId: string) => void;
-  deleteCard: (cardId: string) => void;
-  clearAllCards: () => void;
+  createCard: (card: PoolCard) => Promise<void>;
+  activateCard: (cardId: string, balance: string) => Promise<void>;
+  deleteCard: (cardId: string) => Promise<void>;
+  clearAllCards: () => Promise<void>;
 
   // Getters
-  getCardById: (cardId: string) => IssuedCard | undefined;
-  getActiveCards: () => IssuedCard[];
-  getInactiveCards: () => IssuedCard[];
-  getCardStats: () => ReturnType<typeof getCardStatsFromStorage>;
-  isCardExpired: (card: IssuedCard) => boolean;
+  getCardById: (cardId: string) => Promise<PoolCard | null>;
+  getCardStats: () => Promise<{
+    total: number;
+    active: number;
+    pending: number;
+    totalValue: number;
+  }>; // ✅ Fixed: Direct type instead of ReturnType
 
   // Refresh
-  refreshCards: () => void;
+  refreshCards: () => Promise<void>;
 }
 
 /**
- * Custom hook for card issuance management
- * Single responsibility: React state management for card operations
- * Uses storage utilities for persistence, focuses on business logic
+ * Updated hook for card management using IndexedDB
+ * Handles both pending and active cards
  */
 export function useCardIssuance(): UseCardIssuanceResult {
-  const [issuedCards, setIssuedCards] = useState<IssuedCard[]>([]);
-  const [isIssuing, setIsIssuing] = useState(false);
+  const [allCards, setAllCards] = useState<PoolCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load cards from storage on mount
+  // Derived state
+  const pendingCards = allCards.filter(
+    (card) => card.status === "pending-topup",
+  );
+  const activeCards = allCards.filter((card) => card.status === "active");
+
+  // Load cards from IndexedDB on mount
   useEffect(() => {
-    const cards = loadCardsFromStorage();
-    setIssuedCards(cards);
+    loadCards();
   }, []);
 
-  // Refresh cards from storage (useful after external changes)
-  const refreshCards = useCallback(() => {
-    const cards = loadCardsFromStorage();
-    setIssuedCards(cards);
-  }, []);
-
-  // Issue a new card with realistic timing
-  const issueNewCard = useCallback(async (): Promise<IssuedCard> => {
-    setIsIssuing(true);
-
+  const loadCards = useCallback(async () => {
     try {
-      // Simulate card generation delay for realistic UX
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Generate and save new card
-      const newCard = generateNewCard();
-      const updatedCards = addCardToStorage(newCard);
-
-      // Update React state
-      setIssuedCards(updatedCards);
-
-      return newCard;
+      setIsLoading(true);
+      const cards = await loadCardsFromIndexedDB();
+      setAllCards(cards);
+    } catch (error) {
+      console.error("Failed to load cards:", error);
     } finally {
-      setIsIssuing(false);
+      setIsLoading(false);
     }
   }, []);
 
-  // Activate a card (called after successful top-up)
-  const activateCard = useCallback(
-    (cardId: string, network: IssuedCard["network"], amount: number) => {
-      const updates: Partial<IssuedCard> = {
-        status: "active" as const,
-        network,
-        amount,
-      };
+  // Create a new card (used by identity generation flow)
+  const createCard = useCallback(
+    async (card: PoolCard) => {
+      try {
+        await saveCardToIndexedDB(card);
+        await loadCards(); // Refresh state
+      } catch (error) {
+        console.error("Failed to create card:", error);
+        throw error;
+      }
+    },
+    [loadCards],
+  );
 
-      const updatedCards = updateCardInStorage(cardId, updates);
-      setIssuedCards(updatedCards);
+  // Activate a card (called after successful top-up/pool join)
+  const activateCard = useCallback(
+    async (cardId: string, balance: string) => {
+      try {
+        const updates: Partial<PoolCard> = {
+          status: "active",
+          balance,
+          joinedAt: new Date().toISOString(),
+        };
+
+        await updateCardInIndexedDB(cardId, updates);
+        await loadCards(); // Refresh state
+      } catch (error) {
+        console.error("Failed to activate card:", error);
+        throw error;
+      }
+    },
+    [loadCards],
+  );
+
+  // Delete a card permanently
+  const deleteCard = useCallback(
+    async (cardId: string) => {
+      try {
+        await deleteCardFromIndexedDB(cardId);
+        await loadCards(); // Refresh state
+      } catch (error) {
+        console.error("Failed to delete card:", error);
+        throw error;
+      }
+    },
+    [loadCards],
+  );
+
+  // Clear all cards
+  const clearAllCards = useCallback(async () => {
+    try {
+      // Delete each card individually to ensure clean state
+      await Promise.all(
+        allCards.map((card) => deleteCardFromIndexedDB(card.id)),
+      );
+      await loadCards(); // Refresh state
+    } catch (error) {
+      console.error("Failed to clear all cards:", error);
+      throw error;
+    }
+  }, [allCards, loadCards]);
+
+  // Get a specific card by ID
+  const getCardById = useCallback(
+    async (cardId: string): Promise<PoolCard | null> => {
+      try {
+        return await findCardInIndexedDB(cardId);
+      } catch (error) {
+        console.error("Failed to get card by ID:", error);
+        return null;
+      }
     },
     [],
   );
 
-  // Deactivate a card
-  const deactivateCard = useCallback((cardId: string) => {
-    const updates: Partial<IssuedCard> = {
-      status: "inactive" as const,
-      network: undefined,
-      amount: undefined,
-    };
-
-    const updatedCards = updateCardInStorage(cardId, updates);
-    setIssuedCards(updatedCards);
+  // Get card statistics - ✅ Fixed implementation
+  const getCardStats = useCallback(async () => {
+    try {
+      return await getCardStatsFromIndexedDB();
+    } catch (error) {
+      console.error("Failed to get card stats:", error);
+      return {
+        total: 0,
+        active: 0,
+        pending: 0,
+        totalValue: 0,
+      };
+    }
   }, []);
 
-  // Delete a card permanently
-  const deleteCard = useCallback((cardId: string) => {
-    const updatedCards = removeCardFromStorage(cardId);
-    setIssuedCards(updatedCards);
-  }, []);
-
-  // Clear all cards
-  const clearAllCards = useCallback(() => {
-    setIssuedCards([]);
-    // Note: We're using the storage utility for consistency
-    const updatedCards = removeCardFromStorage(""); // This will clear all
-    setIssuedCards(updatedCards);
-  }, []);
-
-  // Get a specific card by ID (from current state for performance)
-  const getCardById = useCallback(
-    (cardId: string): IssuedCard | undefined => {
-      return issuedCards.find((card) => card.id === cardId);
-    },
-    [issuedCards],
-  );
-
-  // Get all active cards
-  const getActiveCards = useCallback((): IssuedCard[] => {
-    return issuedCards.filter((card) => card.status === "active");
-  }, [issuedCards]);
-
-  // Get all inactive cards
-  const getInactiveCards = useCallback((): IssuedCard[] => {
-    return issuedCards.filter((card) => card.status === "inactive");
-  }, [issuedCards]);
-
-  // Get card statistics (delegates to storage utility)
-  const getCardStats = useCallback(() => {
-    return getCardStatsFromStorage();
-  }, []);
-
-  // Check if card is expired
-  const checkCardExpired = useCallback((card: IssuedCard): boolean => {
-    return isCardExpired(card.expiresAt);
-  }, []);
+  // Refresh cards (for manual refresh)
+  const refreshCards = useCallback(async () => {
+    await loadCards();
+  }, [loadCards]);
 
   return {
     // State
-    issuedCards,
-    isIssuing,
+    allCards,
+    pendingCards,
+    activeCards,
+    isLoading,
 
     // Actions
-    issueNewCard,
+    createCard,
     activateCard,
-    deactivateCard,
     deleteCard,
     clearAllCards,
 
     // Getters
     getCardById,
-    getActiveCards,
-    getInactiveCards,
     getCardStats,
-    isCardExpired: checkCardExpired,
 
     // Refresh
     refreshCards,
@@ -174,39 +186,64 @@ export function useCardIssuance(): UseCardIssuanceResult {
 }
 
 /**
- * Hook for managing card operations with optimistic updates
- * Useful when you need immediate UI feedback
+ * Hook specifically for pending cards
  */
-export function useOptimisticCards() {
-  const cardHook = useCardIssuance();
-  const [optimisticCards, setOptimisticCards] = useState<IssuedCard[]>([]);
+export function usePendingCards() {
+  const [pendingCards, setPendingCards] = useState<PoolCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sync optimistic state with actual state
-  useEffect(() => {
-    setOptimisticCards(cardHook.issuedCards);
-  }, [cardHook.issuedCards]);
-
-  const optimisticIssueCard = useCallback(async () => {
-    // Add optimistic card immediately
-    const optimisticCard = generateNewCard();
-    setOptimisticCards((prev) => [optimisticCard, ...prev]);
-
+  const loadPendingCards = useCallback(async () => {
     try {
-      // Issue real card
-      const realCard = await cardHook.issueNewCard();
-      return realCard;
+      setIsLoading(true);
+      const cards = await getCardsByStatus("pending-topup");
+      setPendingCards(cards);
     } catch (error) {
-      // Remove optimistic card on error
-      setOptimisticCards((prev) =>
-        prev.filter((card) => card.id !== optimisticCard.id),
-      );
-      throw error;
+      console.error("Failed to load pending cards:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [cardHook]);
+  }, []);
+
+  useEffect(() => {
+    loadPendingCards();
+  }, [loadPendingCards]);
 
   return {
-    ...cardHook,
-    issuedCards: optimisticCards,
-    issueNewCard: optimisticIssueCard,
+    pendingCards,
+    isLoading,
+    refreshPendingCards: loadPendingCards,
   };
 }
+
+/**
+ * Hook specifically for active cards
+ */
+export function useActiveCards() {
+  const [activeCards, setActiveCards] = useState<PoolCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadActiveCards = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const cards = await getCardsByStatus("active");
+      setActiveCards(cards);
+    } catch (error) {
+      console.error("Failed to load active cards:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadActiveCards();
+  }, [loadActiveCards]);
+
+  return {
+    activeCards,
+    isLoading,
+    refreshActiveCards: loadActiveCards,
+  };
+}
+
+// Export types for use in components
+export type { PoolCard };

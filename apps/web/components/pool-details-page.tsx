@@ -7,16 +7,19 @@ import { usePoolDetails } from "@/hooks/use-pool-details";
 import PrepaidPoolCard from "./ui/prepaid-pool-card";
 import PoolMembersList from "./ui/pool-members-list";
 import { LabelHeader } from "./ui/page-header";
+import IdentityGenerationFlow from "./identity/identity-generation-flow";
+import { PoolCard } from "@/lib/storage/indexed-db-storage";
 
 interface PoolDetailsPageProps {
   poolId: string;
 }
 
-// Main pool details page component - UPDATED to include members
+// Main pool details page component - UPDATED to include join pool flow
 const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   const router = useRouter();
   const [showMembers, setShowMembers] = useState(false);
   const [memberLimit, setMemberLimit] = useState(100);
+  const [showJoinFlow, setShowJoinFlow] = useState(false);
 
   // Use the updated hook with member controls
   const { pool, isLoading, error, refetch, members, hasMembers, memberCount } =
@@ -27,8 +30,18 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
     router.push("/pools");
   };
 
-  const handleJoinPool = (poolId: string) => {
-    router.push(`/cards/topup?pool=${poolId}`);
+  const handleJoinPool = () => {
+    setShowJoinFlow(true);
+  };
+
+  const handleJoinFlowComplete = (card: PoolCard) => {
+    setShowJoinFlow(false);
+    // Redirect to topup with the new card
+    router.push(`/cards/topup?card=${card.id}&pool=${poolId}`);
+  };
+
+  const handleJoinFlowCancel = () => {
+    setShowJoinFlow(false);
   };
 
   // Toggle members loading
@@ -116,9 +129,54 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
         </motion.div>
 
         {/* Card Display */}
-        <div className="mb-12">
+        <div className="mb-8">
           <PrepaidPoolCard pool={pool} />
         </div>
+
+        {/* NEW: Join Pool Section */}
+        <motion.div
+          className="mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+        >
+          <div className="card-prepaid-glass card-content-md text-center">
+            <div className="text-4xl mb-4">💳</div>
+            <h2 className="text-xl font-bold text-white mb-3">
+              Ready to Join This Pool?
+            </h2>
+            <p className="text-slate-300 mb-6 max-w-md mx-auto">
+              Get anonymous gas payments by joining Pool {pool.poolId}. You'll
+              need to create a secure identity and top up your card.
+            </p>
+
+            {/* Pool Info Summary */}
+            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+              <div className="bg-slate-800/30 rounded-lg p-3">
+                <div className="text-slate-400 mb-1">Joining Fee</div>
+                <div className="text-purple-400 font-bold">
+                  {parseFloat(pool.joiningFee).toFixed(4)} ETH
+                </div>
+              </div>
+              <div className="bg-slate-800/30 rounded-lg p-3">
+                <div className="text-slate-400 mb-1">Members</div>
+                <div className="text-white font-bold">{pool.membersCount}</div>
+              </div>
+            </div>
+
+            {/* Join Button */}
+            <button
+              onClick={handleJoinPool}
+              className="btn-prepaid-primary btn-lg w-full max-w-sm mx-auto"
+            >
+              Join Pool & Create Gas Card →
+            </button>
+
+            <p className="text-xs text-slate-400 mt-3">
+              This will create a secure identity and prepare your gas card
+            </p>
+          </div>
+        </motion.div>
 
         {/* Members Section */}
         <motion.div
@@ -195,6 +253,15 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
           <p>🔒 All transactions are private and unlinkable</p>
         </div>
       </div>
+
+      {/* NEW: Identity Generation Flow Modal */}
+      {showJoinFlow && pool && (
+        <IdentityGenerationFlow
+          pool={pool}
+          onComplete={handleJoinFlowComplete}
+          onCancel={handleJoinFlowCancel}
+        />
+      )}
     </div>
   );
 };
