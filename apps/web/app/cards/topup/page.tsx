@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import { LabelHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Top Up Gas Card - Prepaid Gas",
@@ -14,12 +13,18 @@ function TopUpContent() {
   return (
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* ✅ Using the new reusable header component */}
-        <LabelHeader
-          backText="← Back to Pools"
-          onBack={() => (window.location.href = "/pools")}
-          label="Top-up Flow"
-        />
+        {/* ✅ FIXED: Inline header (no event handler props) */}
+        <div className="flex justify-between items-center mb-8">
+          <a 
+            href="/pools"
+            className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono"
+          >
+            ← Back to Pools
+          </a>
+          <div className="text-xs text-slate-500 font-mono">
+            Top-up Flow
+          </div>
+        </div>
 
         <div className="text-center">
           <div className="text-6xl mb-6">🚀</div>
@@ -28,8 +33,8 @@ function TopUpContent() {
             <span className="text-prepaid-gradient-brand">Flow</span>
           </h1>
           <p className="text-lg text-slate-300 mb-8 max-w-2xl mx-auto">
-            This is where the wallet connection and Ethereum transaction flow
-            will be implemented.
+            This is where the wallet connection and Ethereum transaction
+            flow will be implemented.
           </p>
 
           {/* Future features preview */}
@@ -46,18 +51,15 @@ function TopUpContent() {
             </ul>
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons - using links instead of onClick handlers */}
           <div className="flex gap-4 justify-center mb-8">
-            <button
-              onClick={() => (window.location.href = "/pools")}
-              className="btn-prepaid-outline btn-lg"
+            <a 
+              href="/pools"
+              className="btn-prepaid-outline btn-lg inline-block"
             >
               Back to Pools
-            </button>
+            </a>
             <button
-              onClick={() => {
-                alert("Wallet connection flow will be implemented soon!");
-              }}
               className="btn-prepaid-primary btn-lg"
             >
               Connect Wallet →
@@ -83,21 +85,19 @@ function TopUpContent() {
 
 /**
  * Top-up page - /cards/topup
- * Handles funding prepaid gas cards
+ * Pure Server Component - no event handlers
  * Supports query params: ?pool=123 or ?card=PG-ABC123
  */
 export default function TopUpPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-prepaid-gradient flex items-center justify-center">
-          <div className="text-white text-lg animate-pulse">
-            <div className="text-6xl mb-4">⚡</div>
-            <div className="text-xl">Loading Top-up...</div>
-          </div>
+    <Suspense fallback={
+      <div className="min-h-screen bg-prepaid-gradient flex items-center justify-center">
+        <div className="text-white text-lg animate-pulse">
+          <div className="text-6xl mb-4">⚡</div>
+          <div className="text-xl">Loading Top-up...</div>
         </div>
-      }
-    >
+      </div>
+    }>
       <TopUpContent />
     </Suspense>
   );
