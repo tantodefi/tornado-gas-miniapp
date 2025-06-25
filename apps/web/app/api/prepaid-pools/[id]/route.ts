@@ -29,11 +29,30 @@ export async function GET(
       );
     }
 
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const includeMembers = searchParams.get("includeMembers") === "true";
+    const memberLimit = parseInt(searchParams.get("memberLimit") || "100", 10);
+
+    // Validate memberLimit
+    if (memberLimit < 1 || memberLimit > 1000) {
+      return createErrorResponse(
+        "Member limit must be between 1 and 1000",
+        "INVALID_MEMBER_LIMIT",
+        400,
+        requestId,
+      );
+    }
+
     // Create pool service
     const poolService = new PoolService();
 
-    // Get pool details
-    const result = await poolService.getPoolDetails(id);
+    // Get pool details with optional members
+    const result = await poolService.getPoolDetails(
+      id,
+      includeMembers,
+      memberLimit,
+    );
 
     // Add processing time to meta
     const enhancedMeta = {
@@ -42,6 +61,8 @@ export async function GET(
       processingTime: Date.now() - startTime,
       poolId: id,
       timestamp: new Date().toISOString(),
+      includeMembers, // Include in response for debugging
+      memberLimit: includeMembers ? memberLimit : undefined,
     };
 
     // Create response

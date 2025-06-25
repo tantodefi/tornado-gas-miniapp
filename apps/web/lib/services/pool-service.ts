@@ -155,15 +155,14 @@ export class PoolService {
   }
 
   /**
-   * Get detailed pool information
+   * Get detailed pool information with optional members
    */
-  async getPoolDetails(poolId: string): Promise<
-    PoolServiceResponse<
-      SerializedPool & {
-        members: any[];
-        rootHistory: any[];
-      }
-    >
+  async getPoolDetails(
+    poolId: string,
+    includeMembers: boolean = false,
+    memberLimit: number = 100,
+  ): Promise<
+    PoolServiceResponse<SerializedPool & { members: any[]; rootHistory: any[] }>
   > {
     const startTime = Date.now();
 
@@ -172,9 +171,13 @@ export class PoolService {
       setTimeout(() => reject(new Error("Request timeout")), this.timeout);
     });
 
-    // Create data promise
+    // Create data promise with new parameters
     const dataPromise = async () => {
-      return await this.client.getPoolDetails(poolId);
+      return await this.client.getPoolDetails(
+        poolId,
+        includeMembers,
+        memberLimit,
+      );
     };
 
     // Execute with timeout
@@ -225,7 +228,6 @@ export class PoolService {
       },
     };
   }
-
   /**
    * Validate query parameters
    */

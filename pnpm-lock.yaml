@@ -142,12 +142,21 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^6.0.0
         version: 6.21.0(eslint@8.57.1)(typescript@5.7.3)
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       eslint:
         specifier: ^8.0.0
         version: 8.57.1
       jest:
         specifier: ^29.0.0
         version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.7.3))
+      prettier:
+        specifier: ^3.5.1
+        version: 3.5.1
       rollup:
         specifier: ^4.0.0
         version: 4.44.0
@@ -191,12 +200,21 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^6.0.0
         version: 6.21.0(eslint@8.57.1)(typescript@5.7.3)
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       eslint:
         specifier: ^8.0.0
         version: 8.57.1
       jest:
         specifier: ^29.0.0
         version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.7.3))
+      prettier:
+        specifier: ^3.5.1
+        version: 3.5.1
       rimraf:
         specifier: ^5.0.0
         version: 5.0.10

@@ -61,31 +61,46 @@ interface MerkleRootHistory {
 }
 
 // Custom hook for managing pool details state
-export const usePoolDetails = (poolId: string) => {
+export const usePoolDetails = (
+  poolId: string,
+  includeMembers: boolean = false,
+  memberLimit: number = 100,
+) => {
   const [pool, setPool] = useState<DetailedPool | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Add request deduplication
   const isRequestInProgress = useRef(false);
-  const currentPoolId = useRef<string | null>(null);
+  const currentRequest = useRef<string | null>(null);
 
   const loadPoolDetails = useCallback(async () => {
-    // Prevent duplicate requests for the same pool
-    if (isRequestInProgress.current && currentPoolId.current === poolId) {
+    const requestKey = `${poolId}-${includeMembers}-${memberLimit}`;
+
+    // Prevent duplicate requests
+    if (isRequestInProgress.current && currentRequest.current === requestKey) {
       console.log(
-        `🔄 Request for pool ${poolId} already in progress, skipping...`,
+        `🔄 Request for pool ${poolId} (members: ${includeMembers}) already in progress, skipping...`,
       );
       return;
     }
 
     try {
       isRequestInProgress.current = true;
-      currentPoolId.current = poolId;
+      currentRequest.current = requestKey;
       setIsLoading(true);
       setError(null);
 
-      console.log(`🔍 Loading pool details for ID: ${poolId}`);
+      console.log(
+        `🔍 Loading pool details for ID: ${poolId}, includeMembers: ${includeMembers}`,
+      );
+
+      // Build query parameters
+      const params: any = {};
+      if (includeMembers) {
+        params.includeMembers = "true";
+        params.memberLimit = memberLimit.toString();
+      }
 
       const response = await prepaidPoolsApi.getPoolDetails(poolId);
 
@@ -123,15 +138,15 @@ export const usePoolDetails = (poolId: string) => {
       setIsLoading(false);
       isRequestInProgress.current = false;
     }
-  }, [poolId]);
+  }, [poolId, includeMembers, memberLimit]);
 
-  // Load data when poolId changes (only if different)
+  // Load data when parameters change
   useEffect(() => {
-    if (poolId && poolId !== currentPoolId.current) {
-      currentPoolId.current = null; // Reset to allow new request
+    if (poolId) {
+      currentRequest.current = null; // Reset to allow new request
       loadPoolDetails();
     }
-  }, [poolId, loadPoolDetails]);
+  }, [poolId, includeMembers, memberLimit, loadPoolDetails]);
 
   // Refetch function for retry functionality
   const refetch = useCallback(() => {
@@ -160,6 +175,10 @@ export const usePoolDetails = (poolId: string) => {
     getJoiningFeeAsNumber,
     getMembersCountAsNumber,
     getTotalDepositsAsNumber,
+    // New: Direct access to members and metadata
+    members: pool?.members || [],
+    hasMembers: includeMembers && (pool?.members?.length || 0) > 0,
+    memberCount: pool?.members?.length || 0,
   };
 };
 

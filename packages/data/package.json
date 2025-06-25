@@ -28,6 +28,9 @@
     "dev": "rollup -c rollup.config.js -w",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist"
   },
@@ -44,6 +47,8 @@
     "graphql-request": "7.2.0"
   },
   "devDependencies": {
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-typescript": "^11.0.0",
@@ -57,7 +62,8 @@
     "rollup": "^4.0.0",
     "rollup-plugin-dts": "^6.0.0",
     "ts-jest": "^29.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "prettier": "^3.5.1"
   },
   "engines": {
     "node": ">=16.0.0"

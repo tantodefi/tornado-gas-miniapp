@@ -140,10 +140,12 @@ export const GET_ALL_POOLS = `
 `;
 
 /**
- * Get detailed pool information including members and root history
+ * Get detailed pool information with optional members
+ * @param includeMembers - Whether to include members list (default: false)
+ * @param memberLimit - Maximum members to fetch when includeMembers=true (default: 100)
  */
 export const GET_POOL_DETAILS = `
-  query GetPoolDetails($poolId: String!) {
+  query GetPoolDetails($poolId: String!, $includeMembers: Boolean = false, $memberLimit: Int = 100) {
     pool(id: $poolId) {
       id
       poolId
@@ -158,7 +160,7 @@ export const GET_POOL_DETAILS = `
       currentRootIndex
       rootHistoryCount
       
-      members(first: 100, where: { isActive: true }) {
+      members(first: $memberLimit, where: { isActive: true }, orderBy: joinedAt, orderDirection: desc) @include(if: $includeMembers) {
         id
         identityCommitment
         memberIndex

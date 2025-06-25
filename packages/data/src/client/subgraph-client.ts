@@ -295,9 +295,16 @@ export class SubgraphClient {
   }
 
   /**
-   * Get detailed pool information including members and root history
+   * Get detailed pool information with optional members
+   * @param poolId - Pool ID to fetch
+   * @param includeMembers - Whether to include members list (default: false)
+   * @param memberLimit - Maximum members to fetch when includeMembers=true (default: 100)
    */
-  async getPoolDetails(poolId: string): Promise<
+  async getPoolDetails(
+    poolId: string,
+    includeMembers: boolean = false,
+    memberLimit: number = 100,
+  ): Promise<
     SubgraphResponse<
       Pool & {
         members: PoolMember[];
@@ -307,7 +314,11 @@ export class SubgraphClient {
   > {
     const response = await this.client.request<PoolDetailsResponse>(
       GET_POOL_DETAILS,
-      { poolId },
+      {
+        poolId,
+        includeMembers,
+        memberLimit,
+      },
     );
 
     if (!response.pool) {

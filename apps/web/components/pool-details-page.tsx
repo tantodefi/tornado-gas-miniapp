@@ -1,176 +1,26 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { usePoolDetails } from "@/hooks/use-pool-details";
 import PrepaidPoolCard from "./ui/prepaid-pool-card";
+import PoolMembersList from "./ui/pool-members-list";
 import { LabelHeader } from "./ui/page-header";
 
-// Keep existing interfaces exactly the same
-interface DetailedPool {
-  id: string;
-  amount: number;
-  members: number;
-  maxMembers: number;
-  network: {
-    name: string;
-    icon: string;
-    color: string;
-  };
-  createdAt: string;
-  status: "active" | "full" | "low";
-  totalTransactions: number;
-  averageGasCost: number;
-  description?: string;
-  memberList: PoolMember[];
-  recentTransactions: Transaction[];
-}
-
-interface PoolMember {
-  id: string;
-  joinedAt: string;
-  contributedAmount: number;
-  gasUsed: number;
-}
-
-interface Transaction {
-  id: string;
-  type: "join" | "gas_usage" | "refund";
-  amount: number;
-  timestamp: string;
-  txHash?: string;
-  member: string;
-}
-
-// Remove the props interface and update it
 interface PoolDetailsPageProps {
   poolId: string;
 }
 
-// Keep StatsGrid component exactly the same
-const StatsGrid: React.FC<{ pool: DetailedPool }> = ({ pool }) => {
-  const stats = [
-    {
-      label: "Pool Members",
-      value: `${pool.members}/${pool.maxMembers}`,
-      icon: "👥",
-    },
-    {
-      label: "Total Transactions",
-      value: pool.totalTransactions.toLocaleString(),
-      icon: "📊",
-    },
-    {
-      label: "Avg Gas Cost",
-      value: `${pool.averageGasCost.toFixed(4)} ETH`,
-      icon: "⛽",
-    },
-    {
-      label: "Created",
-      value: new Date(pool.createdAt).toLocaleDateString(),
-      icon: "📅",
-    },
-  ];
-
-  return (
-    <div className="grid-prepaid-stats">
-      {stats.map((stat, index) => (
-        <motion.div
-          key={stat.label}
-          className="card-prepaid-glass card-content-sm text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
-        >
-          <div className="text-2xl mb-2">{stat.icon}</div>
-          <div className="text-lg font-bold text-purple-400 mb-1">
-            {stat.value}
-          </div>
-          <div className="text-xs text-slate-400">{stat.label}</div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
-// Keep RecentTransactions component exactly the same
-const RecentTransactions: React.FC<{ transactions: Transaction[] }> = ({
-  transactions,
-}) => {
-  if (!transactions.length) {
-    return (
-      <div className="text-center py-8 text-slate-400">
-        <div className="text-4xl mb-2">📝</div>
-        <p>No recent transactions</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {transactions.slice(0, 5).map((tx, index) => (
-        <motion.div
-          key={tx.id}
-          className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg border border-slate-600/20"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.1 }}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                tx.type === "join"
-                  ? "bg-green-500/20 text-green-400"
-                  : tx.type === "gas_usage"
-                    ? "bg-blue-500/20 text-blue-400"
-                    : "bg-purple-500/20 text-purple-400"
-              }`}
-            >
-              {tx.type === "join"
-                ? "➕"
-                : tx.type === "gas_usage"
-                  ? "⛽"
-                  : "💰"}
-            </div>
-            <div>
-              <div className="text-sm font-medium text-white">
-                {tx.type === "join"
-                  ? "Pool Join"
-                  : tx.type === "gas_usage"
-                    ? "Gas Usage"
-                    : "Refund"}
-              </div>
-              <div className="text-xs text-slate-400">
-                {new Date(tx.timestamp).toLocaleString()}
-              </div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div
-              className={`text-sm font-bold ${
-                tx.type === "refund" ? "text-green-400" : "text-slate-300"
-              }`}
-            >
-              {tx.type === "refund" ? "+" : "-"}
-              {tx.amount.toFixed(4)} ETH
-            </div>
-            {tx.txHash && (
-              <div className="text-xs text-purple-400 font-mono">
-                {tx.txHash.slice(0, 8)}...
-              </div>
-            )}
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
-// Main pool details page component - UPDATED to use Next.js router
+// Main pool details page component - UPDATED to include members
 const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   const router = useRouter();
-  const { pool, isLoading, error, refetch } = usePoolDetails(poolId);
+  const [showMembers, setShowMembers] = useState(false);
+  const [memberLimit, setMemberLimit] = useState(100);
+
+  // Use the updated hook with member controls
+  const { pool, isLoading, error, refetch, members, hasMembers, memberCount } =
+    usePoolDetails(poolId, showMembers, memberLimit);
 
   // Navigation handlers using Next.js router
   const handleBack = () => {
@@ -179,6 +29,11 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
 
   const handleJoinPool = (poolId: string) => {
     router.push(`/cards/topup?pool=${poolId}`);
+  };
+
+  // Toggle members loading
+  const handleToggleMembers = () => {
+    setShowMembers(!showMembers);
   };
 
   if (isLoading) {
@@ -264,6 +119,76 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
         <div className="mb-12">
           <PrepaidPoolCard pool={pool} />
         </div>
+
+        {/* Members Section */}
+        <motion.div
+          className="mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-white">
+              Pool Members ({pool.membersCount})
+            </h2>
+
+            {/* Members Control */}
+            <div className="flex items-center gap-4">
+              {showMembers && (
+                <select
+                  value={memberLimit}
+                  onChange={(e) => setMemberLimit(parseInt(e.target.value))}
+                  className="px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded text-white text-sm focus:outline-none focus:border-purple-500"
+                >
+                  <option value={50}>Show 50</option>
+                  <option value={100}>Show 100</option>
+                  <option value={200}>Show 200</option>
+                  <option value={500}>Show 500</option>
+                </select>
+              )}
+
+              <button
+                onClick={handleToggleMembers}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  showMembers
+                    ? "bg-purple-500 text-white hover:bg-purple-600"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                }`}
+              >
+                {showMembers ? "Hide Members" : "Show Members"}
+              </button>
+            </div>
+          </div>
+
+          {/* Members List */}
+          {showMembers && (
+            <PoolMembersList
+              members={members}
+              isLoading={isLoading}
+              poolId={poolId}
+            />
+          )}
+
+          {/* Members Preview */}
+          {!showMembers && (
+            <div className="card-prepaid-glass card-content-md text-center">
+              <div className="text-4xl mb-4">👥</div>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {pool.membersCount} Members in Pool
+              </h3>
+              <p className="text-slate-400 mb-4">
+                Click "Show Members" to view identity commitments and join
+                history
+              </p>
+              <button
+                onClick={handleToggleMembers}
+                className="btn-prepaid-primary btn-md"
+              >
+                View Members
+              </button>
+            </div>
+          )}
+        </motion.div>
 
         {/* Footer */}
         <div className="text-center text-slate-400 text-sm">
