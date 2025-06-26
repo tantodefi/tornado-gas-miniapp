@@ -60,9 +60,9 @@ const formatNumber = (num: string | number): string => {
 
 /**
  * MembersSection Component
- * 
+ *
  * Single Responsibility: Manage pool members display and interaction
- * 
+ *
  * Features:
  * - Members count display
  * - Show/hide members functionality

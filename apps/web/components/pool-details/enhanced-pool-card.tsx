@@ -64,20 +64,20 @@ const formatEthAmount = (weiString: string): string => {
 
 /**
  * Enhanced Pool Card Component
- * 
+ *
  * Single Responsibility: Display pool card with join functionality and state management
- * 
+ *
  * Features:
  * - Shows pool header with ID and status
  * - Displays visual pool card
  * - Handles join button with different states
  * - Shows appropriate descriptions for each state
  */
-const EnhancedPoolCard: React.FC<EnhancedPoolCardProps> = ({ 
-  pool, 
-  onJoin, 
-  isJoining, 
-  showPayment 
+const EnhancedPoolCard: React.FC<EnhancedPoolCardProps> = ({
+  pool,
+  onJoin,
+  isJoining,
+  showPayment,
 }) => {
   const joiningFeeEth = formatEthAmount(pool.joiningFee);
 
@@ -85,24 +85,24 @@ const EnhancedPoolCard: React.FC<EnhancedPoolCardProps> = ({
   const getButtonState = () => {
     if (showPayment) {
       return {
-        text: 'Payment in Progress...',
+        text: "Payment in Progress...",
         disabled: true,
-        description: 'Complete your payment to activate the gas card'
+        description: "Complete your payment to activate the gas card",
       };
     }
-    
+
     if (isJoining) {
       return {
-        text: 'Creating Gas Card...',
+        text: "Creating Gas Card...",
         disabled: true,
-        description: 'Generating secure identity and preparing payment...'
+        description: "Generating secure identity and preparing payment...",
       };
     }
-    
+
     return {
-      text: 'Join Pool →',
+      text: "Join Pool →",
       disabled: false,
-      description: 'Creates your gas card and takes you to payment'
+      description: "Creates your gas card and takes you to payment",
     };
   };
 
@@ -124,18 +124,16 @@ const EnhancedPoolCard: React.FC<EnhancedPoolCardProps> = ({
 
       {/* Join Action */}
       <div className="text-center">
-        <button 
-          onClick={onJoin} 
+        <button
+          onClick={onJoin}
           disabled={buttonState.disabled}
           className={`btn-prepaid-primary btn-md my-3 ${
-            buttonState.disabled ? 'opacity-50 cursor-not-allowed' : ''
+            buttonState.disabled ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
           {buttonState.text}
         </button>
-        <p className="text-xs text-slate-400">
-          {buttonState.description}
-        </p>
+        <p className="text-xs text-slate-400">{buttonState.description}</p>
       </div>
     </div>
   );

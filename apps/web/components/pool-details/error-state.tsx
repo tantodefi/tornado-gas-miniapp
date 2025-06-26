@@ -17,9 +17,9 @@ interface ErrorStateProps {
 
 /**
  * ErrorState Component
- * 
+ *
  * Single Responsibility: Display error state for pool details page
- * 
+ *
  * Features:
  * - Animated error display with motion
  * - Clear error messaging

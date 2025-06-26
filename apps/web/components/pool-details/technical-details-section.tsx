@@ -73,16 +73,18 @@ const formatNumber = (num: string | number): string => {
 
 /**
  * TechnicalDetailsSection Component
- * 
+ *
  * Single Responsibility: Display technical specifications and security details
- * 
+ *
  * Features:
  * - Smart contract information
  * - Privacy and security metrics
  * - Copyable addresses and technical values
  * - Organized two-column layout
  */
-const TechnicalDetailsSection: React.FC<TechnicalDetailsSectionProps> = ({ pool }) => {
+const TechnicalDetailsSection: React.FC<TechnicalDetailsSectionProps> = ({
+  pool,
+}) => {
   const duration = formatDuration(pool.merkleTreeDuration);
   const createdDate = new Date(parseInt(pool.createdAt) * 1000);
 

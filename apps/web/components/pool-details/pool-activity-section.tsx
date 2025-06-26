@@ -4,9 +4,9 @@ import React from "react";
 
 /**
  * PoolActivitySection Component
- * 
+ *
  * Single Responsibility: Display pool activity information (currently placeholder)
- * 
+ *
  * Features:
  * - Consistent card styling
  * - Placeholder for future activity tracking

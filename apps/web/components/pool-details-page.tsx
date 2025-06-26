@@ -5,10 +5,10 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { usePoolDetails } from "@/hooks/use-pool-details";
 import { LabelHeader } from "./ui/page-header";
-import { 
+import {
   generateCompleteIdentity,
   IdentitySecurity,
-  type GenerateIdentityResult
+  type GenerateIdentityResult,
 } from "@/lib/identity/identity-generator";
 import {
   PoolCard,
@@ -33,9 +33,9 @@ interface PoolDetailsPageProps {
 
 /**
  * PoolDetailsPage Component
- * 
+ *
  * Single Responsibility: Orchestrate pool details display and joining flow
- * 
+ *
  * Features:
  * - Pool data fetching and display
  * - Identity generation and card creation
@@ -45,19 +45,20 @@ interface PoolDetailsPageProps {
  */
 const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   const router = useRouter();
-  
+
   // Member display state
   const [showMembers, setShowMembers] = useState(false);
   const [memberLimit, setMemberLimit] = useState(100);
-  
+
   // Join flow state
   const [isJoining, setIsJoining] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
-  
+
   // Generated data state
   const [generatedCard, setGeneratedCard] = useState<PoolCard | null>(null);
-  const [generatedIdentity, setGeneratedIdentity] = useState<GenerateIdentityResult | null>(null);
+  const [generatedIdentity, setGeneratedIdentity] =
+    useState<GenerateIdentityResult | null>(null);
   const [activatedCard, setActivatedCard] = useState<PoolCard | null>(null);
 
   // Pool data hook
@@ -72,17 +73,17 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   // Join pool flow
   const handleJoinPool = async () => {
     if (!pool) return;
-    
+
     try {
       setIsJoining(true);
-      
+
       // Validate secure environment
       IdentitySecurity.validateSecureContext();
-      
+
       // Generate identity automatically
       const identity = generateCompleteIdentity();
       setGeneratedIdentity(identity);
-      
+
       // Create the card but don't save to IndexedDB yet (wait for payment success)
       const newCard: PoolCard = {
         id: identity.cardId,
@@ -104,10 +105,9 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
       };
 
       setGeneratedCard(newCard);
-      
+
       // Show payment component instead of redirecting
       setShowPayment(true);
-      
     } catch (error) {
       console.error("Failed to create identity:", error);
       alert("Failed to create gas card. Please try again.");
@@ -155,13 +155,15 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   };
 
   // Convert pool to PaymentPool format
-  const paymentPool: PaymentPool | null = pool ? {
-    id: pool.id,
-    poolId: pool.poolId,
-    joiningFee: pool.joiningFee,
-    membersCount: pool.membersCount,
-    network: pool.network,
-  } : null;
+  const paymentPool: PaymentPool | null = pool
+    ? {
+        id: pool.id,
+        poolId: pool.poolId,
+        joiningFee: pool.joiningFee,
+        membersCount: pool.membersCount,
+        network: pool.network,
+      }
+    : null;
 
   // Loading state
   if (isLoading) {
@@ -195,8 +197,8 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
             >
               {/* Enhanced Pool Card */}
               <div className="mb-6">
-                <EnhancedPoolCard 
-                  pool={pool} 
+                <EnhancedPoolCard
+                  pool={pool}
                   onJoin={handleJoinPool}
                   isJoining={isJoining}
                   showPayment={showPayment}

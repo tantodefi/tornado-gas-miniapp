@@ -13,9 +13,9 @@ interface LoadingSkeletonProps {
 
 /**
  * LoadingSkeleton Component
- * 
+ *
  * Single Responsibility: Display loading state for pool details page
- * 
+ *
  * Features:
  * - Consistent header with back navigation
  * - Skeleton layout matching the actual content structure
@@ -37,7 +37,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ onBack }) => (
           <div className="w-full h-[400px] bg-slate-800/50 rounded-2xl animate-pulse mb-6"></div>
           <div className="w-full h-[200px] bg-slate-800/50 rounded-2xl animate-pulse"></div>
         </div>
-        
+
         {/* Right Column Skeleton */}
         <div className="lg:col-span-7">
           <div className="w-full h-[300px] bg-slate-800/50 rounded-2xl animate-pulse mb-8"></div>

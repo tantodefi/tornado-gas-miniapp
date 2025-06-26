@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PoolCard } from "@/lib/storage/indexed-db-storage";
-import { formatMnemonicForDisplay, type GenerateIdentityResult } from "@/lib/identity/identity-generator";
+import {
+  formatMnemonicForDisplay,
+  type GenerateIdentityResult,
+} from "@/lib/identity/identity-generator";
 
 /**
  * Interface for pool data needed by success screen
@@ -32,7 +35,7 @@ interface SecureSuccessScreenProps {
 
 /**
  * Elegant SecureSuccessScreen Component
- * 
+ *
  * Focused on essential information:
  * - Success celebration
  * - Recovery phrase display
@@ -53,12 +56,12 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!recoveryPhraseSaved) {
         e.preventDefault();
-        e.returnValue = 'Save your recovery phrase before leaving!';
+        e.returnValue = "Save your recovery phrase before leaving!";
       }
     };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [recoveryPhraseSaved]);
 
   const handleComplete = () => {
@@ -97,7 +100,8 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
               </h2>
             </div>
             <p className="text-amber-200 text-sm">
-              Write these 12 words on paper. This is your only chance to see them.
+              Write these 12 words on paper. This is your only chance to see
+              them.
             </p>
           </div>
 
@@ -110,7 +114,9 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
                   className="bg-slate-700/50 rounded-lg p-3 text-center"
                 >
                   <div className="text-xs text-slate-400 mb-1">{index}</div>
-                  <div className="text-white font-mono text-sm font-semibold">{word}</div>
+                  <div className="text-white font-mono text-sm font-semibold">
+                    {word}
+                  </div>
                 </div>
               ))}
             </div>
@@ -142,18 +148,17 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
             disabled={!recoveryPhraseSaved}
             className={`w-full py-4 px-6 rounded-xl text-lg font-semibold transition-all duration-300 ${
               recoveryPhraseSaved
-                ? 'btn-prepaid-primary hover:scale-[1.02]'
-                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                ? "btn-prepaid-primary hover:scale-[1.02]"
+                : "bg-slate-700 text-slate-400 cursor-not-allowed"
             }`}
           >
-            {recoveryPhraseSaved 
-              ? 'Continue to My Cards →'
-              : 'Please save your recovery phrase first'
-            }
+            {recoveryPhraseSaved
+              ? "Continue to My Cards →"
+              : "Please save your recovery phrase first"}
           </button>
 
           {recoveryPhraseSaved && (
-            <motion.p 
+            <motion.p
               className="text-green-400 text-sm text-center mt-3"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

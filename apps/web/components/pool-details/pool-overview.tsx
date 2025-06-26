@@ -56,9 +56,9 @@ const formatNumber = (num: string | number): string => {
 
 /**
  * PoolOverview Component
- * 
+ *
  * Single Responsibility: Display key pool metrics and overview information
- * 
+ *
  * Features:
  * - Key metrics grid (fee, value, members, year)
  * - Network and privacy information

@@ -18,20 +18,20 @@ interface InfoRowProps {
 
 /**
  * InfoRow Component
- * 
+ *
  * Single Responsibility: Display a label-value pair with optional copy functionality
- * 
+ *
  * Features:
  * - Clean label/value layout
  * - Optional copy-to-clipboard functionality
  * - Hover effects and visual feedback
  * - Accessible copy button with tooltip
  */
-const InfoRow: React.FC<InfoRowProps> = ({ 
-  label, 
-  value, 
-  valueClass = "text-white", 
-  copyable 
+const InfoRow: React.FC<InfoRowProps> = ({
+  label,
+  value,
+  valueClass = "text-white",
+  copyable,
 }) => {
   const [copied, setCopied] = useState(false);
 

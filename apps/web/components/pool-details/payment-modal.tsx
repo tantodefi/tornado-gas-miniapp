@@ -43,9 +43,9 @@ const formatEthAmount = (weiString: string): string => {
 
 /**
  * PaymentModal Component
- * 
+ *
  * Single Responsibility: Handle payment processing modal UI and interactions
- * 
+ *
  * Features:
  * - Modal overlay with backdrop blur
  * - Payment amount display
@@ -66,7 +66,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handlePaymentCompleted = (details: any) => {
     console.log("Payment completed:", details);
-    
+
     // Update card status and save
     const activatedCard: PoolCard = {
       ...generatedCard,
@@ -74,7 +74,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       balance: formatEthAmount(paymentPool.joiningFee),
       joinedAt: new Date().toISOString(),
     };
-    
+
     onPaymentSuccess(activatedCard);
   };
 
@@ -90,9 +90,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-600/50 rounded-2xl p-6 max-w-md w-full">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">Complete Payment</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Complete Payment
+          </h2>
           <p className="text-slate-400">
-            Join Pool {poolId} with {formatEthAmount(paymentPool.joiningFee)} ETH
+            Join Pool {poolId} with {formatEthAmount(paymentPool.joiningFee)}{" "}
+            ETH
           </p>
         </div>
 
@@ -107,10 +110,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         />
 
         <div className="text-center mt-6">
-          <button
-            onClick={onCancel}
-            className="btn-prepaid-outline btn-sm"
-          >
+          <button onClick={onCancel} className="btn-prepaid-outline btn-sm">
             Cancel
           </button>
         </div>
