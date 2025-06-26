@@ -359,12 +359,12 @@ const PendingCardItem: React.FC<PendingCardItemProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 justify-items-start">
             {formatMnemonicForDisplay(card.identity.mnemonic).map(
               ({ index, word }) => (
                 <div
                   key={index}
-                  className="bg-slate-800/50 border border-slate-600/50 rounded p-2 text-center"
+                  className="bg-slate-800/50 border border-slate-600/50 rounded p-2 text-left"
                 >
                   <div className="text-xs text-slate-400">{index}</div>
                   <div className="text-sm text-white font-mono">{word}</div>

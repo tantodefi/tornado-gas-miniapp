@@ -315,10 +315,10 @@ const DisplayMnemonicStep: React.FC<DisplayMnemonicStepProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
-          <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-3 gap-x-6 gap-y-4 justify-items-start">
             {formattedWords.map(({ index, word }) => (
               <div key={index} className="flex items-center gap-3">
-                <span className="text-xs text-purple-400 font-mono w-6 text-right">
+                <span className="text-xs text-purple-400 font-mono w-6 text-left">
                   {index}.
                 </span>
                 <span className="text-sm text-white font-mono">{word}</span>
