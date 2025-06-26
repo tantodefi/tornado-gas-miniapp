@@ -163,8 +163,8 @@ const IdentityGenerationFlow: React.FC<IdentityGenerationFlowProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="w-full min-h-screen py-8">
         <AnimatePresence mode="wait">
           {currentStep === "generating" && <GeneratingStep key="generating" />}
 
@@ -205,47 +205,62 @@ const IdentityGenerationFlow: React.FC<IdentityGenerationFlowProps> = ({
 };
 
 /**
- * Step 1: Generating identity with loading animation
+ * Step 1: Generating identity with minimal loading animation
  */
 const GeneratingStep: React.FC = () => (
   <motion.div
-    className="card-prepaid-glass card-content-lg text-center"
+    className="max-w-md mx-auto"
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.9 }}
     transition={{ duration: 0.5 }}
   >
-    <div className="text-6xl mb-6">🔐</div>
-    <h2 className="text-2xl font-bold text-white mb-4">
-      Generating Your Secure Identity
-    </h2>
-    <p className="text-slate-300 mb-8">
-      Creating your unique 12-word recovery phrase using secure cryptography...
-    </p>
+    <div className="text-center mb-8">
+      <div className="text-4xl mb-4">💳</div>
+      <h2 className="text-2xl font-bold text-white mb-2">
+        Creating Your Gas Card
+      </h2>
+      <p className="text-slate-400">
+        Generating your secure recovery phrase...
+      </p>
+    </div>
 
-    {/* Loading animation */}
-    <div className="flex justify-center gap-2">
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          className="w-3 h-3 bg-purple-500 rounded-full"
-          animate={{
-            scale: [1, 1.5, 1],
-            opacity: [0.5, 1, 0.5],
-          }}
-          transition={{
-            duration: 1,
-            repeat: Infinity,
-            delay: i * 0.2,
-          }}
-        />
-      ))}
+    <div className="card-prepaid-glass card-content-lg text-center">
+      {/* Card being created visual */}
+      <div className="bg-slate-700/30 border border-slate-600/50 rounded-xl p-8 mb-6">
+        <div className="flex justify-center items-center gap-2 mb-4">
+          <span className="text-purple-400 text-sm font-mono">PREPAID GAS</span>
+        </div>
+
+        {/* Loading animation */}
+        <div className="flex justify-center gap-2">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-2 h-2 bg-purple-500 rounded-full"
+              animate={{
+                scale: [1, 1.3, 1],
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 1.2,
+                repeat: Infinity,
+                delay: i * 0.2,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <p className="text-xs text-slate-500">
+        Using secure cryptography to protect your identity
+      </p>
     </div>
   </motion.div>
 );
 
 /**
- * Step 2: Display mnemonic for user to save
+ * Step 2: Display mnemonic with minimal, card-focused design
  */
 interface DisplayMnemonicStepProps {
   mnemonic: string;
@@ -263,95 +278,100 @@ const DisplayMnemonicStep: React.FC<DisplayMnemonicStepProps> = ({
 
   return (
     <motion.div
-      className="card-prepaid-glass card-content-lg"
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -50 }}
+      className="max-w-md mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="text-center mb-6">
-        <div className="text-4xl mb-4">📝</div>
-        <h2 className="text-2xl font-bold text-white mb-2">
-          Save Your Recovery Phrase
-        </h2>
-        <p className="text-slate-300">
-          Write down these 12 words in order. You'll need them to access your
-          gas card.
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div className="text-4xl mb-4">💳</div>
+        <h2 className="text-2xl font-bold text-white mb-2">Your Gas Card</h2>
+        <p className="text-slate-400">
+          Keep these 12 words safe to access your card
         </p>
       </div>
 
-      {/* Security warning */}
-      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-        <div className="flex items-start gap-3">
-          <div className="text-red-400 text-xl">⚠️</div>
-          <div>
-            <h3 className="text-red-400 font-bold text-sm mb-1">
-              Important Security Notice
-            </h3>
-            <ul className="text-red-300 text-xs space-y-1">
-              <li>• Never share these words with anyone</li>
-              <li>• Store them offline (write on paper)</li>
-              <li>• Anyone with these words can access your card</li>
-            </ul>
+      {/* Mnemonic Card */}
+      <motion.div
+        className="card-prepaid-glass card-content-lg mb-6"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        {/* Card Header */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm font-mono mb-3">
+            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+            Recovery Phrase
           </div>
         </div>
-      </div>
 
-      {/* Mnemonic display */}
-      <div className="grid grid-cols-3 gap-3 mb-8">
-        {formattedWords.map(({ index, word }) => (
-          <motion.div
-            key={index}
-            className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-3 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-          >
-            <div className="text-xs text-slate-400 mb-1">{index}</div>
-            <div className="text-white font-mono text-sm">{word}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Confirmation checkbox */}
-      <div className="mb-6">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isConfirmChecked}
-            onChange={(e) => setIsConfirmChecked(e.target.checked)}
-            className="mt-1 w-4 h-4 text-purple-500 bg-slate-700 border-slate-600 rounded focus:ring-purple-500"
-          />
-          <span className="text-sm text-slate-300">
-            I have written down my 12-word recovery phrase and stored it in a
-            safe place. I understand that losing these words means losing access
-            to my gas card forever.
-          </span>
-        </label>
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex gap-3">
-        <button
-          onClick={onCancel}
-          className="btn-prepaid-outline btn-md flex-1"
+        {/* Single Mnemonic Card */}
+        <motion.div
+          className="bg-slate-700/30 border border-slate-600/50 rounded-xl p-6 mb-6"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
         >
-          Cancel
-        </button>
-        <button
-          onClick={onConfirmed}
-          disabled={!isConfirmChecked}
-          className="btn-prepaid-primary btn-md flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          I've Saved It →
-        </button>
-      </div>
+          <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+            {formattedWords.map(({ index, word }) => (
+              <div key={index} className="flex items-center gap-3">
+                <span className="text-xs text-purple-400 font-mono w-6 text-right">
+                  {index}.
+                </span>
+                <span className="text-sm text-white font-mono">{word}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Simple Security Note */}
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 text-yellow-400 text-sm">
+            <span>💡</span>
+            <span>Write these words down and store them safely</span>
+          </div>
+        </div>
+
+        {/* Confirmation */}
+        <div className="space-y-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isConfirmChecked}
+              onChange={(e) => setIsConfirmChecked(e.target.checked)}
+              className="mt-1 w-4 h-4 text-purple-500 bg-slate-700 border-slate-600 rounded focus:ring-purple-500"
+            />
+            <span className="text-sm text-slate-300 leading-relaxed">
+              I have saved my recovery phrase safely
+            </span>
+          </label>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="btn-prepaid-outline btn-md flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirmed}
+              disabled={!isConfirmChecked}
+              className="btn-prepaid-primary btn-md flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continue →
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 };
 
 /**
- * Step 3: Confirm mnemonic by asking for random words
+ * Step 3: Confirm mnemonic by asking for random words - Minimal design
  */
 interface ConfirmMnemonicStepProps {
   randomIndices: number[];
@@ -375,72 +395,71 @@ const ConfirmMnemonicStep: React.FC<ConfirmMnemonicStepProps> = ({
   isLoading,
 }) => (
   <motion.div
-    className="card-prepaid-glass card-content-lg"
+    className="max-w-md mx-auto"
     initial={{ opacity: 0, x: 50 }}
     animate={{ opacity: 1, x: 0 }}
     exit={{ opacity: 0, x: -50 }}
     transition={{ duration: 0.5 }}
   >
-    <div className="text-center mb-6">
-      <div className="text-4xl mb-4">✅</div>
-      <h2 className="text-2xl font-bold text-white mb-2">
-        Confirm Your Recovery Phrase
-      </h2>
-      <p className="text-slate-300">
-        Please enter the following words from your recovery phrase to confirm
-        you saved it correctly.
+    <div className="text-center mb-8">
+      <div className="text-4xl mb-4">💳</div>
+      <h2 className="text-2xl font-bold text-white mb-2">Confirm Your Card</h2>
+      <p className="text-slate-400">
+        Enter these words to verify you saved them
       </p>
     </div>
 
-    {/* Confirmation inputs */}
-    <div className="space-y-4 mb-6">
-      {randomIndices.map((wordIndex, confirmIndex) => (
-        <div key={wordIndex}>
-          <label className="block text-sm text-slate-400 mb-2">
-            Word #{wordIndex + 1}
-          </label>
-          <input
-            type="text"
-            value={confirmationWords[confirmIndex] || ""}
-            onChange={(e) => onWordChange(confirmIndex, e.target.value)}
-            placeholder={`Enter word #${wordIndex + 1}`}
-            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white font-mono focus:outline-none focus:border-purple-500 transition-colors"
-            autoComplete="off"
-            spellCheck="false"
-          />
-        </div>
-      ))}
-    </div>
-
-    {/* Error message */}
-    {error && (
-      <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-        <p className="text-red-400 text-sm">{error}</p>
+    <div className="card-prepaid-glass card-content-lg">
+      {/* Confirmation inputs */}
+      <div className="space-y-4 mb-6">
+        {randomIndices.map((wordIndex, confirmIndex) => (
+          <div key={wordIndex}>
+            <label className="block text-sm text-slate-400 mb-2">
+              Word #{wordIndex + 1}
+            </label>
+            <input
+              type="text"
+              value={confirmationWords[confirmIndex] || ""}
+              onChange={(e) => onWordChange(confirmIndex, e.target.value)}
+              placeholder={`Enter word #${wordIndex + 1}`}
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white font-mono focus:outline-none focus:border-purple-500 transition-colors"
+              autoComplete="off"
+              spellCheck="false"
+            />
+          </div>
+        ))}
       </div>
-    )}
 
-    {/* Action buttons */}
-    <div className="flex gap-3">
-      <button
-        onClick={onBack}
-        disabled={isLoading}
-        className="btn-prepaid-outline btn-md flex-1 disabled:opacity-50"
-      >
-        ← Back
-      </button>
-      <button
-        onClick={onSubmit}
-        disabled={isLoading || confirmationWords.some((word) => !word.trim())}
-        className="btn-prepaid-primary btn-md flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isLoading ? "Creating Card..." : "Create Gas Card →"}
-      </button>
+      {/* Error message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-3">
+        <button
+          onClick={onBack}
+          disabled={isLoading}
+          className="btn-prepaid-outline btn-md flex-1 disabled:opacity-50"
+        >
+          ← Back
+        </button>
+        <button
+          onClick={onSubmit}
+          disabled={isLoading || confirmationWords.some((word) => !word.trim())}
+          className="btn-prepaid-primary btn-md flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? "Creating Card..." : "Create Gas Card →"}
+        </button>
+      </div>
     </div>
   </motion.div>
 );
 
 /**
- * Step 4: Success - card created
+ * Step 4: Success - card created - Minimal design
  */
 interface SuccessStepProps {
   cardId: string;
@@ -449,28 +468,47 @@ interface SuccessStepProps {
 
 const SuccessStep: React.FC<SuccessStepProps> = ({ cardId, poolId }) => (
   <motion.div
-    className="card-prepaid-glass card-content-lg text-center"
+    className="max-w-md mx-auto"
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.9 }}
     transition={{ duration: 0.5 }}
   >
-    <div className="text-6xl mb-6">🎉</div>
-    <h2 className="text-2xl font-bold text-green-400 mb-4">
-      Gas Card Created Successfully!
-    </h2>
-    <p className="text-slate-300 mb-8">
-      Your gas card is ready for Pool {poolId}. Next step: top up your card to
-      join the pool and start using anonymous gas payments.
-    </p>
-
-    <div className="bg-slate-800/30 rounded-lg p-4 mb-6">
-      <div className="text-sm text-slate-400 mb-1">Card ID</div>
-      <div className="font-mono text-purple-400">{cardId}</div>
+    <div className="text-center mb-8">
+      <div className="text-4xl mb-4">💳</div>
+      <h2 className="text-2xl font-bold text-green-400 mb-2">
+        Gas Card Created!
+      </h2>
+      <p className="text-slate-400">Your card is ready for Pool {poolId}</p>
     </div>
 
-    <div className="text-xs text-slate-400">
-      Redirecting you to the top-up flow...
+    <div className="card-prepaid-glass card-content-lg text-center">
+      <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6 mb-6">
+        <div className="text-sm text-slate-400 mb-2">Card ID</div>
+        <div className="font-mono text-green-400 text-lg">{cardId}</div>
+      </div>
+
+      <div className="text-sm text-slate-500 mb-4">
+        Next: Top up your card to join the pool
+      </div>
+
+      <div className="flex justify-center gap-2">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-2 h-2 bg-green-500 rounded-full"
+            animate={{
+              scale: [1, 1.3, 1],
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              delay: i * 0.3,
+            }}
+          />
+        ))}
+      </div>
     </div>
   </motion.div>
 );
