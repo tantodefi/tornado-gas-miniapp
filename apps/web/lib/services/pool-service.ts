@@ -5,17 +5,7 @@ import {
   type SerializedPool,
 } from "@workspace/data";
 import { ClientFactory } from "./client-factory";
-
-/**
- * Pool query options for the service
- */
-export interface PoolQueryOptions {
-  page?: number;
-  limit?: number;
-  maxResults?: number;
-  paginated?: boolean;
-  fields?: string[];
-}
+import { PoolQueryOptions } from "@/types";
 
 /**
  * Pool service response

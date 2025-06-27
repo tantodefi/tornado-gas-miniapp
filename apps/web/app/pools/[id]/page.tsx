@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import PoolDetailsPage from "@/components/pool-details-page";
+import PoolDetailsPage from "@/components/features/pools/pool-details-page";
 
 interface PoolPageProps {
   params: Promise<{ id: string }>;

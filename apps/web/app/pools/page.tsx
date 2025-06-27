@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import PrepaidPoolsPage from "@/components/prepaid-pools-page";
+import PrepaidPoolsPage from "@/components/features/pools/pools-page";
 
 export const metadata: Metadata = {
   title: "Prepaid Gas Pools",

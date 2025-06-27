@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "@workspace/ui/globals.css";
-import { PaymentProviderWrapper } from "@/context/Providers";
+import { PaymentProviderWrapper } from "@/components/providers/payment-provider-wrapper";
 import { Metadata } from "next";
 
 const geistSans = Geist({

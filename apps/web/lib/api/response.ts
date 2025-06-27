@@ -1,40 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-
-/**
- * Standard API response structure
- */
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: {
-    message: string;
-    code: string;
-    timestamp: string;
-  };
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    hasMore: boolean;
-    requestedFields?: string[];
-  };
-  meta?: {
-    network?: string;
-    chainId?: number;
-    chainName?: string;
-    networkName?: string;
-    contracts?: {
-      paymaster: string;
-      verifier?: string;
-    };
-    requestId: string;
-    processingTime?: number;
-    cached?: boolean;
-    timestamp?: string; // This line should be here
-    poolId?: string; // Add this too for pool details
-  };
-}
+import { ApiResponse } from "@/types";
 
 /**
  * Create a success response

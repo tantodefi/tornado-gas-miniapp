@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import PendingCardsPage from "@/components/pending-cards-page";
+import PendingCardsPage from "@/components/features/cards/pending-cards-page";
 
 export const metadata: Metadata = {
   title: "Pending Gas Cards - Prepaid Gas",
