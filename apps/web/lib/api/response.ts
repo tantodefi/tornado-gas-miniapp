@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { ApiResponse } from "@/types";
+import { ApiResponse } from "./type";
 
 /**
  * Create a success response

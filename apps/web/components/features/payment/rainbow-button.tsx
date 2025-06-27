@@ -1,4 +1,4 @@
-// apps/web/components/payment/RainbowButton.tsx
+// apps/web/components/features/payment/rainbow-button.tsx
 
 "use client";
 

@@ -1,4 +1,4 @@
-// apps/web/hooks/use-payment.ts
+// apps/web/hooks/payment/use-payment.ts
 
 "use client";
 

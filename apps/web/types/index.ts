@@ -59,29 +59,6 @@ export type {
   PaymentMethod,
 } from "./payment";
 
-// API-related types
-export type {
-  ApiResponse,
-  ApiError,
-  PaginationOptions,
-  PaginatedResponse,
-  QueryResult,
-  RequestMetadata,
-  PoolQueryParams,
-  PoolDetailsParams,
-  ApiClientConfig,
-  RequestOptions,
-  CacheConfig,
-  ValidationError,
-  RateLimitInfo,
-  HealthCheckResponse,
-  ApiAnalytics,
-  JobStatus,
-  WebSocketMessage,
-  SubscriptionConfig,
-  SyncStatus,
-} from "./api";
-
 // Component prop types
 export type {
   PageHeaderProps,

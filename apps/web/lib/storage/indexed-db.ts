@@ -1,4 +1,4 @@
-// lib/storage/indexed-db-storage.ts
+// lib/storage/indexed-db.ts
 
 /**
  * IndexedDB storage utilities for prepaid gas cards

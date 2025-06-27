@@ -1,4 +1,4 @@
-// apps/web/components/payment/PaymentManager.tsx
+// apps/web/components/features/payment/payment-manager.tsx
 
 "use client";
 

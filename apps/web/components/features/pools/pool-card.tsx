@@ -1,4 +1,4 @@
-// app/components/ui/prepaid-pool-card.tsx
+// app/components/feature/pools/pool-card.tsx
 "use client";
 
 import React from "react";

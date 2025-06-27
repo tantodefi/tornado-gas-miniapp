@@ -1,20 +1,4 @@
-import { ApiResponse } from "@/types";
-
-/**
- * Clean HTTP client for frontend API communication
- * Focused only on HTTP concerns, not business logic
- */
-export class ApiError extends Error {
-  public code: string;
-  public status?: number;
-
-  constructor(message: string, code: string, status?: number) {
-    super(message);
-    this.name = "ApiError";
-    this.code = code;
-    this.status = status;
-  }
-}
+import { ApiError, ApiResponse } from "./type";
 
 /**
  * Clean HTTP client - only handles HTTP communication

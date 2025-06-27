@@ -1,4 +1,4 @@
-// apps/web/components/payment/DaimoButton.tsx
+// apps/web/components/features/payment/daimo-button.tsx
 
 "use client";
 

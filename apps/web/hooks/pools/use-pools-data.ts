@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { prepaidPoolsApi, ApiError } from "@/lib/api/api-client";
+import { prepaidPoolsApi } from "@/lib/api/api-client";
 import type { Pool } from "@/types";
+import { ApiError } from "@/lib/api/type";
 
 interface UsePoolsDataResult {
   pools: Pool[];

@@ -1,5 +1,5 @@
+import { ApiError } from "@/lib/api/type";
 import { useState, useCallback, useMemo } from "react";
-import { ApiError } from "@/lib/api/api-client";
 
 interface UseApiErrorResult {
   displayError: string | null;

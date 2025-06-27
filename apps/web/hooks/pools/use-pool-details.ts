@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { prepaidPoolsApi, ApiError } from "@/lib/api/api-client";
+import { prepaidPoolsApi } from "@/lib/api/api-client";
 import type { DetailedPool, PoolMember, MerkleRootHistory } from "@/types";
+import { ApiError } from "@/lib/api/type";
 
 // Custom hook for managing pool details state
 export const usePoolDetails = (

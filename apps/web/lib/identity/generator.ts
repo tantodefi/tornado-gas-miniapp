@@ -1,4 +1,4 @@
-// lib/identity/identity-generator.ts
+// lib/identity/generator.ts
 
 import { Identity } from "@semaphore-protocol/identity";
 import {
