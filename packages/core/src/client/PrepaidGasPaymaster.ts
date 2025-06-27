@@ -1,5 +1,6 @@
 import {
   GetPaymasterDataParameters,
+  GetPaymasterDataReturnType,
   GetPaymasterStubDataReturnType,
   UserOperation,
 } from "viem/account-abstraction";
@@ -149,7 +150,9 @@ export class PrepaidGasPaymaster {
    * @param parameters - Parameters for generating paymaster data
    * @returns Promise resolving to encoded paymaster data
    */
-  async getPaymasterData(parameters: GetPaymasterDataParameters): Promise<Hex> {
+  async getPaymasterData(
+    parameters: GetPaymasterDataParameters,
+  ): Promise<GetPaymasterDataReturnType> {
     if ("initCode" in parameters) {
       throw new Error("v6-style UserOperation with initCode is not supported.");
     }
@@ -229,12 +232,19 @@ export class PrepaidGasPaymaster {
     });
 
     // Generate paymaster data
-    return this.paymasterDataService.generatePaymasterData({
-      mode: PrepaidGasPaymasterMode.VALIDATION_MODE,
-      poolId: parsedContext.poolId,
-      proof: proofResult.proof,
-      merkleRootIndex: rootIndexResult.index,
-    });
+    const paymasterData = await this.paymasterDataService.generatePaymasterData(
+      {
+        mode: PrepaidGasPaymasterMode.VALIDATION_MODE,
+        poolId: parsedContext.poolId,
+        proof: proofResult.proof,
+        merkleRootIndex: rootIndexResult.index,
+      },
+    );
+
+    return {
+      paymaster: parsedContext.paymasterAddress,
+      paymasterData: paymasterData,
+    };
   }
 
   /**

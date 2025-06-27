@@ -5,7 +5,9 @@ This monorepo contains a modular system for privacy-preserving, pool-based prepa
 ## Apps
 
 ### `apps/web`
+
 A Next.js web application that provides a user interface for:
+
 - Managing prepaid gas credits
 - Viewing and joining pools
 - Interacting with the paymaster system
@@ -14,28 +16,36 @@ A Next.js web application that provides a user interface for:
 ## Packages
 
 ### `packages/core`
+
 TypeScript SDK for interacting with the prepaid gas paymaster system. Provides:
+
 - Paymaster client for generating paymaster data and proofs
 - Utilities for encoding/decoding context and config
 - Services for proof generation, Merkle root management, and gas estimation
 - Types for pool, membership, and paymaster data
 
 ### `packages/data`
+
 Data access layer for the subgraph. Provides:
+
 - A client for querying pool, member, and root history data
 - Utilities for serializing/deserializing subgraph data
 - Types matching the subgraph schema
 
 ### `packages/ui`
+
 Reusable React UI components for the app and packages, including:
+
 - Buttons, cards, dialogs, inputs, labels, badges, and more
 - Styled with Tailwind CSS and Radix UI primitives
 - Designed for consistency and accessibility
 
 ### `packages/eslint-config`
+
 Shared ESLint configuration for code quality and style across the monorepo.
 
 ### `packages/typescript-config`
+
 Shared TypeScript configuration for consistent type checking and build settings.
 
 ## Getting Started
@@ -54,6 +64,7 @@ Shared TypeScript configuration for consistent type checking and build settings.
    ```
 
 ## Contributing
+
 - UI components should be added to `packages/ui` for reuse.
 - Core logic and SDK code should go in `packages/core`.
 - Data fetching and subgraph logic should go in `packages/data`.
