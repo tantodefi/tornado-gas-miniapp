@@ -2,6 +2,7 @@ import { generateProof } from "@semaphore-protocol/proof";
 import { Identity } from "@semaphore-protocol/identity";
 import { Group } from "@semaphore-protocol/group";
 import type { SemaphoreProof } from "@semaphore-protocol/proof";
+import { fromHex } from "viem";
 
 /**
  * Input parameters for proof generation
@@ -59,15 +60,42 @@ export class ProofGenerationService {
     params: ProofGenerationParams,
   ): Promise<ProofGenerationResult> {
     const { identityString, poolMembers, messageHash, poolId } = params;
-
     // Validate inputs
     this.validateProofParams(params);
 
+    // Convert bytes identity back to string
+    let identityBase64: string;
+    try {
+      // The identityString is stored as hex bytes, we need to convert it back to string
+      const identityHex = identityString as `0x${string}`;
+
+      // Try direct fromHex conversion first
+      try {
+        identityBase64 = fromHex(identityHex, "string");
+        console.log("🔍 Converted identity from hex bytes to string:", {
+          hex: identityHex,
+          string: identityBase64,
+        });
+      } catch (hexError) {
+        // If that fails, the identityString might already be a string, not hex bytes
+        console.log("🔍 Identity may already be a string, not hex bytes");
+        if (typeof identityString === "string") {
+          identityBase64 = identityString;
+          console.log("🔍 Using identity string directly:", identityBase64);
+        } else {
+          throw hexError;
+        }
+      }
+    } catch (conversionError) {
+      console.error("Identity conversion error:", conversionError);
+      throw new Error(
+        `Failed to decode identity from context: ${conversionError instanceof Error ? conversionError.message : "Unknown error"}`,
+      );
+    }
     // Create Semaphore group from pool members
     const group = new Group(poolMembers);
-
     // Create user identity
-    const identity = new Identity(identityString);
+    const identity = Identity.import(identityBase64);
 
     // Verify identity is in the group
     const memberIndex = group.indexOf(identity.commitment);

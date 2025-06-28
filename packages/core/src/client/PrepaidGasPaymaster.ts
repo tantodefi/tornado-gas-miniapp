@@ -18,11 +18,11 @@ import { GasEstimationService } from "../services/GasEstimationService.js";
 
 import { getChainById, PrepaidGasPaymasterMode } from "../utils";
 import { PREPAID_GAS_PAYMASTER_ABI } from "../constants";
-import { getChainConfig, validateChainConfig } from "../constants/chains";
 import {
   PrepaidGasPaymasterConfig,
   GetPaymasterStubDataV7Parameters,
 } from "./types";
+import { NetworkConfig } from "../networks/index.js";
 
 /**
  * Main client for interacting with the Prepaid Gas Paymaster system
@@ -34,9 +34,17 @@ import {
  *
  * @example
  * ```typescript
- * // Using network configuration
  * const paymaster = new PrepaidGasPaymaster({
- *   network: 'base-sepolia'
+ *   subgraphUrl: "https://api.studio.thegraph.com/query/your-subgraph",
+ *   network: {
+ *     name: "Base",
+ *     chainId: 84532,
+ *     chainName: "Base Sepolia",
+ *     networkName: "Sepolia",
+ *     contracts: {
+ *       paymaster: "0xAAdb7b165057fF59a1f2a93C83CE6a183891EAf6",
+ *     },
+ *   },
  * });
  *
  * // Get stub data for gas estimation
@@ -47,22 +55,12 @@ import {
  *   chainId: 84532,
  *   entryPointAddress: '0x...'
  * });
- *
- * // Generate real paymaster data with proof
- * const paymasterData = await paymaster.getPaymasterData({
- *   sender: '0x...',
- *   callData: '0x...',
- *   context: encodeAbiParameters(...),
- *   chainId: 84532,
- *   entryPointAddress: '0x...'
- * });
  * ```
  */
 export class PrepaidGasPaymaster {
   private subgraphClient: SubgraphClient;
   private config: PrepaidGasPaymasterConfig;
-  private network: string;
-  private chainConfig: any;
+  private networkConfig: NetworkConfig;
 
   // Service instances
   private proofGenerationService: ProofGenerationService;
@@ -72,39 +70,22 @@ export class PrepaidGasPaymaster {
 
   constructor(config: PrepaidGasPaymasterConfig) {
     this.config = config;
-    this.network = config.network;
+    this.networkConfig = config.network;
 
-    // Get chain configuration
-    this.chainConfig = getChainConfig(this.network);
-    if (!this.chainConfig) {
-      throw new Error(`Unsupported network: ${this.network}`);
-    }
+    // Validate required configuration
+    this.validateConfig(config);
 
-    // Validate chain configuration
-    const validation = validateChainConfig(this.network);
-    if (!validation.isValid) {
-      console.warn(
-        `Chain configuration warnings for ${this.network}:`,
-        validation.errors,
-      );
-    }
-
-    // Initialize subgraph client
-    const subgraphUrl = config.subgraphUrl || this.chainConfig.subgraphUrl;
-    if (!subgraphUrl) {
-      throw new Error(`No subgraph URL available for network: ${this.network}`);
-    }
-
+    // Initialize subgraph client with explicit configuration
     this.subgraphClient = new SubgraphClient({
-      subgraphUrl,
+      subgraphUrl: config.subgraphUrl,
       network: {
-        name: this.chainConfig.name,
-        chainId: this.chainConfig.chainId,
-        chainName: this.chainConfig.name,
-        networkName: this.chainConfig.network,
+        name: this.networkConfig.name,
+        chainId: this.networkConfig.chainId,
+        chainName: this.networkConfig.chainName,
+        networkName: this.networkConfig.networkName,
         contracts: {
-          paymaster: this.chainConfig.contracts.paymaster,
-          verifier: this.chainConfig.contracts.verifier,
+          paymaster: this.networkConfig.contracts.paymaster,
+          verifier: this.networkConfig.contracts.verifier,
         },
       },
     });
@@ -114,6 +95,59 @@ export class PrepaidGasPaymaster {
     this.merkleRootService = new MerkleRootService();
     this.paymasterDataService = new PaymasterDataService();
     this.gasEstimationService = new GasEstimationService();
+
+    if (config.debug) {
+      console.log("✅ PrepaidGasPaymaster initialized:", {
+        subgraphUrl: config.subgraphUrl,
+        network: this.networkConfig.name,
+        chainId: this.networkConfig.chainId,
+        paymasterAddress: this.networkConfig.contracts.paymaster,
+      });
+    }
+  }
+
+  /**
+   * Validate the provided configuration
+   */
+  private validateConfig(config: PrepaidGasPaymasterConfig): void {
+    if (!config.subgraphUrl || !config.subgraphUrl.trim()) {
+      throw new Error("subgraphUrl is required and must be a valid URL");
+    }
+
+    if (!config.network) {
+      throw new Error("network configuration is required");
+    }
+
+    const { network } = config;
+
+    if (!network.name || !network.name.trim()) {
+      throw new Error("network.name is required");
+    }
+
+    if (!network.chainId || network.chainId <= 0) {
+      throw new Error(
+        "network.chainId is required and must be a positive number",
+      );
+    }
+
+    if (!network.chainName || !network.chainName.trim()) {
+      throw new Error("network.chainName is required");
+    }
+
+    if (!network.networkName || !network.networkName.trim()) {
+      throw new Error("network.networkName is required");
+    }
+
+    if (!network.contracts?.paymaster) {
+      throw new Error("network.contracts.paymaster address is required");
+    }
+
+    // Validate that the subgraph URL looks like a valid URL
+    try {
+      new URL(config.subgraphUrl);
+    } catch {
+      throw new Error("subgraphUrl must be a valid URL");
+    }
   }
 
   /**
@@ -165,8 +199,10 @@ export class PrepaidGasPaymaster {
     };
 
     // Get chain and create public client
-    const chain = getChainById(parameters.chainId);
-    if (!chain) throw new Error(`Unsupported chainId: ${parameters.chainId}`);
+    const chain = getChainById(this.networkConfig.chainId);
+    if (!chain) {
+      throw new Error(`Unsupported chainId: ${this.networkConfig.chainId}`);
+    }
 
     const publicClient = createPublicClient({
       chain,
@@ -252,13 +288,13 @@ export class PrepaidGasPaymaster {
   /**
    * Get the current network configuration
    *
-   * @returns Current network and chain configuration
+   * @returns Current network configuration
    */
   getNetworkInfo() {
     return {
-      network: this.network,
-      chainConfig: this.chainConfig,
-      subgraphUrl: this.subgraphClient.getNetworkMetadata().network,
+      subgraphUrl: this.config.subgraphUrl,
+      network: this.networkConfig,
+      rpcUrl: this.config.rpcUrl,
     };
   }
 

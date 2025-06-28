@@ -21,3 +21,12 @@ export type {
   DeploymentConfig,
   DeploymentResult,
 } from "./contracts";
+
+export {
+  BASE_MAINNET_NETWORK,
+  BASE_SEPOLIA_NETWORK,
+  NETWORKS,
+  NetworkConfig,
+  getNetworkByChainId,
+  validateNetworkConfig,
+} from "../networks";

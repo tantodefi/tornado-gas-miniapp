@@ -13,15 +13,24 @@
 // Main client exports
 export { PrepaidGasPaymaster } from "./client/PrepaidGasPaymaster";
 
+// Network configuration helpers
+export {
+  BASE_SEPOLIA_NETWORK,
+  BASE_MAINNET_NETWORK,
+  NETWORKS,
+  getNetworkByChainId,
+  validateNetworkConfig,
+} from "./networks";
+
 // Utility exports
 export {
   encodeContext,
+  encodePaymasterContext,
   generatePaymasterData,
   getChainById,
   PrepaidGasPaymasterMode,
   encodeConfig,
   decodeConfig,
-  encodePaymasterContext,
   validateDataStructure,
 } from "./utils";
 
@@ -38,6 +47,7 @@ export {
 // Type exports
 export type {
   PrepaidGasPaymasterConfig,
+  NetworkConfig,
   GetPaymasterStubDataV7Parameters,
   PoolMembershipInfo,
   PoolMembershipProof,
@@ -47,6 +57,7 @@ export type {
   PoolData,
   PoolFields,
 } from "./types";
+
 // Service exports (for advanced usage)
 export { ProofGenerationService } from "./services/ProofGenerationService.js";
 export { MerkleRootService } from "./services/MerkleRootService.js";
@@ -64,5 +75,6 @@ export type {
   GasEstimationParams,
   GasEstimationResult,
 } from "./services/index.js";
+
 // Version
 export const VERSION = "1.0.0";

@@ -2,6 +2,7 @@
 import { PaginationOptions } from "@workspace/data";
 import { Address, PartialBy } from "viem";
 import { UserOperation } from "viem/account-abstraction";
+import { NetworkConfig } from "../networks";
 
 /**
  * Pool data with all available fields
@@ -30,11 +31,11 @@ export type PoolFields = keyof PoolData;
  * Configuration options for the PrepaidGasPaymaster client
  */
 export interface PrepaidGasPaymasterConfig {
-  /** Network/chain to use (e.g., 'base-sepolia', 'base-mainnet') */
-  network: string;
-  /** URL of the subgraph endpoint (overrides network default) */
-  subgraphUrl?: string;
-  /** RPC URL for blockchain interactions (overrides network default) */
+  /** URL of the subgraph endpoint (required) */
+  subgraphUrl: string;
+  /** Network configuration */
+  network: NetworkConfig;
+  /** RPC URL for blockchain interactions (optional, will use default) */
   rpcUrl?: string;
   /** Default timeout for requests in milliseconds */
   timeout?: number;
@@ -119,56 +120,59 @@ export interface PoolQueryFilters {
 }
 
 /**
- * Sort options for queries
+ * Sort options for pool queries
  */
 export interface SortOptions {
   /** Field to sort by */
-  field: "createdAt" | "joiningFee" | "memberCount" | "totalDeposits";
+  field: PoolFields;
   /** Sort direction */
   direction: "asc" | "desc";
 }
 
 /**
- * Enhanced pool query parameters
+ * Parameters for pool queries
  */
 export interface PoolQueryParams extends SubgraphQueryOptions {
   /** Filters to apply */
   filters?: PoolQueryFilters;
-  /** Sorting options */
+  /** Sort options */
   sort?: SortOptions;
+  /** Fields to include in response */
+  fields?: PoolFields[];
 }
 
 /**
- * Response wrapper for paginated queries
+ * Paginated response wrapper
  */
 export interface PaginatedResponse<T> {
-  /** Array of items */
+  /** Data items */
   items: T[];
-  /** Total count (if available) */
-  totalCount?: number;
-  /** Whether there are more items */
-  hasMore: boolean;
-  /** Next cursor for pagination */
-  nextCursor?: string;
+  /** Pagination information */
+  pagination: {
+    /** Total number of items */
+    total: number;
+    /** Current page */
+    page: number;
+    /** Items per page */
+    limit: number;
+    /** Whether there are more pages */
+    hasMore: boolean;
+  };
 }
 
 /**
- * Query result status
+ * Generic query result wrapper
  */
 export interface QueryResult<T> {
-  /** Whether the query was successful */
-  success: boolean;
-  /** Result data (if successful) */
-  data?: T;
-  /** Error message (if failed) */
-  error?: string;
-  /** Additional metadata */
-  metadata?: {
-    /** Query execution time in milliseconds */
+  /** Query data */
+  data: T;
+  /** Query metadata */
+  meta: {
+    /** Time taken to execute query */
     executionTime: number;
-    /** Block number queried */
-    blockNumber?: bigint;
     /** Whether data is from cache */
-    fromCache?: boolean;
+    cached: boolean;
+    /** Block number when query was executed */
+    blockNumber?: number;
   };
 }
