@@ -1,4 +1,4 @@
-// file: prepaid-gas-website/apps/demo/components/features/paymaster/direct-context-input.tsx
+// file: apps/demo/components/features/paymaster/direct-context-input.tsx
 "use client";
 
 import { useState, useCallback } from "react";
@@ -14,7 +14,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Identity } from "@semaphore-protocol/core";
-import { PaymasterDataService } from "@workspace/core";
+import { parsePaymasterContext } from "@workspace/core";
 import { fromHex } from "viem";
 
 interface DirectContextInputProps {
@@ -59,9 +59,10 @@ export function DirectContextInput({
         );
       }
 
-      // Use PaymasterDataService to parse the context
-      const paymasterDataService = new PaymasterDataService();
-      const parsedContext = paymasterDataService.parseContext(trimmedContext);
+      // ✅ Use the new utility function instead of PaymasterDataService
+      const parsedContext = parsePaymasterContext(
+        trimmedContext as `0x${string}`,
+      );
 
       console.log("🔍 Raw parsed context:", parsedContext);
 
@@ -74,7 +75,7 @@ export function DirectContextInput({
         throw new Error("Missing pool ID in context");
       }
 
-      if (!parsedContext.identityString) {
+      if (!parsedContext.identityHex) {
         throw new Error(
           "Missing identity in context - this context may be from an older version",
         );
@@ -84,11 +85,11 @@ export function DirectContextInput({
       let identityBase64: string;
       try {
         // The identityString is stored as hex bytes, we need to convert it back to string
-        const identityHex = parsedContext.identityString as `0x${string}`;
+        const identityHex = parsedContext.identityHex as `0x${string}`;
 
         // Try direct fromHex conversion first
         try {
-          identityBase64 = fromHex(identityHex, "string");
+          identityBase64 = fromHex(parsedContext.identityHex, "string");
           console.log("🔍 Converted identity from hex bytes to string:", {
             hex: identityHex,
             string: identityBase64,
@@ -96,8 +97,8 @@ export function DirectContextInput({
         } catch (hexError) {
           // If that fails, the identityString might already be a string, not hex bytes
           console.log("🔍 Identity may already be a string, not hex bytes");
-          if (typeof parsedContext.identityString === "string") {
-            identityBase64 = parsedContext.identityString;
+          if (typeof parsedContext.identityHex === "string") {
+            identityBase64 = parsedContext.identityHex;
             console.log("🔍 Using identity string directly:", identityBase64);
           } else {
             throw hexError;
@@ -200,20 +201,15 @@ export function DirectContextInput({
           }
         >
           {isValid ? (
-            <>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-700 dark:text-green-400">
-                Valid paymaster context format detected
-              </AlertDescription>
-            </>
+            <CheckCircle className="h-4 w-4 text-green-600" />
           ) : (
-            <>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-700 dark:text-red-400">
-                Must be a hex string starting with '0x'
-              </AlertDescription>
-            </>
+            <AlertTriangle className="h-4 w-4 text-red-600" />
           )}
+          <AlertDescription className="text-sm">
+            {isValid
+              ? "Valid paymaster context format detected"
+              : "Invalid format - paymaster context must start with '0x'"}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -221,25 +217,26 @@ export function DirectContextInput({
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="text-sm">{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={isLoading || isProcessing || !isValid}
+        disabled={!isValid || isLoading || isProcessing}
         className="w-full"
+        size="lg"
       >
         {isProcessing ? (
           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Parsing Context...
           </>
         ) : (
           <>
-            Configure Paymaster
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="mr-2 h-4 w-4" />
+            Configure from Context
           </>
         )}
       </Button>

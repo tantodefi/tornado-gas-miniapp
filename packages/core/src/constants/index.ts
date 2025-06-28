@@ -1,15 +1,5 @@
 // Constants exports
 export { PREPAID_GAS_PAYMASTER_ABI } from "./abi";
-export {
-  CHAIN_CONFIGS,
-  supportedChains,
-  DEFAULT_CHAIN,
-  getChainConfig,
-  getChainConfigByChainId,
-  validateChainConfig,
-  getSupportedChainIds,
-  type ChainConfig,
-} from "./chains";
 
 // Contract constants
 export const POST_OP_GAS_LIMIT = 65000n;

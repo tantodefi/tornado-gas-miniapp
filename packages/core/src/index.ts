@@ -12,69 +12,42 @@
 
 // Main client exports
 export { PrepaidGasPaymaster } from "./client/PrepaidGasPaymaster";
-
-// Network configuration helpers
-export {
-  BASE_SEPOLIA_NETWORK,
-  BASE_MAINNET_NETWORK,
-  NETWORKS,
-  getNetworkByChainId,
-  validateNetworkConfig,
-} from "./networks";
-
-// Utility exports
-export {
-  encodeContext,
-  encodePaymasterContext,
-  generatePaymasterData,
-  getChainById,
-  PrepaidGasPaymasterMode,
-  encodeConfig,
-  decodeConfig,
-  validateDataStructure,
-} from "./utils";
-
-// Constants exports
-export {
-  PREPAID_GAS_PAYMASTER_ABI,
-  POST_OP_GAS_LIMIT,
-  POOL_ROOT_HISTORY_SIZE,
-  PAYMASTER_VALIDATION_GAS_OFFSET,
-  PAYMASTER_POSTOP_GAS_OFFSET,
-  PAYMASTER_DATA_OFFSET,
-} from "./constants";
-
-// Type exports
+// Client exports
 export type {
   PrepaidGasPaymasterConfig,
-  NetworkConfig,
   GetPaymasterStubDataV7Parameters,
-  PoolMembershipInfo,
-  PoolMembershipProof,
-  PaymasterConfig,
-  PaymasterData,
-  UserGasData,
-  PoolData,
-  PoolFields,
-} from "./types";
+} from "./client";
 
-// Service exports (for advanced usage)
-export { ProofGenerationService } from "./services/ProofGenerationService.js";
-export { MerkleRootService } from "./services/MerkleRootService.js";
-export { PaymasterDataService } from "./services/PaymasterDataService.js";
-export { GasEstimationService } from "./services/GasEstimationService.js";
+export {
+  BASE_SEPOLIA_PRESET,
+  BASE_MAINNET_PRESET,
+  NETWORK_PRESETS,
+  NETWORK_PRESETS_BY_NAME,
+  getNetworkPreset,
+  getNetworkPresetByName,
+  getSupportedChainIds,
+  getSupportedNetworkNames,
+  isSupportedChainId,
+  getUnsupportedNetworkError,
+  validateNetworkPreset,
+  getValidatedNetworkPreset,
+} from "./presets";
 
-// Service types
-export type {
-  ProofGenerationParams,
-  ProofGenerationResult,
-  FindRootIndexParams,
-  FindRootIndexResult,
-  PaymasterDataParams,
-  StubDataParams,
-  GasEstimationParams,
-  GasEstimationResult,
-} from "./services/index.js";
+export type { NetworkPreset } from "./presets";
+export type { NetworkConfig } from "./presets/config";
+// Utility exports
+export {
+  encodePaymasterContext,
+  parsePaymasterContext,
+  PrepaidGasPaymasterMode,
+  getChainById,
+} from "./utils";
+export type { ParsedPaymasterContext } from "./utils";
+
+// Constants exports
+export { PREPAID_GAS_PAYMASTER_ABI, POOL_ROOT_HISTORY_SIZE } from "./constants";
+
+export type { PoolMembershipProof } from "./proof";
 
 // Version
 export const VERSION = "1.0.0";

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "es2022", // or "esnext"
+    "module": "es2022",
     "moduleResolution": "bundler",
     "target": "es2022",
     "declaration": true,
@@ -10,7 +10,11 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src"]
 }

@@ -9,7 +9,7 @@ import { fromHex } from "viem";
  */
 export interface ProofGenerationParams {
   /** Identity string (private key or commitment) */
-  identityString: string;
+  identityHex: `0x${string}`;
   /** Array of pool member identity commitments */
   poolMembers: bigint[];
   /** Message to sign (usually operation hash) */
@@ -59,16 +59,13 @@ export class ProofGenerationService {
   async generateProof(
     params: ProofGenerationParams,
   ): Promise<ProofGenerationResult> {
-    const { identityString, poolMembers, messageHash, poolId } = params;
+    const { identityHex, poolMembers, messageHash, poolId } = params;
     // Validate inputs
     this.validateProofParams(params);
 
     // Convert bytes identity back to string
     let identityBase64: string;
     try {
-      // The identityString is stored as hex bytes, we need to convert it back to string
-      const identityHex = identityString as `0x${string}`;
-
       // Try direct fromHex conversion first
       try {
         identityBase64 = fromHex(identityHex, "string");
@@ -79,8 +76,8 @@ export class ProofGenerationService {
       } catch (hexError) {
         // If that fails, the identityString might already be a string, not hex bytes
         console.log("🔍 Identity may already be a string, not hex bytes");
-        if (typeof identityString === "string") {
-          identityBase64 = identityString;
+        if (typeof identityHex === "string") {
+          identityBase64 = identityHex;
           console.log("🔍 Using identity string directly:", identityBase64);
         } else {
           throw hexError;
@@ -123,9 +120,9 @@ export class ProofGenerationService {
    * @throws Error if validation fails
    */
   private validateProofParams(params: ProofGenerationParams): void {
-    const { identityString, poolMembers, messageHash, poolId } = params;
+    const { identityHex, poolMembers, messageHash, poolId } = params;
 
-    if (!identityString || identityString.length === 0) {
+    if (!identityHex || identityHex.length === 0) {
       throw new Error("Identity string cannot be empty");
     }
 

@@ -1,4 +1,4 @@
-// file :prepaid-gas-website/apps/demo/hooks/use-smart-account-creation.ts
+// file: apps/demo/hooks/use-smart-account-creation.ts
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { toSimpleSmartAccount } from "permissionless/accounts";
@@ -6,7 +6,7 @@ import { createSmartAccountClient } from "permissionless";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { CLIENT_CONFIG, STORAGE_KEYS } from "@/constants/config";
 import { createPublicClient, http } from "viem";
-import { PrepaidGasPaymaster, BASE_SEPOLIA_NETWORK } from "@workspace/core";
+import { PrepaidGasPaymaster } from "@workspace/core";
 import type { PaymasterConfig } from "@/types/paymaster";
 import { baseSepolia } from "viem/chains";
 
@@ -138,18 +138,19 @@ export function useSmartAccountCreation(
         return;
       }
 
-      // Try to create paymaster client, but handle failures gracefully
+      // Try to create paymaster client using the new factory method
       let paymasterClient: PrepaidGasPaymaster | null = null;
 
       try {
-        // Only create paymaster if we have a subgraph URL
+        // ✅ NEW: Use the simplified factory method
         if (CLIENT_CONFIG.subgraph && CLIENT_CONFIG.subgraph.trim()) {
-          paymasterClient = new PrepaidGasPaymaster({
+          paymasterClient = PrepaidGasPaymaster.createForNetwork(84532, {
             subgraphUrl: CLIENT_CONFIG.subgraph,
-            network: BASE_SEPOLIA_NETWORK,
             debug: true, // Enable debug logging for development
           });
-          console.log("✅ Paymaster client initialized successfully");
+          console.log(
+            "✅ Paymaster client initialized with new factory method",
+          );
         } else {
           console.warn(
             "🚧 No subgraph URL configured, creating smart account without paymaster",

@@ -1,8 +1,8 @@
 import { Hex } from "viem";
-import { GetPaymasterStubDataReturnType } from "viem/account-abstraction";
-import { PaymasterDataService } from "./PaymasterDataService.js";
+import { PaymasterDataService } from "./PaymasterDataService";
 import { POST_OP_GAS_LIMIT } from "../constants";
-import { GetPaymasterStubDataV7Parameters } from "../client/types";
+import { GetPaymasterStubDataV7Parameters } from "../client";
+import { parsePaymasterContext } from "../utils";
 
 /**
  * Parameters for gas estimation
@@ -73,7 +73,9 @@ export class GasEstimationService {
     }
 
     // Parse context to get paymaster address and pool ID
-    const parsedContext = paymasterDataService.parseContext(parameters.context);
+    const parsedContext = parsePaymasterContext(
+      parameters.context as `0x${string}`,
+    );
 
     // Generate stub paymaster data
     const stubPaymasterData = await paymasterDataService.generateStubData({

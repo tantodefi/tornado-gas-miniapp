@@ -15,8 +15,12 @@ const external = [
   "viem/account-abstraction",
   "viem/chains",
   "@semaphore-protocol/core",
+  "@semaphore-protocol/proof",
+  "@semaphore-protocol/identity",
+  "@semaphore-protocol/group",
   "graphql-request",
   "permissionless",
+  "@workspace/data",
 ];
 
 const baseConfig = {
@@ -27,7 +31,7 @@ const baseConfig = {
       preferBuiltins: true,
       browser: false,
     }),
-    commonjs(), // ✅ remove `.default()`
+    commonjs(),
     typescript({
       tsconfig: "./tsconfig.json",
       declaration: false,
@@ -38,6 +42,7 @@ const baseConfig = {
 };
 
 export default defineConfig([
+  // Main bundle - CJS and ESM
   {
     ...baseConfig,
     input: "src/index.ts",
@@ -55,40 +60,11 @@ export default defineConfig([
       },
     ],
   },
-  {
-    ...baseConfig,
-    input: "src/client/index.ts",
-    output: [
-      {
-        file: "dist/client/index.js",
-        format: "cjs",
-        sourcemap: true,
-        exports: "named",
-      },
-      {
-        file: "dist/client/index.esm.js",
-        format: "esm",
-        sourcemap: true,
-      },
-    ],
-  },
+  // TypeScript declarations
   {
     input: "src/index.ts",
     output: {
       file: pkg.types,
-      format: "esm",
-    },
-    plugins: [
-      dts({
-        tsconfig: "./tsconfig.json",
-      }),
-    ],
-    external,
-  },
-  {
-    input: "src/client/index.ts",
-    output: {
-      file: "dist/client/index.d.ts",
       format: "esm",
     },
     plugins: [

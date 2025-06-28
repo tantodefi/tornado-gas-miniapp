@@ -5,6 +5,7 @@ import {
   toHex,
   concat,
   numberToHex,
+  decodeAbiParameters,
 } from "viem";
 import type { Hex } from "viem";
 import { POOL_ROOT_HISTORY_SIZE } from "../constants";
@@ -261,4 +262,61 @@ export async function generatePaymasterData(
   // Use concat to simulate abi.encodePacked: config + poolId + encodedProof
   // This matches the contract's: abi.encodePacked(config, data.poolId, encodedProof)
   return concat([configBytes, poolIdBytes, encodedProof]);
+}
+
+/**
+ * Parsed context data from paymaster parameters
+ */
+export interface ParsedPaymasterContext {
+  /** Paymaster contract address */
+  paymasterAddress: `0x${string}`;
+  /** Pool ID for the operation */
+  poolId: bigint;
+  /** Identity string for proof generation */
+  identityHex: `0x${string}`;
+}
+
+/**
+ * Parse paymaster context data
+ *
+ * Supports context format: (address paymasterAddress, uint256 poolId, bytes identity)
+ *
+ * @param context - Encoded context data as hex string
+ * @returns Parsed context information
+ *
+ * @example
+ * ```typescript
+ * import { parsePaymasterContext } from "@workspace/core";
+ *
+ * const parsed = parsePaymasterContext("0x123...");
+ * console.log(parsed.poolId); // bigint
+ * console.log(parsed.paymasterAddress); // "0x..."
+ * ```
+ */
+export function parsePaymasterContext(
+  context: `0x${string}`,
+): ParsedPaymasterContext {
+  if (!context) {
+    throw new Error("Context cannot be empty");
+  }
+
+  try {
+    // Parse context with identity (3 parameters)
+    const [paymasterAddress, poolId, identityHex] = decodeAbiParameters(
+      parseAbiParameters(
+        "address paymasterAddress, uint256 poolId, bytes identity",
+      ),
+      context,
+    );
+
+    return {
+      paymasterAddress,
+      poolId,
+      identityHex,
+    };
+  } catch (error) {
+    throw new Error(
+      `Invalid context format: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
 }

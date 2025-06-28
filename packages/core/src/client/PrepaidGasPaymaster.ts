@@ -11,18 +11,27 @@ import { getPackedUserOperation } from "permissionless";
 import { SubgraphClient } from "@workspace/data";
 
 // Import our new services
-import { ProofGenerationService } from "../services/ProofGenerationService.js";
-import { MerkleRootService } from "../services/MerkleRootService.js";
-import { PaymasterDataService } from "../services/PaymasterDataService.js";
-import { GasEstimationService } from "../services/GasEstimationService.js";
+import { ProofGenerationService } from "../services/ProofGenerationService";
+import { MerkleRootService } from "../services/MerkleRootService";
+import { PaymasterDataService } from "../services/PaymasterDataService";
+import { GasEstimationService } from "../services/GasEstimationService";
 
-import { getChainById, PrepaidGasPaymasterMode } from "../utils";
+import {
+  getChainById,
+  parsePaymasterContext,
+  PrepaidGasPaymasterMode,
+} from "../utils";
 import { PREPAID_GAS_PAYMASTER_ABI } from "../constants";
 import {
   PrepaidGasPaymasterConfig,
   GetPaymasterStubDataV7Parameters,
-} from "./types";
-import { NetworkConfig } from "../networks/index.js";
+} from "./";
+import {
+  getValidatedNetworkPreset,
+  getUnsupportedNetworkError,
+  type NetworkPreset,
+} from "../presets";
+import { NetworkConfig } from "../presets/config";
 
 /**
  * Main client for interacting with the Prepaid Gas Paymaster system
@@ -104,6 +113,64 @@ export class PrepaidGasPaymaster {
         paymasterAddress: this.networkConfig.contracts.paymaster,
       });
     }
+  }
+
+  /**
+   * Create a PrepaidGasPaymaster instance for any supported network by chain ID
+   *
+   * @param chainId - The chain ID to create paymaster for
+   * @param options - Optional configuration overrides
+   * @returns Configured PrepaidGasPaymaster instance
+   *
+   * @example
+   * ```typescript
+   * // Create for Base Sepolia using chain ID
+   * const paymaster = PrepaidGasPaymaster.createForNetwork(84532);
+   *
+   * // Create for Base Mainnet with custom options
+   * const paymaster = PrepaidGasPaymaster.createForNetwork(8453, {
+   *   subgraphUrl: "https://custom-subgraph.com",
+   *   debug: true
+   * });
+   * ```
+   */
+  static createForNetwork(
+    chainId: number,
+    options: {
+      /** Custom subgraph URL (optional, uses default if not provided) */
+      subgraphUrl?: string;
+      /** Enable debug logging */
+      debug?: boolean;
+      /** Custom RPC URL */
+      rpcUrl?: string;
+      /** Request timeout in milliseconds */
+      timeout?: number;
+    } = {},
+  ): PrepaidGasPaymaster {
+    let preset: NetworkPreset;
+
+    try {
+      preset = getValidatedNetworkPreset(chainId);
+    } catch (error) {
+      throw new Error(getUnsupportedNetworkError(chainId));
+    }
+
+    const { subgraphUrl, ...restOptions } = options;
+
+    // Use provided subgraph URL or fall back to preset default
+    const finalSubgraphUrl = subgraphUrl || preset.defaultSubgraphUrl;
+
+    if (!finalSubgraphUrl) {
+      throw new Error(
+        `No subgraph URL available for network ${preset.network.name} (chainId: ${chainId}). Please provide one in options.subgraphUrl`,
+      );
+    }
+
+    return new PrepaidGasPaymaster({
+      subgraphUrl: finalSubgraphUrl,
+      network: preset.network,
+      ...restOptions,
+    });
   }
 
   /**
@@ -210,11 +277,11 @@ export class PrepaidGasPaymaster {
     });
 
     // Parse context to get paymaster details
-    const parsedContext = this.paymasterDataService.parseContext(
-      parameters.context,
+    const parsedContext = parsePaymasterContext(
+      parameters.context as `0x${string}`,
     );
 
-    if (!parsedContext.identityString) {
+    if (!parsedContext.identityHex) {
       throw new Error("Identity string is required for proof generation");
     }
 
@@ -254,7 +321,7 @@ export class PrepaidGasPaymaster {
 
     // Generate zero-knowledge proof
     const proofResult = await this.proofGenerationService.generateProof({
-      identityString: parsedContext.identityString,
+      identityHex: parsedContext.identityHex,
       poolMembers,
       messageHash: BigInt(messageHash),
       poolId: parsedContext.poolId,
@@ -295,20 +362,6 @@ export class PrepaidGasPaymaster {
       subgraphUrl: this.config.subgraphUrl,
       network: this.networkConfig,
       rpcUrl: this.config.rpcUrl,
-    };
-  }
-
-  /**
-   * Get service instances (for advanced usage)
-   *
-   * @returns Object containing all service instances
-   */
-  getServices() {
-    return {
-      proofGeneration: this.proofGenerationService,
-      merkleRoot: this.merkleRootService,
-      paymasterData: this.paymasterDataService,
-      gasEstimation: this.gasEstimationService,
     };
   }
 }

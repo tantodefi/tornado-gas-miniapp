@@ -1,6 +1,5 @@
 import {
   Hex,
-  decodeAbiParameters,
   encodeAbiParameters,
   parseAbiParameters,
   stringToHex,
@@ -54,51 +53,6 @@ export interface StubDataParams {
  * - Context parsing and validation
  */
 export class PaymasterDataService {
-  /**
-   * Parse context data from UserOperation parameters
-   *
-   * Supports two context formats:
-   * 1. Simple: (address paymasterAddress, uint256 poolId)
-   * 2. With Identity: (address paymasterAddress, uint256 poolId, bytes identity)
-   *
-   * @param context - Context data from UserOperation
-   * @returns Parsed context information
-   *
-   * @example
-   * ```typescript
-   * const service = new PaymasterDataService();
-   * const parsed = service.parseContext(userOp.context);
-   * console.log(parsed.poolId); // bigint
-   * ```
-   */
-  parseContext(context: unknown): ParsedContext {
-    if (!context) {
-      throw new Error("Context cannot be empty");
-    }
-
-    const contextHex = context as Hex;
-
-    try {
-      // Try parsing with identity first (3 parameters)
-      const [paymasterAddress, poolId, identityString] = decodeAbiParameters(
-        parseAbiParameters(
-          "address paymasterAddress, uint256 poolId, bytes identity",
-        ),
-        contextHex,
-      );
-
-      return {
-        paymasterAddress,
-        poolId,
-        identityString,
-      };
-    } catch (error) {
-      throw new Error(
-        `Invalid context format: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    }
-  }
-
   /**
    * Generate real paymaster data with zero-knowledge proof
    *
@@ -250,25 +204,6 @@ export class PaymasterDataService {
       throw new Error(
         "Invalid proof structure: points array must have 8 elements",
       );
-    }
-  }
-
-  /**
-   * Validate stub data generation parameters
-   *
-   * @private
-   * @param params - Parameters to validate
-   * @throws Error if validation fails
-   */
-  private validateStubDataParams(params: StubDataParams): void {
-    const { poolId, merkleRootIndex = 0 } = params;
-
-    if (poolId < 0n) {
-      throw new Error("Pool ID must be non-negative");
-    }
-
-    if (merkleRootIndex < 0 || merkleRootIndex >= 64) {
-      throw new Error("Merkle root index must be between 0 and 63");
     }
   }
 }
