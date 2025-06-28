@@ -6,7 +6,7 @@ import { createSmartAccountClient } from "permissionless";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { CLIENT_CONFIG, STORAGE_KEYS } from "@/constants/config";
 import { createPublicClient, http } from "viem";
-import { PrepaidGasPaymaster } from "@workspace/core";
+import { PrepaidGasPaymaster, BASE_SEPOLIA_NETWORK } from "@workspace/core";
 import type { PaymasterConfig } from "@/types/paymaster";
 import { baseSepolia } from "viem/chains";
 
@@ -138,21 +138,55 @@ export function useSmartAccountCreation(
         return;
       }
 
-      const prepaidGasClient = new PrepaidGasPaymaster({
-        network: "base-sepolia",
-        subgraphUrl: CLIENT_CONFIG.subgraph,
-      });
+      // Try to create paymaster client, but handle failures gracefully
+      let paymasterClient: PrepaidGasPaymaster | null = null;
 
-      const newSmartAccountClient = createSmartAccountClient({
+      try {
+        // Only create paymaster if we have a subgraph URL
+        if (CLIENT_CONFIG.subgraph && CLIENT_CONFIG.subgraph.trim()) {
+          paymasterClient = new PrepaidGasPaymaster({
+            subgraphUrl: CLIENT_CONFIG.subgraph,
+            network: BASE_SEPOLIA_NETWORK,
+            debug: true, // Enable debug logging for development
+          });
+          console.log("✅ Paymaster client initialized successfully");
+        } else {
+          console.warn(
+            "🚧 No subgraph URL configured, creating smart account without paymaster",
+          );
+        }
+      } catch (paymasterError) {
+        console.warn(
+          "🚧 Failed to initialize paymaster, creating smart account without it:",
+          paymasterError,
+        );
+        // Continue without paymaster
+      }
+
+      // Create smart account client
+      const clientConfig: any = {
         client: publicClient as any,
         account: newSmartAccount as any,
         bundlerTransport: http(CLIENT_CONFIG.bundler),
-        paymaster: {
-          getPaymasterStubData: prepaidGasClient.getPaymasterStubData,
-          getPaymasterData: prepaidGasClient.getPaymasterData,
-        },
-        paymasterContext: paymasterConfig.paymasterContext,
-      });
+      };
+
+      // Only add paymaster if it was successfully created
+      if (paymasterClient) {
+        clientConfig.paymaster = {
+          getPaymasterStubData:
+            paymasterClient.getPaymasterStubData.bind(paymasterClient),
+          getPaymasterData:
+            paymasterClient.getPaymasterData.bind(paymasterClient),
+        };
+        clientConfig.paymasterContext = paymasterConfig.paymasterContext;
+        console.log("✅ Smart account configured with paymaster support");
+      } else {
+        console.log(
+          "ℹ️ Smart account created without paymaster (will use regular ETH for gas)",
+        );
+      }
+
+      const newSmartAccountClient = createSmartAccountClient(clientConfig);
 
       // Final check before setting state
       if (isMountedRef.current) {

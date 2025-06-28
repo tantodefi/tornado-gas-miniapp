@@ -21,7 +21,9 @@ export const NETWORKS = {
 // Client-side API configuration - public for frontend
 export const CLIENT_CONFIG = {
   bundler: process.env.NEXT_PUBLIC_BUNDLER_URL || "http://localhost:4337",
-  subgraph: process.env.NEXT_PUBLIC_SUBGRAPH_URL || "", // Made public for PrepaidGasPaymaster
+  subgraph:
+    process.env.NEXT_PUBLIC_SUBGRAPH_URL ||
+    "https://api.studio.thegraph.com/query/113435/prepaid-gas-paymaster/version/latest", // Made public for PrepaidGasPaymaster
 } as const;
 
 // Server-side API configuration - secure, only available on server
