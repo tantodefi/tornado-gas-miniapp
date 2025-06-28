@@ -61,6 +61,64 @@ export function encodeContext(context: bigint | Hex): Hex {
 }
 
 /**
+ * Encode paymaster context with all required parameters for coupon/card system
+ *
+ * This creates the complete paymaster context that includes:
+ * - Paymaster contract address
+ * - Pool ID
+ * - User's Semaphore identity (as bytes)
+ *
+ * @param paymasterAddress - Paymaster contract address
+ * @param poolId - Pool ID (as string or bigint)
+ * @param identity - Semaphore identity string (base64 encoded)
+ * @returns Encoded paymaster context as hex string
+ *
+ * @example
+ * ```typescript
+ * const context = encodePaymasterContext(
+ *   "0x123...abc",
+ *   "1",
+ *   "eyJrZXkiOiJ2YWx1ZSJ9"
+ * );
+ * ```
+ */
+export function encodePaymasterContext(
+  paymasterAddress: Hex,
+  poolId: string | bigint,
+  identity: string,
+): Hex {
+  // Validate inputs
+  if (!paymasterAddress || typeof paymasterAddress !== "string") {
+    throw new Error(
+      "Paymaster address is required and must be a valid hex string",
+    );
+  }
+
+  if (!poolId || (typeof poolId === "string" && !poolId.trim())) {
+    throw new Error("Pool ID is required");
+  }
+
+  if (!identity || typeof identity !== "string" || !identity.trim()) {
+    throw new Error("Identity is required and must be a non-empty string");
+  }
+
+  // Convert poolId to bigint
+  const poolIdBigInt = typeof poolId === "bigint" ? poolId : BigInt(poolId);
+
+  // Convert identity string to bytes
+  const identityBytes = toHex(identity);
+
+  // Encode using the 3-parameter format that parseContext() expects:
+  // (address paymasterAddress, uint256 poolId, bytes identity)
+  return encodeAbiParameters(
+    parseAbiParameters(
+      "address paymasterAddress, uint256 poolId, bytes identity",
+    ),
+    [paymasterAddress, poolIdBigInt, identityBytes],
+  );
+}
+
+/**
  * Encode paymaster configuration according to contract format
  * Packs: merkleRootIndex (bits 0-31) + mode (bit 32) + reserved (bits 33-255)
  *

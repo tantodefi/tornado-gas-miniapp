@@ -4,6 +4,7 @@ export {
   generatePaymasterData,
   encodeConfig,
   decodeConfig,
+  encodePaymasterContext,
   PrepaidGasPaymasterMode,
 } from "./encoding";
 

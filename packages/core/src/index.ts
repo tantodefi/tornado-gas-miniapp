@@ -21,6 +21,7 @@ export {
   PrepaidGasPaymasterMode,
   encodeConfig,
   decodeConfig,
+  encodePaymasterContext,
   validateDataStructure,
 } from "./utils";
 

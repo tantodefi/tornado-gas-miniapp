@@ -4,14 +4,7 @@ import {
   GetPaymasterStubDataReturnType,
   UserOperation,
 } from "viem/account-abstraction";
-import {
-  createPublicClient,
-  Hex,
-  http,
-  PublicClient,
-  Transport,
-  Chain,
-} from "viem";
+import { createPublicClient, http } from "viem";
 import { getPackedUserOperation } from "permissionless";
 
 // Use new data package

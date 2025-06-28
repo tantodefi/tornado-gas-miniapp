@@ -17,7 +17,7 @@ export interface ParsedContext {
   /** Pool ID for the operation */
   poolId: bigint;
   /** Optional identity string for proof generation */
-  identityString?: string;
+  identityString: string;
 }
 
 /**
@@ -92,23 +92,10 @@ export class PaymasterDataService {
         poolId,
         identityString,
       };
-    } catch {
-      try {
-        // Fall back to simple format (2 parameters)
-        const [paymasterAddress, poolId] = decodeAbiParameters(
-          parseAbiParameters("address paymasterAddress, uint256 poolId"),
-          contextHex,
-        );
-
-        return {
-          paymasterAddress,
-          poolId,
-        };
-      } catch (error) {
-        throw new Error(
-          `Invalid context format: ${error instanceof Error ? error.message : "Unknown error"}`,
-        );
-      }
+    } catch (error) {
+      throw new Error(
+        `Invalid context format: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
