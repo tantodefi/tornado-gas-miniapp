@@ -31,10 +31,10 @@ interface GasData {
   nullifier: bigint;
 }
 
-interface GroupSelectorProps {
+interface PoolSelectorProps {
   identity: Identity;
   onBack: () => void;
-  onSelectGroup: (poolId: string) => void;
+  onSelectPool: (poolId: string) => void;
   isLoading?: boolean;
 }
 
@@ -113,12 +113,12 @@ function GasUsageDisplay({
   );
 }
 
-export function GroupSelector({
+export function PoolSelector({
   identity,
   onBack,
-  onSelectGroup,
+  onSelectPool,
   isLoading,
-}: GroupSelectorProps) {
+}: PoolSelectorProps) {
   const [availableCoupons, setAvailableCoupons] = useState<CouponOption[]>([]);
   const [selectedCouponId, setSelectedCouponId] = useState<string>();
   const [isSearchingCoupons, setIsSearchingCoupons] = useState(false);
@@ -163,12 +163,12 @@ export function GroupSelector({
         searchedIdentityRef.current = identityCommitment;
 
         // Use API route instead of direct subgraph call
-        const groups = await ApiClient.getPoolsByIdentity(identityCommitment);
+        const pools = await ApiClient.getPoolsByIdentity(identityCommitment);
 
-        // Extract group IDs (data is now serialized strings)
-        const coupons: CouponOption[] = groups.map((groupMembership) => ({
-          poolId: groupMembership.pool.poolId, // Already a string now
-          joiningFee: groupMembership.pool.joiningFee,
+        // Extract pool IDs (data is now serialized strings)
+        const coupons: CouponOption[] = pools.map((poolMembership) => ({
+          poolId: poolMembership.pool.poolId, // Already a string now
+          joiningFee: poolMembership.pool.joiningFee,
         }));
 
         // Only update state if component is still mounted
@@ -180,7 +180,7 @@ export function GroupSelector({
             setSelectedCouponId(coupons[0].poolId);
           }
 
-          // Fetch gas data for all groups
+          // Fetch gas data for all pools
           if (coupons.length > 0) {
             fetchGasData(identity, coupons);
           }
@@ -190,7 +190,7 @@ export function GroupSelector({
 
         // Only update state if component is still mounted
         if (isMountedRef.current) {
-          setSearchError("Failed to search for available groups");
+          setSearchError("Failed to search for available pools");
         }
       } finally {
         // Only update loading state if component is still mounted
@@ -207,9 +207,9 @@ export function GroupSelector({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity.commitment, fetchGasData, clearGasData]);
 
-  const handleSelectGroup = () => {
+  const handleSelectPool = () => {
     if (selectedCouponId) {
-      onSelectGroup(selectedCouponId);
+      onSelectPool(selectedCouponId);
     }
   };
 
@@ -229,7 +229,7 @@ export function GroupSelector({
         <div className="text-center py-8">
           <Search className="h-8 w-8 animate-pulse mx-auto mb-4 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            Searching blockchain for your groups...
+            Searching blockchain for your pools...
           </p>
         </div>
       ) : searchError ? (
@@ -241,14 +241,14 @@ export function GroupSelector({
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            No paymaster groups found for this identity. Make sure you have
-            joined a group using this identity.
+            No paymaster pools found for this identity. Make sure you have
+            joined a pool using this identity.
           </AlertDescription>
         </Alert>
       ) : (
         <div className="space-y-3">
           <Label className="text-base font-medium">
-            Select Paymaster Group ({availableCoupons.length} found)
+            Select Paymaster Pool ({availableCoupons.length} found)
           </Label>
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {availableCoupons.map((coupon) => {
@@ -276,7 +276,7 @@ export function GroupSelector({
                       <div className="space-y-3 flex-1">
                         <div className="flex items-center justify-between">
                           <div className="font-medium">
-                            Group #{coupon.poolId}
+                            Pool #{coupon.poolId}
                           </div>
                           {selectedCouponId === coupon.poolId && (
                             <CheckCircle className="h-5 w-5 text-primary" />
@@ -299,7 +299,7 @@ export function GroupSelector({
           </div>
 
           <Button
-            onClick={handleSelectGroup}
+            onClick={handleSelectPool}
             disabled={isLoading || !selectedCouponId}
             className="w-full"
           >

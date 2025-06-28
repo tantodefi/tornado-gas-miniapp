@@ -59,7 +59,7 @@ export default function Home() {
                 <div>
                   <div className="font-medium">Setting Up Smart Account</div>
                   <div className="text-sm text-yellow-600 dark:text-yellow-300">
-                    Group #{paymasterConfig?.poolId} • Creating smart account
+                    Pool #{paymasterConfig?.poolId} • Creating smart account
                     client...
                   </div>
                 </div>
@@ -75,7 +75,7 @@ export default function Home() {
                 <div>
                   <div className="font-medium">System Ready</div>
                   <div className="text-sm text-green-600 dark:text-green-300">
-                    Group #{paymasterConfig?.poolId} • Smart Account Active
+                    Pool #{paymasterConfig?.poolId} • Smart Account Active
                   </div>
                 </div>
                 <PaymasterSettings>

@@ -44,8 +44,8 @@ export interface SemaphoreProof {
   ];
 }
 
-// Group configuration from blockchain
-export interface GroupConfig {
+// Pool configuration from blockchain
+export interface PoolConfig {
   poolId: bigint;
   joiningFee: bigint;
   merkleTreeDuration: bigint;

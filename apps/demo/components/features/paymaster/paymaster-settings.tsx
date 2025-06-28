@@ -18,13 +18,13 @@ import { validatePaymasterConfig } from "@/lib/validation";
 import type { PaymasterConfig } from "@/types/paymaster";
 import { PaymasterStatus } from "./paymaster-status";
 import { IdentityInput } from "./identity-input";
-import { GroupSelector } from "./group-selector";
+import { PoolSelector } from "./pool-selector";
 
 interface PaymasterSettingsProps {
   children?: React.ReactNode;
 }
 
-type DialogStep = "identity" | "group-selection";
+type DialogStep = "identity" | "pool-selection";
 
 export function PaymasterSettings({ children }: PaymasterSettingsProps) {
   const { isConfigured, error, setPaymasterConfig, clearPaymasterConfig } =
@@ -40,10 +40,10 @@ export function PaymasterSettings({ children }: PaymasterSettingsProps) {
 
   const handleValidIdentity = (identity: Identity) => {
     setSemaphoreIdentity(identity);
-    setCurrentStep("group-selection");
+    setCurrentStep("pool-selection");
   };
 
-  const handleSelectGroup = async (poolId: string) => {
+  const handleSelectPool = async (poolId: string) => {
     if (!semaphoreIdentity) {
       setStepError("No identity available");
       return;
@@ -125,12 +125,12 @@ export function PaymasterSettings({ children }: PaymasterSettingsProps) {
             <CreditCard className="h-5 w-5" />
             {currentStep === "identity"
               ? "Configure Identity"
-              : "Select Paymaster Group"}
+              : "Select Paymaster Pool"}
           </DialogTitle>
           <DialogDescription>
             {currentStep === "identity"
-              ? "Enter your Semaphore identity to find available paymaster groups."
-              : "Choose from your available paymaster groups found on-chain."}
+              ? "Enter your Semaphore identity to find available paymaster pools."
+              : "Choose from your available paymaster pools found on-chain."}
           </DialogDescription>
         </DialogHeader>
 
@@ -148,10 +148,10 @@ export function PaymasterSettings({ children }: PaymasterSettingsProps) {
             />
           ) : (
             semaphoreIdentity && (
-              <GroupSelector
+              <PoolSelector
                 identity={semaphoreIdentity}
                 onBack={() => setCurrentStep("identity")}
-                onSelectGroup={handleSelectGroup}
+                onSelectPool={handleSelectPool}
                 isLoading={isLoading}
               />
             )

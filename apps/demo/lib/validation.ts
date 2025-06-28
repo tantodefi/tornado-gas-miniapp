@@ -13,7 +13,7 @@ export function validatePaymasterConfig(config: PaymasterConfig): {
     (typeof config.poolId === "string" && !config.poolId.trim()) ||
     (typeof config.poolId === "number" && config.poolId <= 0)
   ) {
-    errors.push("Valid group ID is required");
+    errors.push("Valid pool ID is required");
   }
 
   if (!config.identity || typeof config.identity !== "string") {
