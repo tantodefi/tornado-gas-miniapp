@@ -38,6 +38,7 @@ export interface PoolCard {
   poolDetails: CardPoolDetails; // Pool information at creation time
   identity: CardIdentity; // Cryptographic identity data
   paymasterContract: string; // Paymaster contract address
+  paymasterContext: string; // Encoded context for demo app configuration
   createdAt: string; // ISO timestamp of creation
   status: CardStatus; // Current card status
   expiresAt: string; // ISO timestamp of expiration

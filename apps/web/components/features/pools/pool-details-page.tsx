@@ -11,6 +11,7 @@ import {
   IdentitySecurity,
 } from "@/lib/identity/generator";
 import { saveCardToIndexedDB } from "@/lib/storage/indexed-db";
+import { encodePaymasterContext } from "@workspace/core";
 import LoadingSkeleton from "@/components/shared/loading-skeleton";
 import ErrorState from "@/components/shared/error-state";
 import { LabelHeader } from "@/components/layout/page-header";
@@ -79,6 +80,15 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
       const identity = generateCompleteIdentity();
       setGeneratedIdentity(identity);
 
+      // Generate encoded paymaster context using the new function
+      const paymasterContext = encodePaymasterContext(
+        pool.network.contracts.paymaster as `0x${string}`, // paymaster address
+        pool.poolId, // pool ID
+        identity.identity.export(), // identity string
+      );
+
+      console.log("Generated paymaster context:", paymasterContext);
+
       // Create the card but don't save to IndexedDB yet (wait for payment success)
       const newCard: PoolCard = {
         id: identity.cardId,
@@ -94,6 +104,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
           commitment: identity.commitment,
         },
         paymasterContract: pool.network.contracts.paymaster,
+        paymasterContext: paymasterContext, // Add the encoded context
         createdAt: new Date().toISOString(),
         status: "pending-topup",
         expiresAt: identity.expiresAt,
