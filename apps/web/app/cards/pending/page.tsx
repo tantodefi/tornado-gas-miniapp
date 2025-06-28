@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/app/cards/pending/page.tsx
 import { Metadata } from "next";
 import PendingCardsPage from "@/components/features/cards/pending-cards-page";
 

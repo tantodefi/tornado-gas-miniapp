@@ -1,3 +1,4 @@
+// file :prepaid-gas-website/apps/demo/hooks/use-smart-account-creation.ts
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { toSimpleSmartAccount } from "permissionless/accounts";

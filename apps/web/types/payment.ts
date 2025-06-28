@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/types/payment.ts
 /**
  * Payment flow and transaction-related type definitions
  * Single source of truth for payment processing, providers, and transaction data

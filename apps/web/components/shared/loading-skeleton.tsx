@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/components/shared/loading-skeleton.tsx
 "use client";
 
 import React from "react";

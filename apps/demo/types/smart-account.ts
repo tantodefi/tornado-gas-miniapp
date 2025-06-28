@@ -1,3 +1,4 @@
+// file :prepaid-gas-website/apps/demo/types/smart-account.ts
 import type { SmartAccount } from "viem/account-abstraction";
 import type { LocalAccount } from "viem/accounts";
 import type { Identity } from "@semaphore-protocol/core";

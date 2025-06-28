@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/types/index.ts
 /**
  * Central type exports for the web application
  * Single source of truth for all type definitions

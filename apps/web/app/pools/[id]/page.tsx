@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/app/pools/[id]/page.tsx
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PoolDetailsPage from "@/components/features/pools/pool-details-page";

@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/components/features/pools/pool-filters.tsx
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { FilterState } from "@/types";

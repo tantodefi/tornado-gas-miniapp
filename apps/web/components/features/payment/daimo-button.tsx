@@ -1,4 +1,4 @@
-// apps/web/components/features/payment/daimo-button.tsx
+//file:prepaid-gas-website/apps/web/components/features/payment/daimo-button.tsx
 
 "use client";
 

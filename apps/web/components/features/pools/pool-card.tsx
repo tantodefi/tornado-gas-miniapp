@@ -1,4 +1,4 @@
-// app/components/feature/pools/pool-card.tsx
+//file: prepaid-gas-website/apps/web/components/features/pools/pool-card.tsx
 "use client";
 
 import React from "react";

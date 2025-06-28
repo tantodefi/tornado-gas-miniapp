@@ -1,3 +1,4 @@
+// file :prepaid-gas-website/apps/demo/hooks/use-counter-value.ts
 import { useState, useEffect, useCallback } from "react";
 import { COUNTER_CONTRACT } from "@/lib/contracts/counter";
 import { createPublicClient, http } from "viem";

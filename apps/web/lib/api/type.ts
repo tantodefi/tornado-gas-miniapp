@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/lib/api/type.ts
 /**
  * Standard API response wrapper structure
  */

@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/types/card.ts
 /**
  * Card and identity-related type definitions
  * Single source of truth for gas cards, identities, and recovery data

@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/types/storage.ts
 /**
  * Client-side storage and data persistence type definitions
  * Single source of truth for IndexedDB, local storage, and data backup types

@@ -1,3 +1,4 @@
+// file :prepaid-gas-website/apps/demo/components/features/counter/smart-account-info.tsx
 "use client";
 
 import { Button } from "@workspace/ui/components/button";

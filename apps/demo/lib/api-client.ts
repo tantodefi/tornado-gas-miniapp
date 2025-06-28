@@ -1,4 +1,4 @@
-// Updated to use pool terminology and data package types
+/// file :prepaid-gas-website/apps/demo/lib/api-client.ts
 interface SerializedPoolMembershipInfo {
   membershipId: string;
   identityCommitment: string;

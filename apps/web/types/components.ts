@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/types/components.ts
 /**
  * UI component prop and styling type definitions
  * Single source of truth for component interfaces, variants, and UI state

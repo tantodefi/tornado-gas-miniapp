@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/types/pool.ts
 /**
  * Pool-related type definitions
  * Single source of truth for all pool, member, and network types

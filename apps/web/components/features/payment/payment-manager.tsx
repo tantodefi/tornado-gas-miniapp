@@ -1,4 +1,4 @@
-// apps/web/components/features/payment/payment-manager.tsx
+//file:prepaid-gas-website/apps/web/components/features/payment/payment-manager.tsx
 
 "use client";
 

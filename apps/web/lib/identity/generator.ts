@@ -1,4 +1,4 @@
-// lib/identity/generator.ts
+//file:prepaid-gas-website/apps/web/lib/constants
 
 import { Identity } from "@semaphore-protocol/identity";
 import {

@@ -1,3 +1,4 @@
+// file :prepaid-gas-website/apps/demo/components/features/counter/contract-info.tsx
 "use client";
 
 import { COUNTER_CONTRACT_ADDRESS } from "@/lib/contracts/counter";

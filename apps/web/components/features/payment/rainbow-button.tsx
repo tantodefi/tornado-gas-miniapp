@@ -1,4 +1,4 @@
-// apps/web/components/features/payment/rainbow-button.tsx
+//file:prepaid-gas-website/apps/web/components/features/payment/rainbow-button.tsx
 
 "use client";
 

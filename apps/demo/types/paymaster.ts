@@ -1,4 +1,4 @@
-// Main paymaster configuration (renamed from GasCouponData)
+// file :prepaid-gas-website/apps/demo/types/paymaster.ts
 export interface PaymasterConfig {
   poolId: number | string;
   identity: string;

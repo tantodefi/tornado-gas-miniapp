@@ -1,3 +1,4 @@
+// file :prepaid-gas-website/apps/demo/constants/config.ts
 import type { Address } from "viem";
 
 // Contract addresses - these need to be public for frontend wallet interactions

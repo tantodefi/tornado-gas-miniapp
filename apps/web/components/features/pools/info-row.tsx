@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/components/features/pools/info-row.tsx
 "use client";
 
 import React, { useState } from "react";

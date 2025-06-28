@@ -1,5 +1,4 @@
-// Import serialized types from data package
-import type { SerializedPool, SerializedPoolMember } from "@workspace/data";
+// file :prepaid-gas-website/apps/demo/types/api.ts
 
 // API-specific response types using pool terminology
 export interface SerializedPoolMembershipInfo {

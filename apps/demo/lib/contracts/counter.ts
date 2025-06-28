@@ -1,3 +1,4 @@
+// file :prepaid-gas-website/apps/demo/lib/contracts/counter.ts
 import { encodeFunctionData } from "viem";
 import { CONTRACTS } from "@/constants/config";
 
