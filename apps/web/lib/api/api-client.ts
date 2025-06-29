@@ -149,8 +149,15 @@ export const prepaidPoolsApi = {
   /**
    * Get pool details - simple HTTP call
    */
-  async getPoolDetails(poolId: string) {
-    return apiClient.get(`/api/prepaid-pools/${poolId}`);
+  async getPoolDetails(
+    poolId: string,
+    includeMembers: boolean = true,
+    memberLimit: number = 100,
+  ) {
+    return apiClient.get(`/api/prepaid-pools/${poolId}`, {
+      includeMembers: includeMembers.toString(),
+      memberLimit: memberLimit.toString(),
+    });
   },
 };
 

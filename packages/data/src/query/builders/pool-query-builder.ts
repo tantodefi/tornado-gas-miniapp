@@ -340,7 +340,7 @@ ${fieldsList}
    * This replaces the old SubgraphClient.getPoolDetails() method.
    *
    * @param poolId - Pool ID to fetch
-   * @param includeMembers - Whether to include members list (default: false)
+   * @param includeMembers - Whether to include members list and root history (default: false)
    * @param memberLimit - Maximum members to fetch when includeMembers=true (default: 100)
    * @returns Promise resolving to pool with optional members and root history, or null if not found
    *
@@ -349,20 +349,23 @@ ${fieldsList}
    * // Get pool with basic info only
    * const pool = await client.query().pools().getPoolById('1');
    *
-   * // Get pool with members included
-   * const poolWithMembers = await client.query().pools().getPoolById('1', true, 50);
+   * // Get pool with members and root history included
+   * const poolWithDetails = await client.query().pools().getPoolById('1', true, 50);
    * ```
    */
   async getPoolById(
     poolId: string,
     includeMembers: boolean = false,
     memberLimit: number = 100,
-  ): Promise<(Pool & { members?: PoolMember[] }) | null> {
+  ): Promise<
+    | (Pool & { members?: PoolMember[]; rootHistory?: MerkleRootHistory[] })
+    | null
+  > {
     // Create a new query builder instance to avoid affecting current state
     const poolQuery = new PoolQueryBuilder(this.client);
 
     if (includeMembers) {
-      // Use withMembers() for pools with member data
+      // Use withMembers() for pools with member data and root history
       const poolsWithMembers = await poolQuery
         .byId(poolId)
         .withMembers(memberLimit)
@@ -580,10 +583,10 @@ ${fieldsList}
  * Extended query builder for pools that includes member data
  *
  * This builder extends the base functionality to fetch pools along with their
- * member information, useful for detailed pool analysis.
+ * member information and root history, useful for detailed pool analysis.
  */
 export class PoolQueryWithMembersBuilder extends BaseQueryBuilder<
-  Pool & { members: PoolMember[] },
+  Pool & { members: PoolMember[]; rootHistory: MerkleRootHistory[] },
   PoolFields,
   PoolWhereInput
 > {
@@ -639,6 +642,14 @@ export class PoolQueryWithMembersBuilder extends BaseQueryBuilder<
             joinedAtBlock
             isActive
           }
+          rootHistory(where: { isValid: true }, orderBy: index, orderDirection: asc) {
+            index
+            merkleRoot
+            createdAt
+            createdAtBlock
+            isValid
+            transactionHash
+          }
         }
       }
     `;
@@ -679,27 +690,32 @@ export class PoolQueryWithMembersBuilder extends BaseQueryBuilder<
   }
 
   /**
-   * Execute query and return pools with their members
+   * Execute query and return pools with their members and root history
    *
-   * @returns Promise resolving to pools with member data included
+   * @returns Promise resolving to pools with member data and root history included
    */
-  async execute(): Promise<(Pool & { members: PoolMember[] })[]> {
+  async execute(): Promise<
+    (Pool & { members: PoolMember[]; rootHistory: MerkleRootHistory[] })[]
+  > {
     // Build query and variables
     const query = this.buildPoolsWithMembersQuery();
     const variables = this.buildQueryVariables();
 
     // Execute via generic SubgraphClient method
     const response = await this.client.executeQuery<{
-      pools: (Pool & { members: PoolMember[] })[];
+      pools: (Pool & {
+        members: PoolMember[];
+        rootHistory: MerkleRootHistory[];
+      })[];
     }>(query, variables);
 
     return response.pools;
   }
 
   /**
-   * Execute query and return serialized pools with members
+   * Execute query and return serialized pools with members and root history
    *
-   * @returns Promise resolving to array of SerializedPool entities with members
+   * @returns Promise resolving to array of SerializedPool entities with members and root history
    *
    * @example
    * ```typescript
@@ -711,17 +727,17 @@ export class PoolQueryWithMembersBuilder extends BaseQueryBuilder<
    */
   async executeAndSerialize(): Promise<SerializedPool[]> {
     const poolsWithMembers = await this.execute();
-    // Serialize each pool (serializePool handles the members array automatically)
+    // Serialize each pool (serializePool handles the members and rootHistory arrays automatically)
     return poolsWithMembers.map(serializePool);
   }
 
   /**
-   * Count pools (members are not counted, only pools)
+   * Count pools (members and root history are not counted, only pools)
    *
    * @returns Promise resolving to number of matching pools
    */
   async count(): Promise<number> {
-    // Build a simple count query (just pool fields, no members)
+    // Build a simple count query (just pool fields, no members or root history)
     const countQuery = `
       query CountPoolsWithMembers(
         $first: Int!
