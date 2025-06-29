@@ -14,12 +14,6 @@ interface SerializedPoolMembershipInfo {
   };
 }
 
-interface PoolMembersResponse {
-  poolId: string;
-  members: string[];
-  count: number;
-}
-
 // Simple API client for calling our Next.js routes
 export class ApiClient {
   /**
@@ -39,21 +33,5 @@ export class ApiClient {
     const pools: SerializedPoolMembershipInfo[] = await response.json();
 
     return pools;
-  }
-
-  /**
-   * Get all member identity commitments for a specific pool
-   */
-  static async getPoolMembers(poolId: string): Promise<string[]> {
-    const response = await fetch(`/api/pools/${poolId}/members`);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API Error: ${response.statusText}`);
-    }
-
-    const data: PoolMembersResponse = await response.json();
-
-    return data.members;
   }
 }

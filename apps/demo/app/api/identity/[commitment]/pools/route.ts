@@ -4,7 +4,6 @@ import {
   SubgraphClient,
   serializePool,
   serializePoolMember,
-  type SubgraphResponse,
 } from "@workspace/data";
 import { SERVER_CONFIG } from "@/constants/config";
 
@@ -26,9 +25,9 @@ interface SerializedPoolMembershipInfo {
 
 // Helper function to transform data package response to expected format
 function transformPoolMemberships(
-  response: SubgraphResponse<Array<{ member: any; pool: any }>>,
+  response: Array<{ member: any; pool: any }>,
 ): SerializedPoolMembershipInfo[] {
-  return response.data.map(({ member, pool }) => {
+  return response.map(({ member, pool }) => {
     // Use data package serialization utilities
     const serializedPool = serializePool(pool);
     const serializedMember = serializePoolMember(member);
@@ -75,16 +74,20 @@ export async function GET(
     }
 
     // ✨ NEW: Use factory method with Base Sepolia preset (chainId: 84532)
-    // Much cleaner than manual configuration!
     const subgraphClient = SubgraphClient.createForNetwork(84532, {
       subgraphUrl: SERVER_CONFIG.subgraph, // Override with env variable
     });
 
-    // Query pools using data package method (updated terminology)
-    const poolsResponse = await subgraphClient.getPoolsByIdentity(commitment);
+    // ✨ NEW: Use query builder instead of direct method call
+    // Before: const poolsResponse = await subgraphClient.getPoolsByIdentity(commitment);
+    // After: Use the convenience method from QueryBuilder
+    const poolsData = await subgraphClient
+      .query()
+      .findPoolsByIdentity(commitment);
 
     // Transform response using data package serialization
-    const serializedPools = transformPoolMemberships(poolsResponse);
+    // Note: findPoolsByIdentity returns the data directly, not wrapped in SubgraphResponse
+    const serializedPools = transformPoolMemberships(poolsData);
 
     // Return with caching headers (5 minutes cache)
     return NextResponse.json(serializedPools, {
