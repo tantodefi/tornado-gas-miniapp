@@ -45,52 +45,19 @@ export interface FindRootIndexResult {
  */
 export class MerkleRootService {
   /**
-   * Find the best valid merkle root index for proof generation
+   * Find merkle root index for proof generation
    *
-   * Uses multiple strategies in order of preference:
-   * 1. Contract search - Find exact root in contract history
-   * 2. Contract current - Use current root index from contract
-   * 3. Subgraph fallback - Query subgraph for root information
-   * 4. Ultimate fallback - Use index 0 (most recent)
+   * 1. Contract current - Use current root index from contract
    *
    * @param params - Parameters for root finding
    * @returns Promise resolving to root index and metadata
    */
   async findBestRootIndex(
     params: FindRootIndexParams,
-  ): Promise<FindRootIndexResult> {
-    const {
-      publicClient,
-      paymasterAddress,
-      poolId,
-      currentMerkleRoot,
-      subgraphClient,
-    } = params;
+  ): Promise<FindRootIndexResult | undefined> {
+    const { publicClient, paymasterAddress, poolId } = params;
 
     // Strategy 1: Try to find the current root in the contract's root history
-    try {
-      const contractSearchResult = await this.findRootInContract(
-        publicClient,
-        paymasterAddress,
-        poolId,
-        currentMerkleRoot,
-      );
-
-      if (contractSearchResult.found) {
-        console.log(
-          `Found current root at index: ${contractSearchResult.index}`,
-        );
-        return {
-          index: contractSearchResult.index,
-          strategy: "contract-search",
-          found: true,
-        };
-      }
-    } catch (error) {
-      console.warn("Contract search strategy failed:", error);
-    }
-
-    // Strategy 2: Get current root index from pool info
     try {
       const currentIndex = await this.getCurrentRootIndex(
         publicClient,
@@ -107,63 +74,6 @@ export class MerkleRootService {
     } catch (error) {
       console.warn("Contract current strategy failed:", error);
     }
-
-    // Strategy 3: Fallback to subgraph
-    try {
-      const subgraphResult = await this.findRootInSubgraph(
-        subgraphClient,
-        poolId,
-        currentMerkleRoot,
-      );
-
-      if (subgraphResult !== null) {
-        console.log(`Using subgraph fallback, root index: ${subgraphResult}`);
-        return {
-          index: subgraphResult,
-          strategy: "subgraph-fallback",
-          found: true,
-        };
-      }
-    } catch (error) {
-      console.warn("Subgraph fallback failed:", error);
-    }
-
-    // Strategy 4: Ultimate fallback - use 0 (most recent)
-    console.log("Using ultimate fallback: root index 0");
-    return {
-      index: 0,
-      strategy: "ultimate-fallback",
-      found: false,
-    };
-  }
-
-  /**
-   * Find a specific merkle root in the contract's root history
-   *
-   * @private
-   * @param publicClient - Blockchain client
-   * @param paymasterAddress - Paymaster contract address
-   * @param poolId - Pool ID
-   * @param merkleRoot - Root to search for
-   * @returns Promise resolving to index and found status
-   */
-  private async findRootInContract(
-    publicClient: PublicClient<Transport, Chain>,
-    paymasterAddress: Hex,
-    poolId: bigint,
-    merkleRoot: bigint,
-  ): Promise<{ index: number; found: boolean }> {
-    const [foundIndex, found] = await publicClient.readContract({
-      abi: PREPAID_GAS_PAYMASTER_ABI,
-      address: paymasterAddress,
-      functionName: "findRootIndex",
-      args: [poolId, merkleRoot],
-    });
-
-    return {
-      index: foundIndex,
-      found,
-    };
   }
 
   /**
@@ -188,28 +98,6 @@ export class MerkleRootService {
     });
 
     return currentIndex;
-  }
-
-  /**
-   * Find merkle root information in the subgraph
-   *
-   * @private
-   * @param subgraphClient - Subgraph client
-   * @param poolId - Pool ID
-   * @param merkleRoot - Root to search for
-   * @returns Promise resolving to root index or null if not found
-   */
-  private async findRootInSubgraph(
-    subgraphClient: SubgraphClient,
-    poolId: bigint,
-    merkleRoot: bigint,
-  ): Promise<number | null> {
-    const result = await subgraphClient.findRootIndex(
-      poolId.toString(),
-      merkleRoot.toString(),
-    );
-
-    return result ? result.index : null;
   }
 
   /**

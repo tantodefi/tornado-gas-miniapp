@@ -23,14 +23,11 @@ export {
   encodePaymasterContext,
   parsePaymasterContext,
   PrepaidGasPaymasterMode,
-  getChainById,
 } from "./utils";
 export type { ParsedPaymasterContext } from "./utils";
 
 // Constants exports
 export { PREPAID_GAS_PAYMASTER_ABI, POOL_ROOT_HISTORY_SIZE } from "./constants";
-
-export type { PoolMembershipProof } from "./proof";
 
 // Version
 export const VERSION = "1.0.0";

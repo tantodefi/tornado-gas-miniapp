@@ -11,4 +11,4 @@ export {
 
 export type { ParsedPaymasterContext } from "./encoding";
 
-export { getChainById, validateDataStructure } from "./validation";
+export { getChainById, validatePaymasterAndData } from "./validation";

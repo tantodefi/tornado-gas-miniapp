@@ -46,7 +46,7 @@ export function getChainById(chainId: number): ViemChains.Chain | undefined {
  * }
  * ```
  */
-export function validateDataStructure(
+export function validatePaymasterAndData(
   paymasterAndData: Uint8Array | string,
 ): boolean {
   try {
@@ -112,21 +112,6 @@ function bytesToBigInt(bytes: Uint8Array): bigint {
     result = (result << 8n) + BigInt(byte);
   }
   return result;
-}
-
-/**
- * Validate that an address is a valid Ethereum address
- *
- * @param address - Address to validate
- * @returns True if valid address format
- *
- * @example
- * ```typescript
- * const isValid = validateAddress('0x1234567890123456789012345678901234567890');
- * ```
- */
-export function validateAddress(address: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
 /**
