@@ -1,6 +1,6 @@
-//file:prepaid-gas-website/apps/web/app/api/prepaid-pools/[id]/route.ts
 import { NextRequest } from "next/server";
-import { PoolService } from "@/lib/services/pool-service";
+import { ClientFactory } from "@/lib/services/client-factory";
+import { CACHE_CONFIG } from "@/constants/network";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -9,7 +9,7 @@ import {
   setCacheHeaders,
 } from "@/lib/api/response";
 
-const CACHE_TTL = parseInt(process.env.POOL_DETAILS_CACHE_TTL || "60", 10);
+const CACHE_TTL = CACHE_CONFIG.POOL_DETAILS_TTL;
 
 export async function GET(
   request: NextRequest,
@@ -45,39 +45,134 @@ export async function GET(
       );
     }
 
-    // Create pool service
-    const poolService = new PoolService();
+    // Create client using factory
+    const subgraphClient = ClientFactory.getSubgraphClient();
 
-    // Get pool details with optional members
-    const result = await poolService.getPoolDetails(
-      id,
-      includeMembers,
-      memberLimit,
-    );
+    // Build query using the new query builder pattern
+    const poolQuery = subgraphClient.query().pools().byId(id);
 
-    // Add processing time to meta
-    const enhancedMeta = {
-      ...result.meta,
-      requestId,
-      processingTime: Date.now() - startTime,
-      poolId: id,
-      timestamp: new Date().toISOString(),
-      includeMembers, // Include in response for debugging
-      memberLimit: includeMembers ? memberLimit : undefined,
-    };
+    // If members are requested, use the withMembers builder
+    if (includeMembers) {
+      const poolWithMembersQuery = poolQuery.withMembers(memberLimit);
 
-    // Create response
-    const response = createSuccessResponse(
-      result.data,
-      enhancedMeta,
-      result.pagination,
-      requestId,
-    );
+      // Execute query and get serialized results
+      const serializedPools = await poolWithMembersQuery.executeAndSerialize();
 
-    // Set caching headers
-    setCacheHeaders(response, CACHE_TTL);
+      if (!serializedPools || serializedPools.length === 0) {
+        return createErrorResponse(
+          `Pool with ID ${id} not found`,
+          "POOL_NOT_FOUND",
+          404,
+          requestId,
+        );
+      }
 
-    return response;
+      // Get the first (and only) pool result
+      const poolData = serializedPools[0];
+
+      if (!poolData) {
+        return createErrorResponse(
+          `Pool with ID ${id} not found`,
+          "POOL_NOT_FOUND",
+          404,
+          requestId,
+        );
+      }
+
+      // Add network information using ClientFactory
+      const poolWithNetwork = ClientFactory.addNetworkInfoToPool(poolData);
+
+      // Construct response metadata using ClientFactory
+      const enhancedMeta = {
+        ...ClientFactory.getNetworkMetadata(),
+        requestId,
+        processingTime: Date.now() - startTime,
+        poolId: id,
+        timestamp: new Date().toISOString(),
+        includeMembers,
+        memberLimit,
+      };
+
+      // Construct pagination info
+      const pagination = {
+        page: 0,
+        limit: 1,
+        total: 1,
+        hasMore: false,
+      };
+
+      // Create response
+      const response = createSuccessResponse(
+        poolWithNetwork,
+        enhancedMeta,
+        pagination,
+        requestId,
+      );
+
+      // Set caching headers
+      setCacheHeaders(response, CACHE_TTL);
+
+      return response;
+    } else {
+      // Execute basic pool query without members
+      const serializedPools = await poolQuery.executeAndSerialize();
+
+      if (!serializedPools || serializedPools.length === 0) {
+        return createErrorResponse(
+          `Pool with ID ${id} not found`,
+          "POOL_NOT_FOUND",
+          404,
+          requestId,
+        );
+      }
+
+      // Get the first (and only) pool result
+      const poolData = serializedPools[0];
+
+      if (!poolData) {
+        return createErrorResponse(
+          `Pool with ID ${id} not found`,
+          "POOL_NOT_FOUND",
+          404,
+          requestId,
+        );
+      }
+
+      // Add network information using ClientFactory
+      const poolWithNetwork = ClientFactory.addNetworkInfoToPool(poolData);
+
+      // Construct response metadata using ClientFactory
+      const enhancedMeta = {
+        ...ClientFactory.getNetworkMetadata(),
+        requestId,
+        processingTime: Date.now() - startTime,
+        poolId: id,
+        timestamp: new Date().toISOString(),
+        includeMembers,
+        memberLimit: includeMembers ? memberLimit : undefined,
+      };
+
+      // Construct pagination info
+      const pagination = {
+        page: 0,
+        limit: 1,
+        total: 1,
+        hasMore: false,
+      };
+
+      // Create response
+      const response = createSuccessResponse(
+        poolWithNetwork,
+        enhancedMeta,
+        pagination,
+        requestId,
+      );
+
+      // Set caching headers
+      setCacheHeaders(response, CACHE_TTL);
+
+      return response;
+    }
   } catch (error) {
     return handleApiError(error, requestId);
   }

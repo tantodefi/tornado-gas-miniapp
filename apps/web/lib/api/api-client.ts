@@ -152,19 +152,6 @@ export const prepaidPoolsApi = {
   async getPoolDetails(poolId: string) {
     return apiClient.get(`/api/prepaid-pools/${poolId}`);
   },
-
-  /**
-   * Get pools with specific fields - simple HTTP call
-   */
-  async getPoolsWithFields(
-    fields: string[],
-    options?: Omit<PoolQueryParams, "fields">,
-  ) {
-    return apiClient.get("/api/prepaid-pools", {
-      fields: fields.join(","),
-      ...options,
-    });
-  },
 };
 
 // Export for easier imports

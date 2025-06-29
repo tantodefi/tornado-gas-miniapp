@@ -58,8 +58,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   const [activatedCard, setActivatedCard] = useState<PoolCard | null>(null);
 
   // Pool data hook
-  const { pool, isLoading, error, refetch, members, hasMembers, memberCount } =
-    usePoolDetails(poolId, showMembers, memberLimit);
+  const { pool, isLoading, error, refetch, members } = usePoolDetails(poolId);
 
   // Navigation handlers
   const handleBack = () => {
