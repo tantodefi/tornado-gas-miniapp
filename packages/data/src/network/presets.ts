@@ -4,11 +4,7 @@
  * These presets provide default configurations for supported networks,
  * including default subgraph URLs and network settings.
  */
-import {
-  NetworkConfig,
-  BASE_SEPOLIA_NETWORK,
-  BASE_MAINNET_NETWORK,
-} from "./config";
+import { NetworkConfig, BASE_SEPOLIA_NETWORK } from "./config";
 
 /**
  * Network preset configuration
@@ -36,21 +32,10 @@ export const BASE_SEPOLIA_PRESET: NetworkPreset = {
 };
 
 /**
- * Base Mainnet network preset
- */
-export const BASE_MAINNET_PRESET: NetworkPreset = {
-  network: BASE_MAINNET_NETWORK,
-  defaultSubgraphUrl: "", // TODO: Add actual mainnet subgraph URL when available
-  defaultRpcUrl: "https://mainnet.base.org",
-  description: "Base Mainnet - production network",
-};
-
-/**
  * All available network presets mapped by chain ID
  */
 export const NETWORK_PRESETS: Record<number, NetworkPreset> = {
   [BASE_SEPOLIA_NETWORK.chainId]: BASE_SEPOLIA_PRESET,
-  [BASE_MAINNET_NETWORK.chainId]: BASE_MAINNET_PRESET,
 } as const;
 
 /**
@@ -58,7 +43,6 @@ export const NETWORK_PRESETS: Record<number, NetworkPreset> = {
  */
 export const NETWORK_PRESETS_BY_NAME = {
   BASE_SEPOLIA: BASE_SEPOLIA_PRESET,
-  BASE_MAINNET: BASE_MAINNET_PRESET,
 } as const;
 
 /**

@@ -30,26 +30,12 @@ export interface NetworkConfig {
  * Base Sepolia network configuration
  */
 export const BASE_SEPOLIA_NETWORK: NetworkConfig = {
-  name: "Base",
+  name: "Base Sepolia",
   chainId: 84532,
-  chainName: "Base Sepolia",
-  networkName: "Sepolia",
+  chainName: "base-sepolia",
+  networkName: "base-sepolia",
   contracts: {
     paymaster: "0xAAdb7b165057fF59a1f2a93C83CE6a183891EAf6",
-    // verifier: "0x...", // Add when available
-  },
-};
-
-/**
- * Base Mainnet network configuration
- */
-export const BASE_MAINNET_NETWORK: NetworkConfig = {
-  name: "Base",
-  chainId: 8453,
-  chainName: "Base Mainnet",
-  networkName: "Mainnet",
-  contracts: {
-    paymaster: "0x0000000000000000000000000000000000000000", // TODO: Add actual address when deployed
     // verifier: "0x...", // Add when available
   },
 };
