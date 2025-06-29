@@ -74,18 +74,10 @@ export async function GET(
       );
     }
 
-    // Initialize SubgraphClient from data package
-    const subgraphClient = new SubgraphClient({
-      subgraphUrl: SERVER_CONFIG.subgraph,
-      network: {
-        name: "Base",
-        chainId: 84532,
-        chainName: "Base Sepolia",
-        networkName: "Base Sepolia",
-        contracts: {
-          paymaster: "0xAAdb7b165057fF59a1f2a93C83CE6a183891EAf6", // From demo config
-        },
-      },
+    // ✨ NEW: Use factory method with Base Sepolia preset (chainId: 84532)
+    // Much cleaner than manual configuration!
+    const subgraphClient = SubgraphClient.createForNetwork(84532, {
+      subgraphUrl: SERVER_CONFIG.subgraph, // Override with env variable
     });
 
     // Query pools using data package method (updated terminology)

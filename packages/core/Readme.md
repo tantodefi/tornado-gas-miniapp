@@ -5,7 +5,7 @@ A TypeScript SDK for privacy-preserving, pool-based prepaid gas payments using A
 ## Features
 
 - 🔐 **Privacy-First**: Zero-knowledge proofs via Semaphore protocol
-- ⛽ **Gasless Transactions**: ERC-4337 Account Abstraction support  
+- ⛽ **Gasless Transactions**: ERC-4337 Account Abstraction support
 - 🏊 **Pool-Based**: Join pools for anonymous gas payments
 - 🚀 **Developer-Friendly**: Simple API with smart defaults
 - 🌐 **Multi-Network**: Support for Base Sepolia and Base Mainnet
@@ -31,12 +31,12 @@ const paymaster = PrepaidGasPaymaster.createForNetwork(84532);
 
 // ✅ Base Mainnet with custom subgraph
 const paymaster = PrepaidGasPaymaster.createForNetwork(8453, {
-  subgraphUrl: "https://your-mainnet-subgraph.com"
+  subgraphUrl: "https://your-mainnet-subgraph.com",
 });
 
 // ✅ With debug logging
 const paymaster = PrepaidGasPaymaster.createForNetwork(84532, {
-  debug: true
+  debug: true,
 });
 ```
 
@@ -51,7 +51,7 @@ const paymaster = new PrepaidGasPaymaster({
   network: BASE_SEPOLIA_PRESET.network,
   rpcUrl: "https://custom-rpc.com",
   debug: true,
-  timeout: 10000
+  timeout: 10000,
 });
 ```
 
@@ -71,7 +71,7 @@ const baseMainnet = PrepaidGasPaymaster.createForNetwork(8453);
 // With options
 const paymaster = PrepaidGasPaymaster.createForNetwork(84532, {
   subgraphUrl?: string;    // Custom subgraph URL
-  debug?: boolean;         // Enable debug logging  
+  debug?: boolean;         // Enable debug logging
   rpcUrl?: string;         // Custom RPC endpoint
   timeout?: number;        // Request timeout (ms)
 });
@@ -86,10 +86,10 @@ Generate stub paymaster data for gas estimation.
 ```typescript
 const stubData = await paymaster.getPaymasterStubData({
   sender: "0x...",
-  callData: "0x...", 
+  callData: "0x...",
   context: encodedContext,
   chainId: 84532,
-  entryPointAddress: "0x..."
+  entryPointAddress: "0x...",
 });
 ```
 
@@ -109,10 +109,10 @@ const paymasterData = await paymaster.getPaymasterData({
 ### Network Utilities
 
 ```typescript
-import { 
-  getNetworkPreset, 
+import {
+  getNetworkPreset,
   getSupportedChainIds,
-  isSupportedChainId 
+  isSupportedChainId,
 } from "@workspace/core";
 
 // Check if network is supported
@@ -133,17 +133,17 @@ import { encodePaymasterContext } from "@workspace/core";
 // Create paymaster context for gas cards
 const context = encodePaymasterContext(
   "0x...", // paymaster address
-  "1",     // pool ID  
-  "eyJ..." // semaphore identity (base64)
+  "1", // pool ID
+  "eyJ...", // semaphore identity (base64)
 );
 ```
 
 ## Network Support
 
-| Network | Chain ID | Status |
-|---------|----------|--------|
-| Base Sepolia | 84532 | ✅ Active |
-| Base Mainnet | 8453 | 🚧 Coming Soon |
+| Network      | Chain ID | Status         |
+| ------------ | -------- | -------------- |
+| Base Sepolia | 84532    | ✅ Active      |
+| Base Mainnet | 8453     | 🚧 Coming Soon |
 
 ```typescript
 import { BASE_SEPOLIA_PRESET, BASE_MAINNET_PRESET } from "@workspace/core";
@@ -160,24 +160,24 @@ console.log(BASE_SEPOLIA_PRESET.network.contracts.paymaster);
 # Optional: Custom subgraph URL
 NEXT_PUBLIC_SUBGRAPH_URL=https://api.studio.thegraph.com/query/your-subgraph
 
-# Optional: Custom RPC URL  
+# Optional: Custom RPC URL
 NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
 ```
 
 ### TypeScript Types
 
 ```typescript
-import type { 
+import type {
   PrepaidGasPaymasterConfig,
   NetworkConfig,
   NetworkPreset,
-  PoolMembershipProof
+  PoolMembershipProof,
 } from "@workspace/core";
 
 const config: PrepaidGasPaymasterConfig = {
   subgraphUrl: "https://...",
   network: networkConfig,
-  debug: true
+  debug: true,
 };
 ```
 
@@ -191,7 +191,7 @@ import { PrepaidGasPaymaster } from "@workspace/core";
 
 export const paymaster = PrepaidGasPaymaster.createForNetwork(84532, {
   subgraphUrl: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
-  debug: process.env.NODE_ENV === "development"
+  debug: process.env.NODE_ENV === "development",
 });
 ```
 
@@ -204,7 +204,7 @@ import { useMemo } from "react";
 export function usePaymaster(chainId: number) {
   return useMemo(() => {
     return PrepaidGasPaymaster.createForNetwork(chainId, {
-      debug: process.env.NODE_ENV === "development"
+      debug: process.env.NODE_ENV === "development",
     });
   }, [chainId]);
 }
@@ -223,7 +223,7 @@ const smartAccount = await createSmartAccountClient({
   paymaster: {
     getPaymasterStubData: paymaster.getPaymasterStubData.bind(paymaster),
     getPaymasterData: paymaster.getPaymasterData.bind(paymaster),
-  }
+  },
 });
 ```
 
@@ -237,11 +237,10 @@ try {
   if (!isSupportedChainId(chainId)) {
     throw new Error(`Unsupported network: ${chainId}`);
   }
-  
+
   const paymaster = PrepaidGasPaymaster.createForNetwork(chainId);
-  
+
   const data = await paymaster.getPaymasterData(params);
-  
 } catch (error) {
   if (error.message.includes("subgraph")) {
     console.error("Subgraph connection failed:", error);
@@ -265,17 +264,18 @@ const paymaster = new PrepaidGasPaymaster({
   // ... lots of manual setup
 });
 
-// ✅ New way (v2.x) 
+// ✅ New way (v2.x)
 const paymaster = PrepaidGasPaymaster.createForNetwork(84532); // That's it!
 
 // ✅ With custom options
 const paymaster = PrepaidGasPaymaster.createForNetwork(84532, {
   subgraphUrl: "https://custom-subgraph.com",
-  debug: true
+  debug: true,
 });
 ```
 
 **Key improvements in v2.x:**
+
 - 🚀 **90% less setup code** for common use cases
 - 🎯 **Single factory method** instead of multiple network-specific methods
 - 🏗️ **Built-in presets** with sensible defaults
@@ -285,15 +285,19 @@ const paymaster = PrepaidGasPaymaster.createForNetwork(84532, {
 ## Best Practices
 
 ### 1. Use Factory Methods
+
 ```typescript
 // ✅ Recommended
 const paymaster = PrepaidGasPaymaster.createForNetwork(84532);
 
 // ❌ Avoid unless you need custom network config
-const paymaster = new PrepaidGasPaymaster({ /* lots of config */ });
+const paymaster = new PrepaidGasPaymaster({
+  /* lots of config */
+});
 ```
 
 ### 2. Handle Network Validation
+
 ```typescript
 import { isSupportedChainId } from "@workspace/core";
 
@@ -304,15 +308,17 @@ if (isSupportedChainId(userChainId)) {
 ```
 
 ### 3. Environment-Based Configuration
+
 ```typescript
 // ✅ Good for different environments
 const paymaster = PrepaidGasPaymaster.createForNetwork(84532, {
   subgraphUrl: process.env.SUBGRAPH_URL,
-  debug: process.env.NODE_ENV === "development"
+  debug: process.env.NODE_ENV === "development",
 });
 ```
 
 ### 4. Error Boundaries
+
 ```typescript
 // ✅ Wrap in try-catch for production
 try {
@@ -329,6 +335,7 @@ try {
 ### Common Issues
 
 **"Unsupported network" error:**
+
 ```typescript
 // Check supported networks
 import { getSupportedChainIds } from "@workspace/core";
@@ -336,14 +343,16 @@ console.log("Supported:", getSupportedChainIds()); // [84532, 8453]
 ```
 
 **"No subgraph URL" error:**
+
 ```typescript
 // Provide custom subgraph URL
 const paymaster = PrepaidGasPaymaster.createForNetwork(chainId, {
-  subgraphUrl: "https://your-subgraph-endpoint.com"
+  subgraphUrl: "https://your-subgraph-endpoint.com",
 });
 ```
 
 **"Invalid identity" error:**
+
 ```typescript
 // Ensure identity is base64 encoded Semaphore identity
 const identity = Identity.generate().export();

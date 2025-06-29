@@ -9,6 +9,7 @@ import {
   BASE_SEPOLIA_NETWORK,
   BASE_MAINNET_NETWORK,
 } from "./config";
+
 /**
  * Network preset configuration
  */

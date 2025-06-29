@@ -15,17 +15,9 @@ class ClientFactory {
         throw new Error("SUBGRAPH_URL environment variable is required");
       }
 
-      this.subgraphClient = new SubgraphClient({
-        subgraphUrl,
-        network: {
-          name: "Base",
-          chainId: 84532,
-          chainName: "Base",
-          networkName: "Sepolia",
-          contracts: {
-            paymaster: "0xAAdb7b165057fF59a1f2a93C83CE6a183891EAf6",
-          },
-        },
+      // ✨ NEW: Use factory method with Base Sepolia preset (chainId: 84532)
+      this.subgraphClient = SubgraphClient.createForNetwork(84532, {
+        subgraphUrl, // Override with env variable
       });
     }
 

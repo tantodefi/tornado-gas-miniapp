@@ -30,8 +30,8 @@ import {
   getValidatedNetworkPreset,
   getUnsupportedNetworkError,
   type NetworkPreset,
-} from "../presets";
-import { NetworkConfig } from "../presets/config";
+} from "@workspace/data";
+import { NetworkConfig } from "@workspace/data";
 
 /**
  * Main client for interacting with the Prepaid Gas Paymaster system

@@ -5,8 +5,6 @@
  * chain IDs, contract addresses, and network metadata.
  */
 
-import { Address } from "viem";
-
 /**
  * Network configuration interface
  */
@@ -22,9 +20,9 @@ export interface NetworkConfig {
   /** Contract addresses for this network */
   contracts: {
     /** Paymaster contract address */
-    paymaster: Address;
+    paymaster: `0x${string}`;
     /** Optional verifier contract address */
-    verifier?: Address;
+    verifier?: `0x${string}`;
   };
 }
 

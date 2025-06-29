@@ -16,6 +16,11 @@ import {
   GET_POOL_DETAILS,
   buildPoolsQuery,
 } from "./queries.js";
+import {
+  getValidatedNetworkPreset,
+  NETWORK_PRESETS,
+  type NetworkPreset,
+} from "../network/presets.js";
 
 /**
  * Configuration for the subgraph client
@@ -139,6 +144,75 @@ export class SubgraphClient {
   }
 
   /**
+   * Create SubgraphClient for a specific network using presets
+   *
+   * @param chainId - The chain ID to create client for
+   * @param options - Optional configuration overrides
+   * @returns Configured SubgraphClient instance
+   *
+   * @example
+   * ```typescript
+   * // Create for Base Sepolia using preset
+   * const client = SubgraphClient.createForNetwork(84532);
+   *
+   * // Create with custom subgraph URL override
+   * const client = SubgraphClient.createForNetwork(84532, {
+   *   subgraphUrl: "https://custom-subgraph.com",
+   *   timeout: 60000
+   * });
+   * ```
+   */
+  static createForNetwork(
+    chainId: number,
+    options: {
+      /** Custom subgraph URL (optional, uses preset default if not provided) */
+      subgraphUrl?: string;
+      /** Request timeout in milliseconds */
+      timeout?: number;
+    } = {},
+  ): SubgraphClient {
+    const preset = getValidatedNetworkPreset(chainId);
+
+    return new SubgraphClient({
+      subgraphUrl: options.subgraphUrl || preset.defaultSubgraphUrl,
+      network: preset.network,
+      timeout: options.timeout,
+    });
+  }
+
+  /**
+   * Get all supported networks
+   *
+   * @returns Array of all supported network presets
+   *
+   * @example
+   * ```typescript
+   * const networks = SubgraphClient.getSupportedNetworks();
+   * console.log(networks.map(n => n.network.chainName)); // ["Base Sepolia", "Base Mainnet"]
+   * ```
+   */
+  static getSupportedNetworks(): NetworkPreset[] {
+    return Object.values(NETWORK_PRESETS);
+  }
+
+  /**
+   * Check if a chain ID is supported
+   *
+   * @param chainId - The chain ID to check
+   * @returns True if supported, false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (SubgraphClient.isNetworkSupported(84532)) {
+   *   const client = SubgraphClient.createForNetwork(84532);
+   * }
+   * ```
+   */
+  static isNetworkSupported(chainId: number): boolean {
+    return chainId in NETWORK_PRESETS;
+  }
+
+  /**
    * Get all pools where an identity is a member
    */
   async getPoolsByIdentity(
@@ -217,45 +291,34 @@ export class SubgraphClient {
 
     const result = response.merkleRootHistories[0];
     return result
-      ? { index: result.index, merkleRoot: result.merkleRoot }
+      ? {
+          index: result.index,
+          merkleRoot: result.merkleRoot,
+        }
       : null;
   }
 
   /**
-   * Get pool root history with pagination
+   * Get root history for a pool
    */
   async getPoolRootHistory(
     poolId: string,
     options: PaginationOptions = {},
-  ): Promise<{
-    currentRootIndex: number;
-    rootHistoryCount: number;
-    rootHistory: RootHistoryItem[];
-  }> {
+  ): Promise<SubgraphResponse<MerkleRootHistory[]>> {
     const { first = 100, skip = 0 } = options;
 
-    const response = await this.client.request<ValidRootIndicesResponse>(
-      GET_POOL_ROOT_HISTORY,
-      { poolId, first, skip },
-    );
-
-    if (!response.pool) {
-      return {
-        currentRootIndex: 0,
-        rootHistoryCount: 0,
-        rootHistory: [],
-      };
-    }
+    const response = await this.client.request<{
+      merkleRootHistories: MerkleRootHistory[];
+    }>(GET_POOL_ROOT_HISTORY, { poolId, first, skip });
 
     return {
-      currentRootIndex: response.pool.currentRootIndex,
-      rootHistoryCount: response.pool.rootHistoryCount,
-      rootHistory: response.pool.rootHistory,
+      data: response.merkleRootHistories,
+      meta: this.networkMetadata,
     };
   }
 
   /**
-   * Get all pools with basic information
+   * Get all pools
    */
   async getAllPools(
     options: PaginationOptions = {},
@@ -274,15 +337,15 @@ export class SubgraphClient {
   }
 
   /**
-   * Get all pools with custom field selection
+   * Get pools with specific field selection
    */
   async getPoolsWithFields(
     fields: string[],
     options: PaginationOptions = {},
   ): Promise<SubgraphResponse<Partial<Pool>[]>> {
     const { first = 100, skip = 0 } = options;
-    const query = buildPoolsQuery(fields);
 
+    const query = buildPoolsQuery(fields);
     const response = await this.client.request<PoolsResponse>(query, {
       first,
       skip,

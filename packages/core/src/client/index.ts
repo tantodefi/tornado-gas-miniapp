@@ -1,7 +1,7 @@
 // src/client/types.ts
 import { Address, PartialBy } from "viem";
 import { UserOperation } from "viem/account-abstraction";
-import { NetworkConfig } from "../presets/config.js";
+import { NetworkConfig } from "@workspace/data";
 
 /**
  * Configuration options for the PrepaidGasPaymaster client

@@ -59,5 +59,29 @@ export {
   formatBigIntValue,
 } from "./transformers/index.js";
 
+// Network configuration exports
+export type { NetworkConfig } from "./network/config.js";
+export {
+  BASE_SEPOLIA_NETWORK,
+  BASE_MAINNET_NETWORK,
+} from "./network/config.js";
+
+// Network presets and utilities
+export type { NetworkPreset } from "./network/presets.js";
+export {
+  BASE_SEPOLIA_PRESET,
+  BASE_MAINNET_PRESET,
+  NETWORK_PRESETS,
+  NETWORK_PRESETS_BY_NAME,
+  getNetworkPreset,
+  getNetworkPresetByName,
+  getSupportedChainIds,
+  getSupportedNetworkNames,
+  isSupportedChainId,
+  getUnsupportedNetworkError,
+  validateNetworkPreset,
+  getValidatedNetworkPreset,
+} from "./network/presets.js";
+
 // Package version
 export const VERSION = "1.0.0";

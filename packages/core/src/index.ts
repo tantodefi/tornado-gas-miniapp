@@ -18,23 +18,6 @@ export type {
   GetPaymasterStubDataV7Parameters,
 } from "./client";
 
-export {
-  BASE_SEPOLIA_PRESET,
-  BASE_MAINNET_PRESET,
-  NETWORK_PRESETS,
-  NETWORK_PRESETS_BY_NAME,
-  getNetworkPreset,
-  getNetworkPresetByName,
-  getSupportedChainIds,
-  getSupportedNetworkNames,
-  isSupportedChainId,
-  getUnsupportedNetworkError,
-  validateNetworkPreset,
-  getValidatedNetworkPreset,
-} from "./presets";
-
-export type { NetworkPreset } from "./presets";
-export type { NetworkConfig } from "./presets/config";
 // Utility exports
 export {
   encodePaymasterContext,
