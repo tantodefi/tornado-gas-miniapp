@@ -21,6 +21,7 @@ import {
   NETWORK_PRESETS,
   type NetworkPreset,
 } from "../network/presets.js";
+import { QueryBuilder } from "../query/query-builder.js";
 
 /**
  * Configuration for the subgraph client
@@ -210,6 +211,45 @@ export class SubgraphClient {
    */
   static isNetworkSupported(chainId: number): boolean {
     return chainId in NETWORK_PRESETS;
+  }
+
+  /**
+   * ✨ NEW: Create a fluent query builder instance
+   *
+   * This is the main entry point for the new query builder API.
+   * Provides a fluent interface for building complex queries with type safety.
+   *
+   * @returns QueryBuilder for fluent query building
+   *
+   * @example
+   * ```typescript
+   * // Simple pool query
+   * const pools = await client
+   *   .query()
+   *   .pools()
+   *   .withMinMembers(10)
+   *   .orderByPopularity()
+   *   .limit(20)
+   *   .execute();
+   *
+   * // Complex member query with field selection
+   * const members = await client
+   *   .query()
+   *   .members()
+   *   .inPool("1")
+   *   .select("identityCommitment", "joinedAt", "memberIndex")
+   *   .activeOnly()
+   *   .orderByNewestJoined()
+   *   .limit(50)
+   *   .execute();
+   *
+   * // Convenience methods
+   * const popularPools = await client.query().getPopularPools(15, 10);
+   * const stats = await client.query().getPoolStats();
+   * ```
+   */
+  query(): QueryBuilder {
+    return new QueryBuilder(this);
   }
 
   /**

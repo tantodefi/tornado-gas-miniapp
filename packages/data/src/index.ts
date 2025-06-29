@@ -83,5 +83,38 @@ export {
   getValidatedNetworkPreset,
 } from "./network/presets.js";
 
+// ✨ NEW: Query Builder Exports
+// Main query builder class
+export { QueryBuilder } from "./query/query-builder.js";
+
+// Entity-specific query builders
+export {
+  PoolQueryBuilder,
+  PoolQueryWithMembersBuilder,
+} from "./query/builders/pool-query-builder.js";
+export {
+  PoolMemberQueryBuilder,
+  MemberQueryWithPoolBuilder,
+} from "./query/builders/member-query-builder.js";
+
+// Base query builder (for advanced usage or extending)
+export { BaseQueryBuilder } from "./query/builders/base-query-builder.js";
+
+// Query configuration and field types
+export type {
+  QueryConfig,
+  PoolFields,
+  PoolMemberFields,
+  MerkleRootHistoryFields,
+  WhereCondition,
+} from "./query/types.js";
+
+// Where condition input types for filtering
+export type {
+  PoolWhereInput,
+  PoolMemberWhereInput,
+  MerkleRootHistoryWhereInput,
+} from "./query/types.js";
+
 // Package version
 export const VERSION = "1.0.0";
