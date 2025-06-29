@@ -1,21 +1,5 @@
 import { GraphQLClient } from "graphql-request";
-import type {
-  Pool,
-  PoolMember,
-  MerkleRootHistory,
-  NetworkMetadata,
-  SubgraphResponse,
-} from "../types/subgraph.js";
-import {
-  GET_POOLS_BY_IDENTITY,
-  GET_POOL_MEMBERS,
-  GET_VALID_ROOT_INDICES,
-  FIND_ROOT_INDEX,
-  GET_POOL_ROOT_HISTORY,
-  GET_ALL_POOLS,
-  GET_POOL_DETAILS,
-  buildPoolsQuery,
-} from "./queries.js";
+import type { NetworkMetadata } from "../types/subgraph.js";
 import {
   getValidatedNetworkPreset,
   NETWORK_PRESETS,
@@ -60,67 +44,6 @@ export interface PaginationOptions {
 export interface PoolQueryOptions extends PaginationOptions {
   /** Specific fields to fetch */
   fields?: string[];
-}
-
-/**
- * Simplified root history item (without full pool reference)
- */
-export interface RootHistoryItem {
-  index: number;
-  merkleRoot: string;
-  createdAt: string;
-  createdAtBlock: string;
-  isValid?: boolean;
-}
-
-/**
- * Raw GraphQL response types (as returned by subgraph)
- */
-interface PoolsByIdentityResponse {
-  poolMembers: Array<{
-    id: string;
-    identityCommitment: string;
-    memberIndex: string;
-    joinedAt: string;
-    joinedAtBlock: string;
-    isActive: boolean;
-    pool: Pool;
-  }>;
-}
-
-interface PoolMembersResponse {
-  poolMembers: PoolMember[];
-}
-
-interface ValidRootIndicesResponse {
-  pool: {
-    id: string;
-    currentRootIndex: number;
-    rootHistoryCount: number;
-    rootHistory: RootHistoryItem[];
-  } | null;
-}
-
-interface RootIndexResponse {
-  merkleRootHistories: Array<{
-    index: number;
-    merkleRoot: string;
-    createdAt: string;
-    isValid: boolean;
-  }>;
-}
-
-interface PoolDetailsResponse {
-  pool:
-    | (Pool & {
-        members: PoolMember[];
-        rootHistory: MerkleRootHistory[];
-      })
-    | null;
-}
-
-interface PoolsResponse {
-  pools: Pool[];
 }
 
 /**
@@ -253,191 +176,43 @@ export class SubgraphClient {
   }
 
   /**
-   * Get all pools where an identity is a member
-   */
-  async getPoolsByIdentity(
-    identityCommitment: string,
-    options: PaginationOptions = {},
-  ): Promise<SubgraphResponse<Array<{ member: PoolMember; pool: Pool }>>> {
-    const { first = 100, skip = 0 } = options;
-
-    const response = await this.client.request<PoolsByIdentityResponse>(
-      GET_POOLS_BY_IDENTITY,
-      { identityCommitment, first, skip },
-    );
-
-    const data = response.poolMembers.map((item) => ({
-      member: {
-        id: item.id,
-        identityCommitment: item.identityCommitment,
-        memberIndex: item.memberIndex,
-        joinedAt: item.joinedAt,
-        joinedAtBlock: item.joinedAtBlock,
-        isActive: item.isActive,
-        pool: item.pool,
-      },
-      pool: item.pool,
-    }));
-
-    return {
-      data,
-      meta: this.networkMetadata,
-    };
-  }
-
-  /**
-   * Get all members of a specific pool
-   */
-  async getPoolMembers(
-    poolId: string,
-    options: PaginationOptions = {},
-  ): Promise<SubgraphResponse<PoolMember[]>> {
-    const { first = 100, skip = 0 } = options;
-
-    const response = await this.client.request<PoolMembersResponse>(
-      GET_POOL_MEMBERS,
-      { poolId, first, skip },
-    );
-
-    return {
-      data: response.poolMembers,
-      meta: this.networkMetadata,
-    };
-  }
-
-  /**
-   * Get valid root indices for a pool
-   */
-  async getValidRootIndices(poolId: string): Promise<RootHistoryItem[]> {
-    const response = await this.client.request<ValidRootIndicesResponse>(
-      GET_VALID_ROOT_INDICES,
-      { poolId },
-    );
-
-    return response.pool?.rootHistory || [];
-  }
-
-  /**
-   * Find the index for a specific merkle root
-   */
-  async findRootIndex(
-    poolId: string,
-    merkleRoot: string,
-  ): Promise<{ index: number; merkleRoot: string } | null> {
-    const response = await this.client.request<RootIndexResponse>(
-      FIND_ROOT_INDEX,
-      { poolId, merkleRoot },
-    );
-
-    const result = response.merkleRootHistories[0];
-    return result
-      ? {
-          index: result.index,
-          merkleRoot: result.merkleRoot,
-        }
-      : null;
-  }
-
-  /**
-   * Get root history for a pool
-   */
-  async getPoolRootHistory(
-    poolId: string,
-    options: PaginationOptions = {},
-  ): Promise<SubgraphResponse<MerkleRootHistory[]>> {
-    const { first = 100, skip = 0 } = options;
-
-    const response = await this.client.request<{
-      merkleRootHistories: MerkleRootHistory[];
-    }>(GET_POOL_ROOT_HISTORY, { poolId, first, skip });
-
-    return {
-      data: response.merkleRootHistories,
-      meta: this.networkMetadata,
-    };
-  }
-
-  /**
-   * Get all pools
-   */
-  async getAllPools(
-    options: PaginationOptions = {},
-  ): Promise<SubgraphResponse<Pool[]>> {
-    const { first = 100, skip = 0 } = options;
-
-    const response = await this.client.request<PoolsResponse>(GET_ALL_POOLS, {
-      first,
-      skip,
-    });
-
-    return {
-      data: response.pools,
-      meta: this.networkMetadata,
-    };
-  }
-
-  /**
-   * Get pools with specific field selection
-   */
-  async getPoolsWithFields(
-    fields: string[],
-    options: PaginationOptions = {},
-  ): Promise<SubgraphResponse<Partial<Pool>[]>> {
-    const { first = 100, skip = 0 } = options;
-
-    const query = buildPoolsQuery(fields);
-    const response = await this.client.request<PoolsResponse>(query, {
-      first,
-      skip,
-    });
-
-    return {
-      data: response.pools,
-      meta: this.networkMetadata,
-    };
-  }
-
-  /**
-   * Get detailed pool information with optional members
-   * @param poolId - Pool ID to fetch
-   * @param includeMembers - Whether to include members list (default: false)
-   * @param memberLimit - Maximum members to fetch when includeMembers=true (default: 100)
-   */
-  async getPoolDetails(
-    poolId: string,
-    includeMembers: boolean = false,
-    memberLimit: number = 100,
-  ): Promise<
-    SubgraphResponse<
-      Pool & {
-        members: PoolMember[];
-        rootHistory: MerkleRootHistory[];
-      }
-    >
-  > {
-    const response = await this.client.request<PoolDetailsResponse>(
-      GET_POOL_DETAILS,
-      {
-        poolId,
-        includeMembers,
-        memberLimit,
-      },
-    );
-
-    if (!response.pool) {
-      throw new Error(`Pool with ID ${poolId} not found`);
-    }
-
-    return {
-      data: response.pool,
-      meta: this.networkMetadata,
-    };
-  }
-
-  /**
    * Get current network metadata
    */
   getNetworkMetadata(): NetworkMetadata {
     return this.networkMetadata;
+  }
+
+  /**
+   *
+   * This method provides a generic interface for executing any GraphQL query,
+   * allowing query builders to construct their own queries while still
+   * benefiting from the client's network and error handling.
+   *
+   * @template T - The expected response type
+   * @param query - GraphQL query string
+   * @param variables - Query variables object
+   * @returns Promise resolving to the query response data
+   *
+   * @example
+   * ```typescript
+   * const response = await client.executeQuery<{ pools: Pool[] }>(
+   *   'query GetPools($first: Int!) { pools(first: $first) { id poolId } }',
+   *   { first: 10 }
+   * );
+   * console.log(response.pools);
+   * ```
+   */
+  async executeQuery<T = any>(
+    query: string,
+    variables: Record<string, any> = {},
+  ): Promise<T> {
+    try {
+      const response = await this.client.request<T>(query, variables);
+      return response;
+    } catch (error) {
+      // TODO: Add proper error handling and logging in future iterations
+      console.error("GraphQL query failed:", error);
+      throw error;
+    }
   }
 }

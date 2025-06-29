@@ -23,7 +23,6 @@ export type {
   SubgraphClientConfig,
   PaginationOptions,
   PoolQueryOptions,
-  RootHistoryItem,
 } from "./client/subgraph-client.js";
 
 export { SubgraphClient } from "./client/subgraph-client.js";

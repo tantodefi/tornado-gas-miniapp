@@ -10,6 +10,19 @@ import {
 } from "../../transformers/index.js";
 
 /**
+ * Default fields to fetch when no specific fields are selected
+ * Matches the GET_POOL_MEMBERS query from queries.ts
+ */
+const DEFAULT_MEMBER_FIELDS: PoolMemberFields[] = [
+  "id",
+  "identityCommitment",
+  "memberIndex",
+  "joinedAt",
+  "joinedAtBlock",
+  "isActive",
+];
+
+/**
  * Query builder for PoolMember entities with member-specific convenience methods
  *
  * Extends BaseQueryBuilder to provide PoolMember-specific functionality including
@@ -41,7 +54,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    */
   inPool(poolId: string): this {
     this.poolId = poolId;
-    return this;
+    return this.where({ pool: poolId });
   }
 
   /**
@@ -58,7 +71,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   byIdentity(identityCommitment: string): this {
-    return this.where({ identityCommitment: { eq: identityCommitment } });
+    return this.where({ identityCommitment });
   }
 
   /**
@@ -75,7 +88,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   byIdentities(identityCommitments: string[]): this {
-    return this.where({ identityCommitment: { in: identityCommitments } });
+    return this.where({ identityCommitment_in: identityCommitments });
   }
 
   /**
@@ -92,7 +105,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   activeOnly(): this {
-    return this.where({ isActive: { eq: true } });
+    return this.where({ isActive: true });
   }
 
   /**
@@ -109,7 +122,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   inactiveOnly(): this {
-    return this.where({ isActive: { eq: false } });
+    return this.where({ isActive: false });
   }
 
   /**
@@ -129,7 +142,8 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    */
   memberIndexBetween(min: string, max: string): this {
     return this.where({
-      memberIndex: { gte: min, lte: max },
+      memberIndex_gte: min,
+      memberIndex_lte: max,
     });
   }
 
@@ -148,7 +162,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   joinedAfter(timestamp: string): this {
-    return this.where({ joinedAt: { gt: timestamp } });
+    return this.where({ joinedAt_gt: timestamp });
   }
 
   /**
@@ -166,7 +180,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   joinedBefore(timestamp: string): this {
-    return this.where({ joinedAt: { lt: timestamp } });
+    return this.where({ joinedAt_lt: timestamp });
   }
 
   /**
@@ -244,6 +258,69 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
   }
 
   /**
+   * Build GraphQL query string for pool members
+   *
+   * @private
+   * @param fields - Fields to include in the query
+   * @returns GraphQL query string
+   */
+  private buildMembersQuery(fields: PoolMemberFields[]): string {
+    const fieldsList = fields.map((field) => `      ${field}`).join("\n");
+    return `
+      query GetPoolMembers(
+        $first: Int!
+        $skip: Int!
+        $orderBy: PoolMember_orderBy
+        $orderDirection: OrderDirection
+        $where: PoolMember_filter
+      ) {
+        poolMembers(
+          first: $first
+          skip: $skip
+          orderBy: $orderBy
+          orderDirection: $orderDirection
+          where: $where
+        ) {
+${fieldsList}
+        }
+      }
+    `;
+  }
+
+  /**
+   * Build query variables from current configuration
+   *
+   * @private
+   * @returns Query variables object
+   */
+  private buildQueryVariables(): Record<string, any> {
+    const config = this.getConfig();
+
+    // Only include variables that have values to avoid GraphQL errors
+    const variables: Record<string, any> = {
+      first: config.first || 100,
+      skip: config.skip || 0,
+    };
+
+    // Only add orderBy if specified
+    if (config.orderBy) {
+      variables.orderBy = config.orderBy;
+    }
+
+    // Only add orderDirection if specified
+    if (config.orderDirection) {
+      variables.orderDirection = config.orderDirection;
+    }
+
+    // Only add where if there are conditions
+    if (config.where && Object.keys(config.where).length > 0) {
+      variables.where = config.where;
+    }
+
+    return variables;
+  }
+
+  /**
    * Execute the query and return member results
    *
    * @returns Promise resolving to array of PoolMember entities
@@ -259,15 +336,18 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   async execute(): Promise<PoolMember[]> {
-    if (!this.poolId) {
-      throw new Error(
-        "Pool ID is required for member queries. Use .inPool(poolId) first.",
-      );
-    }
+    // Use selected fields or default fields
+    const fields = this.selectedFields || DEFAULT_MEMBER_FIELDS;
 
-    const config = this.getConfig();
-    const response = await this.client.getPoolMembers(this.poolId, config);
-    return response.data;
+    // Build query and variables
+    const query = this.buildMembersQuery(fields);
+    const variables = this.buildQueryVariables();
+
+    // Execute via generic SubgraphClient method
+    const response = await this.client.executeQuery<{
+      poolMembers: PoolMember[];
+    }>(query, variables);
+    return response.poolMembers;
   }
 
   /**
@@ -327,14 +407,51 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   async count(): Promise<number> {
-    if (!this.poolId) {
-      throw new Error(
-        "Pool ID is required for member queries. Use .inPool(poolId) first.",
-      );
-    }
+    const members = await this.execute();
+    return members.length;
+  }
 
-    // Use base implementation which removes pagination and counts results
-    return await super.count();
+  /**
+   * Find all pool memberships for a specific identity (convenience method)
+   *
+   * Internally uses query builder methods for consistency.
+   * This replaces the old SubgraphClient.getPoolsByIdentity() method.
+   *
+   * @param identityCommitment - The identity commitment to search for
+   * @param options - Pagination options
+   * @returns Promise resolving to array of member-pool pairs
+   *
+   * @example
+   * ```typescript
+   * const memberships = await client.query().members().findPoolsByIdentity('0x123...');
+   * memberships.forEach(({ member, pool }) => {
+   *   console.log(`Member in pool ${pool.poolId}`);
+   * });
+   * ```
+   */
+  async findPoolsByIdentity(
+    identityCommitment: string,
+    options: { first?: number; skip?: number } = {},
+  ): Promise<Array<{ member: PoolMember; pool: Pool }>> {
+    const { first = 100, skip = 0 } = options;
+
+    // Use existing MemberQueryBuilder methods internally
+    // Apply filtering, ordering, and pagination before withPool()
+    const membersWithPools = await this.byIdentity(identityCommitment)
+      .orderByNewestJoined() // Apply ordering first
+      .limit(first)
+      .skip(skip)
+      .withPool() // Then add pool data
+      .execute();
+
+    // Transform from PoolMember & { pool: Pool } to { member: PoolMember; pool: Pool }
+    return membersWithPools.map((memberWithPool) => {
+      const { pool, ...memberData } = memberWithPool;
+      return {
+        member: memberData as PoolMember,
+        pool: pool,
+      };
+    });
   }
 
   /**
@@ -374,37 +491,101 @@ export class MemberQueryWithPoolBuilder extends BaseQueryBuilder<
   }
 
   /**
+   * Build GraphQL query string for members with pool data
+   *
+   * @private
+   * @param fields - Member fields to include in the query
+   * @returns GraphQL query string
+   */
+  private buildMembersWithPoolQuery(fields: PoolMemberFields[]): string {
+    const memberFieldsList = fields.map((field) => `      ${field}`).join("\n");
+    return `
+      query GetPoolMembersWithPool(
+        $first: Int!
+        $skip: Int!
+        $orderBy: PoolMember_orderBy
+        $orderDirection: OrderDirection
+        $where: PoolMember_filter
+      ) {
+        poolMembers(
+          first: $first
+          skip: $skip
+          orderBy: $orderBy
+          orderDirection: $orderDirection
+          where: $where
+        ) {
+${memberFieldsList}
+          pool {
+            id
+            poolId
+            joiningFee
+            merkleTreeDuration
+            totalDeposits
+            currentMerkleTreeRoot
+            membersCount
+            merkleTreeDepth
+            createdAt
+            createdAtBlock
+            currentRootIndex
+            rootHistoryCount
+          }
+        }
+      }
+    `;
+  }
+
+  /**
+   * Build query variables from current configuration
+   *
+   * @private
+   * @returns Query variables object
+   */
+  private buildQueryVariables(): Record<string, any> {
+    const config = this.getConfig();
+
+    // Only include variables that have values to avoid GraphQL errors
+    const variables: Record<string, any> = {
+      first: config.first || 100,
+      skip: config.skip || 0,
+    };
+
+    // Only add orderBy if specified
+    if (config.orderBy) {
+      variables.orderBy = config.orderBy;
+    }
+
+    // Only add orderDirection if specified
+    if (config.orderDirection) {
+      variables.orderDirection = config.orderDirection;
+    }
+
+    // Only add where if there are conditions
+    if (config.where && Object.keys(config.where).length > 0) {
+      variables.where = config.where;
+    }
+
+    return variables;
+  }
+
+  /**
    * Execute query and return members with their pool data
    *
    * @returns Promise resolving to members with pool data included
    */
   async execute(): Promise<(PoolMember & { pool: Pool })[]> {
-    if (!this.poolId) {
-      throw new Error(
-        "Pool ID is required for member queries. Use .inPool(poolId) first.",
-      );
-    }
+    // Use selected fields or default fields for members
+    const memberFields = this.selectedFields || DEFAULT_MEMBER_FIELDS;
 
-    // Get members
-    const membersResponse = await this.client.getPoolMembers(
-      this.poolId,
-      this.config,
-    );
-    const members = membersResponse.data;
+    // Build query and variables
+    const query = this.buildMembersWithPoolQuery(memberFields);
+    const variables = this.buildQueryVariables();
 
-    // Get pool details
-    const poolResponse = await this.client.getPoolDetails(this.poolId);
-    const pool = poolResponse.data;
+    // Execute via generic SubgraphClient method
+    const response = await this.client.executeQuery<{
+      poolMembers: (PoolMember & { pool: Pool })[];
+    }>(query, variables);
 
-    if (!pool) {
-      throw new Error(`Pool with ID ${this.poolId} not found`);
-    }
-
-    // Combine member and pool data
-    return members.map((member) => ({
-      ...member,
-      pool: pool,
-    }));
+    return response.poolMembers;
   }
 
   /**
@@ -439,17 +620,8 @@ export class MemberQueryWithPoolBuilder extends BaseQueryBuilder<
    * @returns Promise resolving to number of matching members
    */
   async count(): Promise<number> {
-    if (!this.poolId) {
-      throw new Error(
-        "Pool ID is required for member queries. Use .inPool(poolId) first.",
-      );
-    }
-
-    const membersResponse = await this.client.getPoolMembers(
-      this.poolId,
-      this.config,
-    );
-    return membersResponse.data.length;
+    const members = await this.execute();
+    return members.length;
   }
 
   /**

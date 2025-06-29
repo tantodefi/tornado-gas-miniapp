@@ -1,8 +1,20 @@
 import { BaseQueryBuilder } from "./base-query-builder.js";
-import { PoolFields, PoolWhereInput } from "../types.js";
-import { Pool, PoolMember, SubgraphResponse } from "../../types/subgraph.js";
+import { PoolFields, PoolWhereInput, RootHistoryItem } from "../types.js";
+import { Pool, PoolMember, MerkleRootHistory } from "../../types/subgraph.js";
 import type { SubgraphClient } from "../../client/subgraph-client.js";
 import { serializePool, SerializedPool } from "../../transformers/index.js";
+
+/**
+ * Default fields to fetch when no specific fields are selected
+ * Matches the GET_ALL_POOLS query from queries.ts
+ */
+const DEFAULT_POOL_FIELDS: PoolFields[] = [
+  "id",
+  "poolId",
+  "joiningFee",
+  "membersCount",
+  "createdAt",
+];
 
 /**
  * Query builder for Pool entities with pool-specific convenience methods
@@ -31,7 +43,7 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   byId(poolId: string): this {
-    return this.where({ poolId: { eq: poolId } });
+    return this.where({ poolId });
   }
 
   /**
@@ -51,7 +63,8 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    */
   joiningFeeBetween(min: string, max: string): this {
     return this.where({
-      joiningFee: { gte: min, lte: max },
+      joiningFee_gte: min,
+      joiningFee_lte: max,
     });
   }
 
@@ -70,7 +83,7 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   maxJoiningFee(maxFee: string): this {
-    return this.where({ joiningFee: { lte: maxFee } });
+    return this.where({ joiningFee_lte: maxFee });
   }
 
   /**
@@ -88,7 +101,7 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   withMinMembers(count: number): this {
-    return this.where({ membersCount: { gte: count.toString() } });
+    return this.where({ membersCount_gte: count.toString() });
   }
 
   /**
@@ -106,7 +119,7 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   withMaxMembers(count: number): this {
-    return this.where({ membersCount: { lte: count.toString() } });
+    return this.where({ membersCount_lte: count.toString() });
   }
 
   /**
@@ -126,7 +139,8 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    */
   memberCountBetween(min: number, max: number): this {
     return this.where({
-      membersCount: { gte: min.toString(), lte: max.toString() },
+      membersCount_gte: min.toString(),
+      membersCount_lte: max.toString(),
     });
   }
 
@@ -185,37 +199,66 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
   }
 
   /**
-   * Order pools by popularity (most members first)
+   * Build GraphQL query string for pools
    *
-   * @returns this for method chaining
-   *
-   * @example
-   * ```typescript
-   * const popularPools = await query.pools()
-   *   .orderByPopularity()
-   *   .limit(10)
-   *   .execute();
-   * ```
+   * @private
+   * @param fields - Fields to include in the query
+   * @returns GraphQL query string
    */
-  orderByPopularity(): this {
-    return this.orderBy("membersCount", "desc");
+  private buildPoolsQuery(fields: PoolFields[]): string {
+    const fieldsList = fields.map((field) => `      ${field}`).join("\n");
+    return `
+      query GetPools(
+        $first: Int!
+        $skip: Int!
+        $orderBy: Pool_orderBy
+        $orderDirection: OrderDirection
+        $where: Pool_filter
+      ) {
+        pools(
+          first: $first
+          skip: $skip
+          orderBy: $orderBy
+          orderDirection: $orderDirection
+          where: $where
+        ) {
+${fieldsList}
+        }
+      }
+    `;
   }
 
   /**
-   * Order pools by affordability (lowest joining fee first)
+   * Build query variables from current configuration
    *
-   * @returns this for method chaining
-   *
-   * @example
-   * ```typescript
-   * const affordablePools = await query.pools()
-   *   .orderByAffordability()
-   *   .limit(10)
-   *   .execute();
-   * ```
+   * @private
+   * @returns Query variables object
    */
-  orderByAffordability(): this {
-    return this.orderBy("joiningFee", "asc");
+  private buildQueryVariables(): Record<string, any> {
+    const config = this.getConfig();
+
+    // Only include variables that have values to avoid GraphQL errors
+    const variables: Record<string, any> = {
+      first: config.first || 100,
+      skip: config.skip || 0,
+    };
+
+    // Only add orderBy if specified
+    if (config.orderBy) {
+      variables.orderBy = config.orderBy;
+    }
+
+    // Only add orderDirection if specified
+    if (config.orderDirection) {
+      variables.orderDirection = config.orderDirection;
+    }
+
+    // Only add where if there are conditions
+    if (config.where && Object.keys(config.where).length > 0) {
+      variables.where = config.where;
+    }
+
+    return variables;
   }
 
   /**
@@ -233,20 +276,19 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   async execute(): Promise<Pool[]> {
-    const config = this.getConfig();
+    // Use selected fields or default fields
+    const fields = this.selectedFields || DEFAULT_POOL_FIELDS;
 
-    if (this.selectedFields) {
-      // Use field selection if specified
-      const response = await this.client.getPoolsWithFields(
-        this.selectedFields,
-        config,
-      );
-      return response.data as Pool[];
-    } else {
-      // Use default fields
-      const response = await this.client.getAllPools(config);
-      return response.data;
-    }
+    // Build query and variables
+    const query = this.buildPoolsQuery(fields);
+    const variables = this.buildQueryVariables();
+
+    // Execute via generic SubgraphClient method
+    const response = await this.client.executeQuery<{ pools: Pool[] }>(
+      query,
+      variables,
+    );
+    return response.pools;
   }
 
   /**
@@ -292,6 +334,234 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
   }
 
   /**
+   * Get detailed pool information by ID (convenience method)
+   *
+   * Internally uses the query builder methods for consistency.
+   * This replaces the old SubgraphClient.getPoolDetails() method.
+   *
+   * @param poolId - Pool ID to fetch
+   * @param includeMembers - Whether to include members list (default: false)
+   * @param memberLimit - Maximum members to fetch when includeMembers=true (default: 100)
+   * @returns Promise resolving to pool with optional members and root history, or null if not found
+   *
+   * @example
+   * ```typescript
+   * // Get pool with basic info only
+   * const pool = await client.query().pools().getPoolById('1');
+   *
+   * // Get pool with members included
+   * const poolWithMembers = await client.query().pools().getPoolById('1', true, 50);
+   * ```
+   */
+  async getPoolById(
+    poolId: string,
+    includeMembers: boolean = false,
+    memberLimit: number = 100,
+  ): Promise<(Pool & { members?: PoolMember[] }) | null> {
+    // Create a new query builder instance to avoid affecting current state
+    const poolQuery = new PoolQueryBuilder(this.client);
+
+    if (includeMembers) {
+      // Use withMembers() for pools with member data
+      const poolsWithMembers = await poolQuery
+        .byId(poolId)
+        .withMembers(memberLimit)
+        .execute();
+
+      return poolsWithMembers.length > 0 ? poolsWithMembers[0] || null : null;
+    } else {
+      // Use regular query for basic pool info
+      return await poolQuery.byId(poolId).first();
+    }
+  }
+
+  /**
+   * Get merkle root history for a specific pool (convenience method)
+   *
+   * Internally uses query builder pattern for consistency.
+   * This replaces the old SubgraphClient.getPoolRootHistory() method.
+   *
+   * @param poolId - Pool ID to get root history for
+   * @param options - Pagination options
+   * @returns Promise resolving to array of MerkleRootHistory entries
+   *
+   * @example
+   * ```typescript
+   * // Get recent root history
+   * const history = await client.query().pools().getPoolRootHistory('1');
+   *
+   * // Get root history with pagination
+   * const history = await client.query().pools().getPoolRootHistory('1', { first: 50, skip: 10 });
+   * ```
+   */
+  async getPoolRootHistory(
+    poolId: string,
+    options: { first?: number; skip?: number } = {},
+  ): Promise<MerkleRootHistory[]> {
+    const { first = 100, skip = 0 } = options;
+
+    const query = `
+      query GetPoolRootHistory(
+        $poolId: String!
+        $first: Int!
+        $skip: Int!
+      ) {
+        merkleRootHistories(
+          where: { pool: $poolId }
+          first: $first
+          skip: $skip
+          orderBy: createdAt
+          orderDirection: desc
+        ) {
+          id
+          index
+          merkleRoot
+          createdAt
+          createdAtBlock
+          isValid
+          transactionHash
+        }
+      }
+    `;
+
+    const variables = {
+      poolId,
+      first,
+      skip,
+    };
+
+    // Execute via generic SubgraphClient method
+    const response = await this.client.executeQuery<{
+      merkleRootHistories: MerkleRootHistory[];
+    }>(query, variables);
+
+    return response.merkleRootHistories;
+  }
+
+  /**
+   * Get valid root indices for a specific pool (convenience method)
+   *
+   * Internally uses query builder pattern for consistency.
+   * This replaces the old SubgraphClient.getValidRootIndices() method.
+   *
+   * @param poolId - Pool ID to get valid root indices for
+   * @returns Promise resolving to array of valid root history items
+   *
+   * @example
+   * ```typescript
+   * const validRoots = await client.query().pools().getValidRootIndices('1');
+   * ```
+   */
+  async getValidRootIndices(poolId: string): Promise<RootHistoryItem[]> {
+    const query = `
+      query GetValidRootIndices($poolId: String!) {
+        pool(id: $poolId) {
+          id
+          currentRootIndex
+          rootHistoryCount
+          rootHistory(where: { isValid: true }, orderBy: index, orderDirection: asc) {
+            index
+            merkleRoot
+            createdAt
+            createdAtBlock
+          }
+        }
+      }
+    `;
+
+    const variables = { poolId };
+
+    // Execute via generic SubgraphClient method
+    const response = await this.client.executeQuery<{
+      pool: {
+        id: string;
+        currentRootIndex: number;
+        rootHistoryCount: number;
+        rootHistory: RootHistoryItem[];
+      } | null;
+    }>(query, variables);
+
+    return response.pool?.rootHistory || [];
+  }
+
+  /**
+   * Find the index for a specific merkle root in a pool (convenience method)
+   *
+   * Internally uses query builder pattern for consistency.
+   * This replaces the old SubgraphClient.findRootIndex() method.
+   *
+   * @param poolId - Pool ID to search in
+   * @param merkleRoot - Merkle root to find
+   * @returns Promise resolving to root index info or null if not found
+   *
+   * @example
+   * ```typescript
+   * const rootInfo = await client.query().pools().findRootIndex('1', '0x123...');
+   * if (rootInfo) {
+   *   console.log(`Root found at index: ${rootInfo.index}`);
+   * }
+   * ```
+   */
+  async findRootIndex(
+    poolId: string,
+    merkleRoot: string,
+  ): Promise<{ index: number; merkleRoot: string } | null> {
+    const query = `
+      query FindRootIndex($poolId: String!, $merkleRoot: BigInt!) {
+        merkleRootHistories(where: { 
+          pool: $poolId, 
+          merkleRoot: $merkleRoot, 
+          isValid: true 
+        }) {
+          index
+          merkleRoot
+          createdAt
+          isValid
+        }
+      }
+    `;
+
+    const variables = {
+      poolId,
+      merkleRoot,
+    };
+
+    // Execute via generic SubgraphClient method
+    const response = await this.client.executeQuery<{
+      merkleRootHistories: Array<{
+        index: number;
+        merkleRoot: string;
+        createdAt: string;
+        isValid: boolean;
+      }>;
+    }>(query, variables);
+
+    const result = response.merkleRootHistories[0];
+    return result
+      ? {
+          index: result.index,
+          merkleRoot: result.merkleRoot,
+        }
+      : null;
+  }
+
+  /**
+   * Check if a pool exists by ID (convenience method)
+   *
+   * @param poolId - Pool ID to check
+   * @returns Promise resolving to true if pool exists, false otherwise
+   *
+   * @example
+   * ```typescript
+   * const exists = await client.query().pools().poolExists('1');
+   * ```
+   */
+  async poolExists(poolId: string): Promise<boolean> {
+    const poolQuery = new PoolQueryBuilder(this.client);
+    return await poolQuery.byId(poolId).exists();
+  }
+
+  /**
    * Clone the current query builder
    *
    * @returns New PoolQueryBuilder instance with same configuration
@@ -327,29 +597,103 @@ export class PoolQueryWithMembersBuilder extends BaseQueryBuilder<
   }
 
   /**
+   * Build GraphQL query string for pools with members
+   *
+   * @private
+   * @returns GraphQL query string
+   */
+  private buildPoolsWithMembersQuery(): string {
+    return `
+      query GetPoolsWithMembers(
+        $first: Int!
+        $skip: Int!
+        $orderBy: Pool_orderBy
+        $orderDirection: OrderDirection
+        $where: Pool_filter
+        $memberLimit: Int!
+      ) {
+        pools(
+          first: $first
+          skip: $skip
+          orderBy: $orderBy
+          orderDirection: $orderDirection
+          where: $where
+        ) {
+          id
+          poolId
+          joiningFee
+          merkleTreeDuration
+          totalDeposits
+          currentMerkleTreeRoot
+          membersCount
+          merkleTreeDepth
+          createdAt
+          createdAtBlock
+          currentRootIndex
+          rootHistoryCount
+          members(first: $memberLimit, where: { isActive: true }, orderBy: joinedAt, orderDirection: desc) {
+            id
+            identityCommitment
+            memberIndex
+            joinedAt
+            joinedAtBlock
+            isActive
+          }
+        }
+      }
+    `;
+  }
+
+  /**
+   * Build query variables from current configuration
+   *
+   * @private
+   * @returns Query variables object
+   */
+  private buildQueryVariables(): Record<string, any> {
+    const config = this.getConfig();
+
+    // Only include variables that have values to avoid GraphQL errors
+    const variables: Record<string, any> = {
+      first: config.first || 100,
+      skip: config.skip || 0,
+      memberLimit: this.memberLimit,
+    };
+
+    // Only add orderBy if specified
+    if (config.orderBy) {
+      variables.orderBy = config.orderBy;
+    }
+
+    // Only add orderDirection if specified
+    if (config.orderDirection) {
+      variables.orderDirection = config.orderDirection;
+    }
+
+    // Only add where if there are conditions
+    if (config.where && Object.keys(config.where).length > 0) {
+      variables.where = config.where;
+    }
+
+    return variables;
+  }
+
+  /**
    * Execute query and return pools with their members
    *
    * @returns Promise resolving to pools with member data included
    */
   async execute(): Promise<(Pool & { members: PoolMember[] })[]> {
-    // First, get the pools based on current configuration
-    const poolsResponse = await this.client.getAllPools(this.config);
-    const pools = poolsResponse.data;
+    // Build query and variables
+    const query = this.buildPoolsWithMembersQuery();
+    const variables = this.buildQueryVariables();
 
-    // For each pool, fetch its members
-    const poolsWithMembers = await Promise.all(
-      pools.map(async (pool) => {
-        const membersResponse = await this.client.getPoolMembers(pool.id, {
-          first: this.memberLimit,
-        });
-        return {
-          ...pool,
-          members: membersResponse.data,
-        };
-      }),
-    );
+    // Execute via generic SubgraphClient method
+    const response = await this.client.executeQuery<{
+      pools: (Pool & { members: PoolMember[] })[];
+    }>(query, variables);
 
-    return poolsWithMembers;
+    return response.pools;
   }
 
   /**
@@ -377,8 +721,36 @@ export class PoolQueryWithMembersBuilder extends BaseQueryBuilder<
    * @returns Promise resolving to number of matching pools
    */
   async count(): Promise<number> {
-    const poolsResponse = await this.client.getAllPools(this.config);
-    return poolsResponse.data.length;
+    // Build a simple count query (just pool fields, no members)
+    const countQuery = `
+      query CountPoolsWithMembers(
+        $first: Int!
+        $skip: Int!
+        $orderBy: Pool_orderBy
+        $orderDirection: OrderDirection
+        $where: Pool_filter
+      ) {
+        pools(
+          first: $first
+          skip: $skip
+          orderBy: $orderBy
+          orderDirection: $orderDirection
+          where: $where
+        ) {
+          id
+        }
+      }
+    `;
+
+    const variables = this.buildQueryVariables();
+    // Remove memberLimit from count query
+    delete variables.memberLimit;
+
+    const response = await this.client.executeQuery<{
+      pools: { id: string }[];
+    }>(countQuery, variables);
+
+    return response.pools.length;
   }
 
   /**

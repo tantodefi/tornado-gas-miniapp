@@ -96,26 +96,96 @@ export interface WhereCondition<T = any> {
  * Typed where conditions for Pool entity
  * Maps Pool fields to appropriate where conditions
  */
+/**
+ * Typed where conditions for Pool entity
+ * Uses direct subgraph format (no transformation needed)
+ */
 export type PoolWhereInput = Partial<{
-  poolId: WhereCondition<string>;
-  joiningFee: WhereCondition<string>;
-  totalDeposits: WhereCondition<string>;
-  membersCount: WhereCondition<string>;
-  createdAt: WhereCondition<string>;
-  merkleTreeDepth: WhereCondition<string>;
-  merkleTreeDuration: WhereCondition<string>;
+  // Direct field matches
+  poolId: string;
+
+  // Range operators for numeric/string fields
+  joiningFee_gte: string;
+  joiningFee_lte: string;
+  joiningFee_gt: string;
+  joiningFee_lt: string;
+  joiningFee_in: string[];
+
+  totalDeposits_gte: string;
+  totalDeposits_lte: string;
+  totalDeposits_gt: string;
+  totalDeposits_lt: string;
+
+  membersCount_gte: string;
+  membersCount_lte: string;
+  membersCount_gt: string;
+  membersCount_lt: string;
+  membersCount_in: string[];
+
+  createdAt_gte: string;
+  createdAt_lte: string;
+  createdAt_gt: string;
+  createdAt_lt: string;
+
+  merkleTreeDepth_gte: string;
+  merkleTreeDepth_lte: string;
+
+  merkleTreeDuration_gte: string;
+  merkleTreeDuration_lte: string;
+
+  // Text search operators
+  poolId_contains: string;
+  poolId_not_contains: string;
+  poolId_starts_with: string;
+  poolId_ends_with: string;
+  poolId_in: string[];
+  poolId_not_in: string[];
 }>;
 
 /**
  * Typed where conditions for PoolMember entity
- * Maps PoolMember fields to appropriate where conditions
+ * Uses direct subgraph format (no transformation needed)
  */
 export type PoolMemberWhereInput = Partial<{
-  identityCommitment: WhereCondition<string>;
-  memberIndex: WhereCondition<string>;
-  joinedAt: WhereCondition<string>;
-  joinedAtBlock: WhereCondition<string>;
-  isActive: WhereCondition<boolean>;
+  // Direct field matches
+  pool: string; // Pool ID filter
+  identityCommitment: string; // Exact identity match
+  memberIndex: string; // Exact member index
+  joinedAt: string; // Exact join timestamp
+  joinedAtBlock: string; // Exact block number
+  isActive: boolean; // Active status
+
+  // Range operators for numeric/string fields
+  memberIndex_gte: string;
+  memberIndex_lte: string;
+  memberIndex_gt: string;
+  memberIndex_lt: string;
+  memberIndex_in: string[];
+
+  joinedAt_gte: string;
+  joinedAt_lte: string;
+  joinedAt_gt: string;
+  joinedAt_lt: string;
+
+  joinedAtBlock_gte: string;
+  joinedAtBlock_lte: string;
+  joinedAtBlock_gt: string;
+  joinedAtBlock_lt: string;
+
+  // Text search operators for identity commitment
+  identityCommitment_contains: string;
+  identityCommitment_not_contains: string;
+  identityCommitment_starts_with: string;
+  identityCommitment_ends_with: string;
+  identityCommitment_in: string[];
+  identityCommitment_not_in: string[];
+
+  // Pool filtering
+  pool_in: string[]; // Multiple pool IDs
+  pool_not_in: string[]; // Exclude pool IDs
+
+  // Boolean operators
+  isActive_not: boolean; // Negation of isActive
 }>;
 
 /**
@@ -129,3 +199,14 @@ export type MerkleRootHistoryWhereInput = Partial<{
   createdAtBlock: WhereCondition<string>;
   isValid: WhereCondition<boolean>;
 }>;
+
+/**
+ * Simplified root history item (without full pool reference)
+ */
+export interface RootHistoryItem {
+  index: number;
+  merkleRoot: string;
+  createdAt: string;
+  createdAtBlock: string;
+  isValid?: boolean;
+}
