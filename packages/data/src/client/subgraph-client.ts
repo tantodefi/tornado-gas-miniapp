@@ -9,6 +9,7 @@ import { QueryBuilder } from "../query/query-builder.js";
 
 /**
  * Configuration for the subgraph client
+ * Updated to support multiple paymaster contracts
  */
 export interface SubgraphClientConfig {
   /** Subgraph endpoint URL */
@@ -20,7 +21,11 @@ export interface SubgraphClientConfig {
     chainName: string;
     networkName: string;
     contracts: {
-      paymaster: string;
+      /** Map of paymaster contracts by type */
+      paymasters: {
+        gasLimited?: string;
+        oneTimeUse?: string;
+      };
       verifier?: string;
     };
   };
@@ -47,15 +52,53 @@ export interface PoolQueryOptions extends PaginationOptions {
 }
 
 /**
+ * Options for paymaster queries with field selection
+ */
+export interface PaymasterQueryOptions extends PaginationOptions {
+  /** Specific fields to fetch */
+  fields?: string[];
+  /** Filter by contract type */
+  contractType?: "GasLimited" | "OneTimeUse";
+}
+
+/**
+ * Options for user operation queries with field selection
+ */
+export interface UserOperationQueryOptions extends PaginationOptions {
+  /** Specific fields to fetch */
+  fields?: string[];
+  /** Filter by paymaster address */
+  paymasterAddress?: string;
+  /** Filter by pool ID */
+  poolId?: string;
+  /** Filter by sender address */
+  senderAddress?: string;
+}
+
+/**
+ * Options for analytics queries
+ */
+export interface AnalyticsQueryOptions extends PaginationOptions {
+  /** Start date for time range (YYYY-MM-DD) */
+  startDate?: string;
+  /** End date for time range (YYYY-MM-DD) */
+  endDate?: string;
+  /** Specific pool ID to filter by */
+  poolId?: string;
+  /** Specific paymaster address to filter by */
+  paymasterAddress?: string;
+}
+
+/**
  * Clean, focused subgraph client for data access
  * Handles GraphQL communication and basic data transformation
+ * Updated for new PaymasterContract-based subgraph structure
  */
 export class SubgraphClient {
   private client: GraphQLClient;
   private networkMetadata: NetworkMetadata;
 
   constructor(config: SubgraphClientConfig) {
-    // GraphQLClient constructor only takes URL and headers
     this.client = new GraphQLClient(config.subgraphUrl);
 
     this.networkMetadata = {
@@ -99,7 +142,19 @@ export class SubgraphClient {
 
     return new SubgraphClient({
       subgraphUrl: options.subgraphUrl || preset.defaultSubgraphUrl,
-      network: preset.network,
+      network: {
+        name: preset.network.name,
+        chainId: preset.network.chainId,
+        chainName: preset.network.chainName,
+        networkName: preset.network.networkName,
+        contracts: {
+          paymasters: {
+            gasLimited: preset.network.contracts.paymasters.gasLimited?.address,
+            oneTimeUse: preset.network.contracts.paymasters.oneTimeUse?.address,
+          },
+          verifier: preset.network.contracts.verifier,
+        },
+      },
       timeout: options.timeout,
     });
   }
@@ -112,7 +167,7 @@ export class SubgraphClient {
    * @example
    * ```typescript
    * const networks = SubgraphClient.getSupportedNetworks();
-   * console.log(networks.map(n => n.network.chainName)); // ["Base Sepolia", "Base Mainnet"]
+   * console.log(networks.map(n => n.network.chainName)); // ["Base Sepolia", ...]
    * ```
    */
   static getSupportedNetworks(): NetworkPreset[] {
@@ -137,7 +192,48 @@ export class SubgraphClient {
   }
 
   /**
-   * ✨ NEW: Create a fluent query builder instance
+   * Get available paymaster contracts for a network
+   *
+   * @param chainId - The chain ID to get paymasters for
+   * @returns Array of paymaster contract information
+   *
+   * @example
+   * ```typescript
+   * const paymasters = SubgraphClient.getPaymasterContracts(84532);
+   * console.log(paymasters); // [{ address: "0x...", type: "GasLimited" }, ...]
+   * ```
+   */
+  static getPaymasterContracts(chainId: number): Array<{
+    address: string;
+    type: "GasLimited" | "OneTimeUse";
+    startBlock: number;
+  }> {
+    const preset = NETWORK_PRESETS[chainId];
+    if (!preset) return [];
+
+    const contracts = [];
+
+    if (preset.network.contracts.paymasters.gasLimited) {
+      contracts.push({
+        address: preset.network.contracts.paymasters.gasLimited.address,
+        type: "GasLimited" as const,
+        startBlock: preset.network.contracts.paymasters.gasLimited.startBlock,
+      });
+    }
+
+    if (preset.network.contracts.paymasters.oneTimeUse) {
+      contracts.push({
+        address: preset.network.contracts.paymasters.oneTimeUse.address,
+        type: "OneTimeUse" as const,
+        startBlock: preset.network.contracts.paymasters.oneTimeUse.startBlock,
+      });
+    }
+
+    return contracts;
+  }
+
+  /**
+   * ✨ Create a fluent query builder instance
    *
    * This is the main entry point for the new query builder API.
    * Provides a fluent interface for building complex queries with type safety.
@@ -146,29 +242,35 @@ export class SubgraphClient {
    *
    * @example
    * ```typescript
-   * // Simple pool query
+   * // Simple paymaster query
+   * const paymasters = await client
+   *   .query()
+   *   .paymasters()
+   *   .byType("GasLimited")
+   *   .withMinRevenue("1000000000000000000")
+   *   .orderByRevenue()
+   *   .limit(10)
+   *   .execute();
+   *
+   * // Complex pool query with members
    * const pools = await client
    *   .query()
    *   .pools()
+   *   .byPaymaster("0x456...")
    *   .withMinMembers(10)
+   *   .withMembers(50)
    *   .orderByPopularity()
    *   .limit(20)
    *   .execute();
    *
-   * // Complex member query with field selection
-   * const members = await client
+   * // Analytics query
+   * const analytics = await client
    *   .query()
-   *   .members()
-   *   .inPool("1")
-   *   .select("identityCommitment", "joinedAt", "memberIndex")
-   *   .activeOnly()
-   *   .orderByNewestJoined()
-   *   .limit(50)
+   *   .dailyGlobalStats()
+   *   .forDateRange("2024-01-01", "2024-01-31")
+   *   .withMinNewPools(2)
+   *   .orderByNewest()
    *   .execute();
-   *
-   * // Convenience methods
-   * const popularPools = await client.query().getPopularPools(15, 10);
-   * const stats = await client.query().getPoolStats();
    * ```
    */
   query(): QueryBuilder {
@@ -177,12 +279,101 @@ export class SubgraphClient {
 
   /**
    * Get current network metadata
+   *
+   * @returns Network metadata including contract addresses
+   *
+   * @example
+   * ```typescript
+   * const metadata = client.getNetworkMetadata();
+   * console.log(metadata.contracts.paymasters.gasLimited); // "0x..."
+   * ```
    */
   getNetworkMetadata(): NetworkMetadata {
     return this.networkMetadata;
   }
 
   /**
+   * Get paymaster contract addresses for current network
+   *
+   * @returns Object containing paymaster contract addresses
+   *
+   * @example
+   * ```typescript
+   * const paymasters = client.getPaymasterAddresses();
+   * console.log(paymasters.gasLimited); // "0x..."
+   * console.log(paymasters.oneTimeUse); // "0x..."
+   * ```
+   */
+  getPaymasterAddresses(): {
+    gasLimited?: string;
+    oneTimeUse?: string;
+  } {
+    return this.networkMetadata.contracts.paymasters;
+  }
+
+  /**
+   * Get specific paymaster address by type
+   *
+   * @param type - Paymaster type ("GasLimited" or "OneTimeUse")
+   * @returns Paymaster address or undefined if not available
+   *
+   * @example
+   * ```typescript
+   * const gasLimitedAddress = client.getPaymasterAddress("GasLimited");
+   * if (gasLimitedAddress) {
+   *   // Use the address
+   * }
+   * ```
+   */
+  getPaymasterAddress(type: "GasLimited" | "OneTimeUse"): string | undefined {
+    const paymasters = this.getPaymasterAddresses();
+    return type === "GasLimited"
+      ? paymasters.gasLimited
+      : paymasters.oneTimeUse;
+  }
+
+  /**
+   * Check if network supports a specific paymaster type
+   *
+   * @param type - Paymaster type to check
+   * @returns True if supported, false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (client.supportsPaymasterType("GasLimited")) {
+   *   const gasLimitedPools = await client.query().pools()
+   *     .byPaymaster(client.getPaymasterAddress("GasLimited")!)
+   *     .execute();
+   * }
+   * ```
+   */
+  supportsPaymasterType(type: "GasLimited" | "OneTimeUse"): boolean {
+    return this.getPaymasterAddress(type) !== undefined;
+  }
+
+  /**
+   * Get all supported paymaster types for current network
+   *
+   * @returns Array of supported paymaster types
+   *
+   * @example
+   * ```typescript
+   * const supportedTypes = client.getSupportedPaymasterTypes();
+   * console.log(supportedTypes); // ["GasLimited", "OneTimeUse"]
+   * ```
+   */
+  getSupportedPaymasterTypes(): Array<"GasLimited" | "OneTimeUse"> {
+    const types: Array<"GasLimited" | "OneTimeUse"> = [];
+    const paymasters = this.getPaymasterAddresses();
+
+    if (paymasters.gasLimited) types.push("GasLimited");
+    if (paymasters.oneTimeUse) types.push("OneTimeUse");
+
+    return types;
+  }
+
+  /**
+   * Execute a raw GraphQL query
    *
    * This method provides a generic interface for executing any GraphQL query,
    * allowing query builders to construct their own queries while still
@@ -210,9 +401,167 @@ export class SubgraphClient {
       const response = await this.client.request<T>(query, variables);
       return response;
     } catch (error) {
-      // TODO: Add proper error handling and logging in future iterations
-      console.error("GraphQL query failed:", error);
+      // Enhanced error handling with context
+      console.error("GraphQL query failed:", {
+        error,
+        query: query.substring(0, 200) + "...", // Log first 200 chars
+        variables,
+        network: this.networkMetadata.chainName,
+      });
       throw error;
     }
+  }
+
+  /**
+   * Execute multiple queries in parallel
+   *
+   * @param queries - Array of query objects with query string and variables
+   * @returns Promise resolving to array of query responses
+   *
+   * @example
+   * ```typescript
+   * const results = await client.executeQueries([
+   *   { query: 'query GetPools { pools { id } }', variables: {} },
+   *   { query: 'query GetPaymasters { paymasterContracts { id } }', variables: {} }
+   * ]);
+   * ```
+   */
+  async executeQueries<T = any>(
+    queries: Array<{ query: string; variables?: Record<string, any> }>,
+  ): Promise<T[]> {
+    const promises = queries.map(({ query, variables = {} }) =>
+      this.executeQuery<T>(query, variables),
+    );
+    return Promise.all(promises);
+  }
+
+  /**
+   * Test connection to the subgraph
+   *
+   * @returns Promise resolving to true if connection is successful
+   *
+   * @example
+   * ```typescript
+   * const isConnected = await client.testConnection();
+   * if (isConnected) {
+   *   console.log("Subgraph is accessible");
+   * }
+   * ```
+   */
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.executeQuery(`
+        query TestConnection {
+          _meta {
+            block {
+              number
+            }
+          }
+        }
+      `);
+      return true;
+    } catch (error) {
+      console.error("Subgraph connection test failed:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Get subgraph metadata
+   *
+   * @returns Promise resolving to subgraph metadata
+   *
+   * @example
+   * ```typescript
+   * const metadata = await client.getSubgraphMetadata();
+   * console.log("Latest block:", metadata.block.number);
+   * ```
+   */
+  async getSubgraphMetadata(): Promise<{
+    block: {
+      number: number;
+      hash: string;
+    };
+    deployment: string;
+  }> {
+    const response = await this.executeQuery<{
+      _meta: {
+        block: {
+          number: number;
+          hash: string;
+        };
+        deployment: string;
+      };
+    }>(`
+      query GetSubgraphMetadata {
+        _meta {
+          block {
+            number
+            hash
+          }
+          deployment
+        }
+      }
+    `);
+    return response._meta;
+  }
+
+  /**
+   * Get health status of the subgraph
+   *
+   * @returns Promise resolving to health status information
+   *
+   * @example
+   * ```typescript
+   * const health = await client.getHealthStatus();
+   * console.log("Sync status:", health.synced);
+   * ```
+   */
+  async getHealthStatus(): Promise<{
+    synced: boolean;
+    latestBlock: number;
+    chainHeadBlock: number;
+    health: string;
+  }> {
+    try {
+      const metadata = await this.getSubgraphMetadata();
+      const isConnected = await this.testConnection();
+
+      return {
+        synced: isConnected,
+        latestBlock: metadata.block.number,
+        chainHeadBlock: metadata.block.number, // Approximation
+        health: isConnected ? "healthy" : "unhealthy",
+      };
+    } catch (error) {
+      return {
+        synced: false,
+        latestBlock: 0,
+        chainHeadBlock: 0,
+        health: "unhealthy",
+      };
+    }
+  }
+
+  /**
+   * Create a new client for different network
+   *
+   * @param chainId - Target chain ID
+   * @param options - Optional configuration overrides
+   * @returns New SubgraphClient instance for the target network
+   *
+   * @example
+   * ```typescript
+   * const newClient = client.switchNetwork(8453); // Switch to Base Mainnet
+   * ```
+   */
+  switchNetwork(
+    chainId: number,
+    options: {
+      subgraphUrl?: string;
+      timeout?: number;
+    } = {},
+  ): SubgraphClient {
+    return SubgraphClient.createForNetwork(chainId, options);
   }
 }

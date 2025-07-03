@@ -1,5 +1,4 @@
 import { QueryConfig } from "../types.js";
-import type { SubgraphResponse } from "../../types/subgraph.js";
 
 /**
  * Base query builder with common functionality

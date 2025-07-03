@@ -3,8 +3,13 @@
  *
  * These presets provide default configurations for supported networks,
  * including default subgraph URLs and network settings.
+ * Updated to support multiple paymaster contracts per network.
  */
-import { NetworkConfig, BASE_SEPOLIA_NETWORK } from "./config";
+import {
+  NetworkConfig,
+  BASE_SEPOLIA_NETWORK,
+  validateNetworkConfig,
+} from "./config.js";
 
 /**
  * Network preset configuration
@@ -18,17 +23,22 @@ export interface NetworkPreset {
   defaultRpcUrl?: string;
   /** Network description for documentation */
   description: string;
+  /** Supported paymaster types on this network */
+  supportedPaymasterTypes: Array<"GasLimited" | "OneTimeUse">;
 }
 
 /**
  * Base Sepolia network preset
+ * Updated with new subgraph URL and multiple paymaster support
  */
 export const BASE_SEPOLIA_PRESET: NetworkPreset = {
   network: BASE_SEPOLIA_NETWORK,
   defaultSubgraphUrl:
-    "https://api.studio.thegraph.com/query/113435/prepaid-gas-paymaster/version/latest",
+    "https://api.studio.thegraph.com/query/113435/prepaid-gas-paymaster-v2/version/latest",
   defaultRpcUrl: "https://sepolia.base.org",
-  description: "Base Sepolia testnet - ideal for development and testing",
+  description:
+    "Base Sepolia testnet with GasLimited and OneTimeUse paymasters - ideal for development and testing",
+  supportedPaymasterTypes: ["GasLimited", "OneTimeUse"],
 };
 
 /**
@@ -118,10 +128,13 @@ export function validateNetworkPreset(preset: NetworkPreset): {
 } {
   const errors: string[] = [];
 
-  if (!preset.network) {
-    errors.push("Network configuration is required");
+  // Validate network config first
+  const networkValidation = validateNetworkConfig(preset.network);
+  if (!networkValidation.isValid) {
+    errors.push(...networkValidation.errors);
   }
 
+  // Validate preset-specific fields
   if (!preset.defaultSubgraphUrl) {
     errors.push("Default subgraph URL is required");
   } else {
@@ -142,6 +155,39 @@ export function validateNetworkPreset(preset: NetworkPreset): {
 
   if (!preset.description || !preset.description.trim()) {
     errors.push("Description is required");
+  }
+
+  if (
+    !preset.supportedPaymasterTypes ||
+    preset.supportedPaymasterTypes.length === 0
+  ) {
+    errors.push("At least one supported paymaster type is required");
+  }
+
+  // Validate that supported paymaster types match actual network contracts
+  if (preset.supportedPaymasterTypes && preset.network.contracts) {
+    const hasGasLimited =
+      preset.network.contracts.paymasters.gasLimited !== undefined;
+    const hasOneTimeUse =
+      preset.network.contracts.paymasters.oneTimeUse !== undefined;
+
+    if (
+      preset.supportedPaymasterTypes.includes("GasLimited") &&
+      !hasGasLimited
+    ) {
+      errors.push(
+        "GasLimited paymaster type is listed as supported but no contract address provided",
+      );
+    }
+
+    if (
+      preset.supportedPaymasterTypes.includes("OneTimeUse") &&
+      !hasOneTimeUse
+    ) {
+      errors.push(
+        "OneTimeUse paymaster type is listed as supported but no contract address provided",
+      );
+    }
   }
 
   return {
@@ -172,4 +218,93 @@ export function getValidatedNetworkPreset(chainId: number): NetworkPreset {
   }
 
   return preset;
+}
+
+/**
+ * Get paymaster contracts for a specific network
+ *
+ * @param chainId - The chain ID to get contracts for
+ * @returns Array of paymaster contracts or empty array if network not supported
+ */
+export function getPaymasterContracts(chainId: number): Array<{
+  address: string;
+  type: "GasLimited" | "OneTimeUse";
+  startBlock: number;
+}> {
+  const preset = getNetworkPreset(chainId);
+  if (!preset) {
+    return [];
+  }
+
+  const contracts = [];
+
+  if (preset.network.contracts.paymasters.gasLimited) {
+    contracts.push({
+      address: preset.network.contracts.paymasters.gasLimited.address,
+      type: "GasLimited" as const,
+      startBlock: preset.network.contracts.paymasters.gasLimited.startBlock,
+    });
+  }
+
+  if (preset.network.contracts.paymasters.oneTimeUse) {
+    contracts.push({
+      address: preset.network.contracts.paymasters.oneTimeUse.address,
+      type: "OneTimeUse" as const,
+      startBlock: preset.network.contracts.paymasters.oneTimeUse.startBlock,
+    });
+  }
+
+  return contracts;
+}
+
+/**
+ * Get paymaster contract by type for a specific network
+ *
+ * @param chainId - The chain ID
+ * @param type - Paymaster type
+ * @returns Paymaster contract info or undefined
+ */
+export function getPaymasterContract(
+  chainId: number,
+  type: "GasLimited" | "OneTimeUse",
+): { address: string; startBlock: number } | undefined {
+  const contracts = getPaymasterContracts(chainId);
+  const contract = contracts.find((c) => c.type === type);
+
+  if (!contract) {
+    return undefined;
+  }
+
+  return {
+    address: contract.address,
+    startBlock: contract.startBlock,
+  };
+}
+
+/**
+ * Check if a network supports a specific paymaster type
+ *
+ * @param chainId - The chain ID
+ * @param type - Paymaster type
+ * @returns True if the network supports the specified paymaster type
+ */
+export function supportsPaymasterType(
+  chainId: number,
+  type: "GasLimited" | "OneTimeUse",
+): boolean {
+  const preset = getNetworkPreset(chainId);
+  return preset ? preset.supportedPaymasterTypes.includes(type) : false;
+}
+
+/**
+ * Get supported paymaster types for a network
+ *
+ * @param chainId - The chain ID
+ * @returns Array of supported paymaster types
+ */
+export function getSupportedPaymasterTypes(
+  chainId: number,
+): Array<"GasLimited" | "OneTimeUse"> {
+  const preset = getNetworkPreset(chainId);
+  return preset ? preset.supportedPaymasterTypes : [];
 }
