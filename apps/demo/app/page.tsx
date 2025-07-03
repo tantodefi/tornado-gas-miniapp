@@ -25,7 +25,7 @@ export default function Home() {
 
         <h1 className="text-4xl font-bold tracking-tight">Counter DApp</h1>
         <p className="text-xl text-muted-foreground">
-          Smart Accounts + Anonymous Gas Coupon Paymasters
+          Smart Accounts + Prepaid Gas Paymaster Credits
         </p>
       </div>
 

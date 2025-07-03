@@ -53,7 +53,7 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
 }) => {
   const [recoveryPhraseSaved, setRecoveryPhraseSaved] = useState(false);
   const [contextCopied, setContextCopied] = useState(false);
-  const formattedWords = formatMnemonicForDisplay(identity.mnemonic);
+  // const formattedWords = formatMnemonicForDisplay(identity.mnemonic);
 
   // Prevent accidental navigation
   useEffect(() => {
@@ -108,7 +108,7 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
           </div>
 
           {/* Critical Warning - Simplified */}
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-6 mb-6">
+          {/* <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-6 mb-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="text-amber-400 text-xl">⚠️</div>
               <h2 className="text-amber-400 font-bold">
@@ -119,10 +119,10 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
               Write these 12 words on paper. This is your only chance to see
               them.
             </p>
-          </div>
+          </div> */}
 
           {/* Recovery Phrase - Cleaner Display */}
-          <div className="bg-slate-800/50 border border-slate-600/50 rounded-xl p-6 mb-6">
+          {/* <div className="bg-slate-800/50 border border-slate-600/50 rounded-xl p-6 mb-6">
             <div className="grid grid-cols-3 gap-3">
               {formattedWords.map(({ index, word }) => (
                 <div
@@ -136,18 +136,18 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* NEW: Paymaster Context Section */}
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6 mb-6">
-            <div className="flex items-center gap-3 mb-3">
+            {/* <div className="flex items-center gap-3 mb-3">
               <div className="text-blue-400 text-xl">🎫</div>
               <h2 className="text-blue-400 font-bold">
                 Demo App Configuration
               </h2>
-            </div>
+            </div> */}
             <p className="text-blue-200 text-sm mb-4">
-              Copy this code to configure the counter demo app with your gas
+              Copy this code to configure the your prepaid gas paymaster with your gas
               card:
             </p>
 
@@ -195,7 +195,8 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
               />
               <div className="text-sm">
                 <div className="text-white font-medium group-hover:text-green-400 transition-colors">
-                  I have written down all 12 words on paper
+                  I have written down 
+                  {/* all 12 words on paper */}
                 </div>
                 <div className="text-slate-400 text-xs mt-1">
                   Keep this safe - it's the only way to recover your card
@@ -216,7 +217,7 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
           >
             {recoveryPhraseSaved
               ? "Continue to Dashboard →"
-              : "Save recovery phrase first"}
+              : "Save"}
           </button>
         </motion.div>
       </div>
