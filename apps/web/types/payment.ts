@@ -4,7 +4,7 @@
  * Single source of truth for payment processing, providers, and transaction data
  */
 
-import type { Pool, PoolNetwork } from "./pool";
+import type { Pool } from "./pool";
 import type { PoolCard } from "./card";
 
 /**

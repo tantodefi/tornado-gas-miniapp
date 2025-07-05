@@ -101,10 +101,6 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
           <span className="text-slate-400">Network</span>
           <span className="text-blue-400">{pool.network}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-slate-400">Privacy Level</span>
-          <span className="text-green-400">Anonymous</span>
-        </div>
       </div>
     </div>
   );

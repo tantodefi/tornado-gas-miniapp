@@ -3,7 +3,7 @@
 
 import React from "react";
 import PoolMembersList from "./pool-members-list";
-import { MemberData, PoolMember } from "@/types";
+import { PoolMember } from "@/types";
 
 /**
  * Interface for pool data needed by members section

@@ -3,14 +3,14 @@
 
 import React from "react";
 import PrepaidPoolCard from "./pool-card";
-import type { DetailedPool } from "@/types";
+import { Pool } from "@/types";
 
 /**
  * Props for EnhancedPoolCard component
  */
 interface EnhancedPoolCardProps {
   /** Pool data to display */
-  pool: DetailedPool;
+  pool: Pool;
   /** Handler for join button click */
   onJoin: () => void;
   /** Whether identity generation is in progress */

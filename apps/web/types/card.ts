@@ -4,8 +4,6 @@
  * Updated to use new field names from data package
  */
 
-import type { PoolNetwork } from "./pool";
-
 /**
  * Card status enumeration
  */
@@ -27,7 +25,7 @@ export interface CardIdentity {
 export interface CardPoolDetails {
   joiningFee: string;
   memberCount: string; // Updated from membersCount
-  network: PoolNetwork;
+  network: string;
 }
 
 /**

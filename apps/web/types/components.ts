@@ -5,7 +5,7 @@
  */
 
 import type { ReactNode } from "react";
-import type { Pool, DetailedPool, PoolMember, FilterState } from "./pool";
+import type { Pool, PoolMember, FilterState } from "./pool";
 import type { PoolCard, CardStats } from "./card";
 import type { PaymentPool, PaymentState } from "./payment";
 
@@ -80,7 +80,7 @@ export interface PoolCardProps {
  * Enhanced pool card props for detail pages
  */
 export interface EnhancedPoolCardProps {
-  pool: DetailedPool;
+  pool: Pool;
   onJoin: () => void;
   isJoining: boolean;
   showPayment: boolean;

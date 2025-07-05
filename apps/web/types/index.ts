@@ -5,20 +5,7 @@
  */
 
 // Pool-related types
-export type {
-  Pool,
-  DetailedPool,
-  PoolMember,
-  PoolNetwork,
-  FilterState,
-  PoolOverviewData,
-  PoolTechnicalData,
-  MemberData,
-  MerkleRootHistory,
-  PoolStats,
-  PoolQueryOptions,
-  PoolSearchOptions,
-} from "./pool";
+export type { Pool, PoolMember, FilterState, PoolOverviewData } from "./pool";
 
 // Card-related types
 export type {

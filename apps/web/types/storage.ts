@@ -4,7 +4,7 @@
  * Single source of truth for IndexedDB, local storage, and data backup types
  */
 
-import type { PoolCard, CardStats, CardFilterOptions } from "./card";
+import type { PoolCard, CardFilterOptions } from "./card";
 
 /**
  * Storage card interface (alias for consistency)

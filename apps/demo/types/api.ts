@@ -29,7 +29,6 @@ export type {
   SerializedPoolMember,
   Pool,
   PoolMember,
-  MerkleRootHistory,
   NetworkMetadata,
   SubgraphResponse,
 } from "@workspace/data";

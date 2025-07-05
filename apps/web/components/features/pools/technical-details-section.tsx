@@ -3,14 +3,14 @@
 
 import React from "react";
 import InfoRow from "./info-row";
-import type { PoolTechnicalData } from "@/types";
+import { Pool } from "@/types";
 
 /**
  * Props for TechnicalDetailsSection component
  */
 interface TechnicalDetailsSectionProps {
   /** Pool data to display technical details for */
-  pool: PoolTechnicalData;
+  pool: Pool;
 }
 /**
  * Format address for display
