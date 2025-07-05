@@ -8,7 +8,7 @@ import {
   formatMnemonicForDisplay,
   type GenerateIdentityResult,
 } from "@/lib/identity/generator";
-import { PoolCard } from "@/types";
+import { Pool, PoolCard } from "@/types";
 
 /**
  * Interface for pool data needed by success screen
@@ -30,7 +30,7 @@ interface SecureSuccessScreenProps {
   /** Generated identity with recovery phrase */
   identity: GenerateIdentityResult;
   /** Pool data for display */
-  pool: PoolData;
+  pool: Pool;
   /** Handler called when user completes the flow */
   onComplete: () => void;
 }
@@ -147,8 +147,8 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
               </h2>
             </div> */}
             <p className="text-blue-200 text-sm mb-4">
-              Copy this code to configure the your prepaid gas paymaster with your gas
-              card:
+              Copy this code to configure the your prepaid gas paymaster with
+              your gas card:
             </p>
 
             <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4">
@@ -195,7 +195,7 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
               />
               <div className="text-sm">
                 <div className="text-white font-medium group-hover:text-green-400 transition-colors">
-                  I have written down 
+                  I have written down
                   {/* all 12 words on paper */}
                 </div>
                 <div className="text-slate-400 text-xs mt-1">
@@ -215,9 +215,7 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
                 : "bg-slate-700 text-slate-400 cursor-not-allowed"
             }`}
           >
-            {recoveryPhraseSaved
-              ? "Continue to Dashboard →"
-              : "Save"}
+            {recoveryPhraseSaved ? "Continue to Dashboard →" : "Save"}
           </button>
         </motion.div>
       </div>

@@ -161,8 +161,8 @@ export function PaymentManager({
         pool,
         card,
         network: {
-          name: pool.network.name,
-          chainId: pool.network.chainId,
+          name: pool.network,
+          chainId: pool.chainId,
         },
         timestamp: Date.now(),
         blockNumber,

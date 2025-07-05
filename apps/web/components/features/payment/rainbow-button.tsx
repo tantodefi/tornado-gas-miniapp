@@ -119,7 +119,7 @@ export function RainbowButton({
       callbacks.handlePaymentStarted(paymentData);
 
       sendTransaction({
-        to: pool.network.contracts.paymaster as `0x${string}`,
+        to: pool.paymaster.address as `0x${string}`,
         data: paymentData.calldata,
         value: BigInt(pool.joiningFee),
       });

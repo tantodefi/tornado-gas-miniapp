@@ -81,7 +81,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
 
       // Generate encoded paymaster context using the new function
       const paymasterContext = encodePaymasterContext(
-        pool.network.contracts.paymaster as `0x${string}`, // paymaster address
+        pool.paymaster.address as `0x${string}`, // paymaster address
         pool.poolId, // pool ID
         identity.identity.export(), // identity string
       );
@@ -94,7 +94,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
         poolId: pool.poolId,
         poolDetails: {
           joiningFee: pool.joiningFee,
-          membersCount: pool.membersCount,
+          memberCount: pool.memberCount, // Updated from membersCount
           network: pool.network,
         },
         identity: {
@@ -102,8 +102,8 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
           privateKey: identity.privateKey,
           commitment: identity.commitment,
         },
-        paymasterContract: pool.network.contracts.paymaster,
-        paymasterContext: paymasterContext, // Add the encoded context
+        paymasterContract: pool.paymaster.address,
+        paymasterContext: paymasterContext,
         createdAt: new Date().toISOString(),
         status: "pending-topup",
         expiresAt: identity.expiresAt,
@@ -160,15 +160,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   };
 
   // Convert pool to PaymentPool format
-  const paymentPool: PaymentPool | null = pool
-    ? {
-        id: pool.id,
-        poolId: pool.poolId,
-        joiningFee: pool.joiningFee,
-        membersCount: pool.membersCount,
-        network: pool.network,
-      }
-    : null;
+  const paymentPool: PaymentPool | null = pool;
 
   // Loading state
   if (isLoading) {

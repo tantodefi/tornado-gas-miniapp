@@ -1,65 +1,56 @@
 //file:prepaid-gas-website/apps/web/hooks/pools/use-pools-filter.ts
+import { useState, useMemo } from "react";
 import type { Pool, FilterState } from "@/types";
-import { useState, useMemo, useCallback } from "react";
-
-interface UsePoolsFilterResult {
-  filteredPools: Pool[];
-  filters: FilterState;
-  setFilter: (key: keyof FilterState, value: string) => void;
-  resetFilters: () => void;
-  poolCount: number;
-}
 
 /**
- * Business logic hook for pool filtering and sorting
- * Single responsibility: filter and sort pool data
- * No data fetching, no UI concerns
+ * Custom hook for filtering and sorting pools
+ * Updated to use new field names from data package
  */
-export function usePoolsFilter(pools: Pool[]): UsePoolsFilterResult {
+export const usePoolsFilter = (pools: Pool[]) => {
   const [filters, setFilters] = useState<FilterState>({
-    network: "",
-    amountRange: "",
-    memberRange: "",
+    network: "all",
+    amountRange: "all",
+    memberRange: "all",
     sortBy: "newest",
   });
 
-  const setFilter = useCallback((key: keyof FilterState, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const setFilter = (key: keyof FilterState, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
-  const resetFilters = useCallback(() => {
+  const resetFilters = () => {
     setFilters({
-      network: "",
-      amountRange: "",
-      memberRange: "",
+      network: "all",
+      amountRange: "all",
+      memberRange: "all",
       sortBy: "newest",
     });
-  }, []);
+  };
 
   const filteredPools = useMemo(() => {
     let filtered = [...pools];
 
     // Apply network filter
-    if (filters.network) {
-      filtered = filtered.filter((pool) => {
-        const networkName = pool.network.name.toLowerCase();
-        return networkName.includes(filters.network.toLowerCase());
-      });
+    if (filters.network !== "all") {
+      filtered = filtered.filter((pool) => pool.network === filters.network);
     }
 
     // Apply amount range filter
-    if (filters.amountRange) {
+    if (filters.amountRange !== "all") {
       filtered = filtered.filter((pool) => {
         const amount = parseFloat(pool.joiningFee);
         switch (filters.amountRange) {
-          case "0-0.01":
-            return amount >= 0 && amount <= 0.01;
-          case "0.01-0.05":
-            return amount > 0.01 && amount <= 0.05;
-          case "0.05-0.1":
-            return amount > 0.05 && amount <= 0.1;
-          case "0.1+":
-            return amount > 0.1;
+          case "0-0.1":
+            return amount >= 0 && amount <= 0.1;
+          case "0.1-0.5":
+            return amount > 0.1 && amount <= 0.5;
+          case "0.5-1":
+            return amount > 0.5 && amount <= 1;
+          case "1+":
+            return amount > 1;
           default:
             return true;
         }
@@ -67,9 +58,9 @@ export function usePoolsFilter(pools: Pool[]): UsePoolsFilterResult {
     }
 
     // Apply member range filter
-    if (filters.memberRange) {
+    if (filters.memberRange !== "all") {
       filtered = filtered.filter((pool) => {
-        const memberCount = parseInt(pool.membersCount);
+        const memberCount = parseInt(pool.memberCount); // Updated from membersCount
         switch (filters.memberRange) {
           case "small":
             return memberCount < 100;
@@ -88,16 +79,17 @@ export function usePoolsFilter(pools: Pool[]): UsePoolsFilterResult {
       switch (filters.sortBy) {
         case "newest":
           return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            new Date(b.createdAtTimestamp).getTime() - // Updated from createdAt
+            new Date(a.createdAtTimestamp).getTime() // Updated from createdAt
           );
         case "amount-high":
           return parseFloat(b.joiningFee) - parseFloat(a.joiningFee);
         case "amount-low":
           return parseFloat(a.joiningFee) - parseFloat(b.joiningFee);
         case "members-high":
-          return parseInt(b.membersCount) - parseInt(a.membersCount);
+          return parseInt(b.memberCount) - parseInt(a.memberCount); // Updated from membersCount
         case "members-low":
-          return parseInt(a.membersCount) - parseInt(b.membersCount);
+          return parseInt(a.memberCount) - parseInt(b.memberCount); // Updated from membersCount
         default:
           return 0;
       }
@@ -113,4 +105,4 @@ export function usePoolsFilter(pools: Pool[]): UsePoolsFilterResult {
     resetFilters,
     poolCount: filteredPools.length,
   };
-}
+};

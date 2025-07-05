@@ -85,12 +85,13 @@ export const usePoolDetails = (poolId: string) => {
   }, [loadPoolDetails]);
 
   // ✅ Helper functions for working with BigInt strings
+  // Updated to use new field names from data package
   const getJoiningFeeAsNumber = useCallback(() => {
     return pool ? parseInt(pool.joiningFee) : 0;
   }, [pool]);
 
   const getMembersCountAsNumber = useCallback(() => {
-    return pool ? parseInt(pool.membersCount) : 0;
+    return pool ? parseInt(pool.memberCount) : 0; // Updated from membersCount
   }, [pool]);
 
   const getTotalDepositsAsNumber = useCallback(() => {
@@ -106,7 +107,7 @@ export const usePoolDetails = (poolId: string) => {
     getJoiningFeeAsNumber,
     getMembersCountAsNumber,
     getTotalDepositsAsNumber,
-    // New: Direct access to members and metadata
+    // Direct access to members and metadata
     members: pool?.members || [],
     hasMembers: (pool?.members?.length || 0) > 0,
     memberCount: pool?.members?.length || 0,

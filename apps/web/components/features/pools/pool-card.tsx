@@ -33,15 +33,9 @@ const formatMembersCount = (membersCountStr: string): string => {
 const PrepaidPoolCard: React.FC<{
   pool: Pool;
   onCardClick?: (poolId: string) => void;
-  onViewDetails?: (poolId: string) => void;
-}> = ({ pool, onCardClick, onViewDetails }) => {
+}> = ({ pool, onCardClick }) => {
   const handleCardClick = () => {
     onCardClick?.(pool.poolId);
-  };
-
-  const handleDetailsClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onViewDetails?.(pool.poolId);
   };
 
   const accountNumber = `**** **** **** ${pool.poolId.slice(-4).padStart(4, "0")}`;
@@ -80,7 +74,7 @@ const PrepaidPoolCard: React.FC<{
                 {formatJoiningFee(pool.joiningFee)} ETH
               </div>
               <div className="text-[10px] text-slate-500">
-                {formatMembersCount(pool.membersCount)} members
+                {formatMembersCount(pool.memberCount)} members
               </div>
             </div>
           </div>
@@ -90,7 +84,7 @@ const PrepaidPoolCard: React.FC<{
               {accountNumber}
             </div>
             <div className="text-right">
-              <div className="text-xs text-slate-500">{pool.network.name}</div>
+              <div className="text-xs text-slate-500">{pool.network}</div>
             </div>
           </div>
         </div>

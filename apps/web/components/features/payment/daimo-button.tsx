@@ -117,7 +117,7 @@ export function DaimoButton({
       <DaimoPayButton
         // Required props
         appId={process.env.NEXT_PUBLIC_DAIMO_APP_ID || "pay-demo"}
-        toAddress={pool.network.contracts.paymaster as `0x${string}`}
+        toAddress={pool.paymaster.address as `0x${string}`}
         toChain={base.id}
         toUnits={formatJoiningFee(pool.joiningFee)}
         toToken={zeroAddress} // ETH

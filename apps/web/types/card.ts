@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/types/card.ts
 /**
  * Card and identity-related type definitions
- * Single source of truth for gas cards, identities, and recovery data
+ * Updated to use new field names from data package
  */
 
 import type { PoolNetwork } from "./pool";
@@ -22,10 +22,11 @@ export interface CardIdentity {
 
 /**
  * Pool details stored with the card
+ * Updated to use new field names from data package
  */
 export interface CardPoolDetails {
   joiningFee: string;
-  membersCount: string;
+  memberCount: string; // Updated from membersCount
   network: PoolNetwork;
 }
 
@@ -111,41 +112,41 @@ export interface CardFilterOptions {
  * Card backup data structure
  */
 export interface CardBackupData {
-  version: string; // Backup format version
-  exportedAt: string; // Export timestamp
-  cards: PoolCard[]; // All card data
-  checksum: string; // Data integrity checksum
+  version: string;
+  exportedAt: string;
+  cards: PoolCard[];
 }
 
 /**
  * Card security validation result
  */
 export interface CardSecurityCheck {
-  isSecure: boolean; // Overall security status
-  warnings: string[]; // Security warnings
-  recommendations: string[]; // Security recommendations
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 
 /**
- * Card transaction history entry
+ * Card transaction record
  */
 export interface CardTransaction {
-  id: string; // Transaction ID
-  cardId: string; // Associated card ID
-  type: "topup" | "spend" | "creation"; // Transaction type
-  amount: string; // Transaction amount (ETH)
-  transactionHash?: string; // Blockchain transaction hash
-  timestamp: string; // ISO timestamp
-  status: "pending" | "confirmed" | "failed"; // Transaction status
+  id: string;
+  cardId: string;
+  type: "topup" | "spend" | "refund";
+  amount: string;
+  timestamp: string;
+  status: "pending" | "completed" | "failed";
+  transactionHash?: string;
 }
 
 /**
  * Card usage statistics
  */
 export interface CardUsageStats {
-  cardId: string; // Card identifier
-  totalSpent: string; // Total amount spent (ETH)
-  transactionCount: number; // Number of transactions
-  lastUsed?: string; // Last usage timestamp
-  averageTransactionSize: string; // Average transaction amount
+  cardId: string;
+  totalSpent: string;
+  transactionCount: number;
+  averageTransactionSize: string;
+  lastUsed?: string;
+  poolUtilization: number; // Percentage of pool gas used
 }

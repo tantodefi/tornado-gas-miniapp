@@ -12,24 +12,6 @@ interface TechnicalDetailsSectionProps {
   /** Pool data to display technical details for */
   pool: PoolTechnicalData;
 }
-
-/**
- * Format duration in seconds to human readable
- */
-const formatDuration = (seconds: string): string => {
-  try {
-    const sec = parseInt(seconds);
-    const hours = Math.floor(sec / 3600);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ${hours % 24}h`;
-    if (hours > 0) return `${hours}h`;
-    return `${Math.floor(sec / 60)}m`;
-  } catch {
-    return "Unknown";
-  }
-};
-
 /**
  * Format address for display
  */
@@ -66,8 +48,7 @@ const formatNumber = (num: string | number): string => {
 const TechnicalDetailsSection: React.FC<TechnicalDetailsSectionProps> = ({
   pool,
 }) => {
-  const duration = formatDuration(pool.merkleTreeDuration);
-  const createdDate = new Date(parseInt(pool.createdAt) * 1000);
+  const createdDate = new Date(parseInt(pool.createdAtTimestamp) * 1000);
 
   return (
     <div className="card-prepaid-glass card-content-lg">
@@ -90,14 +71,14 @@ const TechnicalDetailsSection: React.FC<TechnicalDetailsSectionProps> = ({
             />
             <InfoRow
               label="Network"
-              value={`${pool.network.name} (${pool.network.chainId})`}
+              value={`${pool.network} (${pool.chainId})`}
               valueClass="text-blue-400"
             />
             <InfoRow
               label="Paymaster"
-              value={formatAddress(pool.network.contracts.paymaster)}
+              value={formatAddress(pool.paymaster.address)}
               valueClass="font-mono text-slate-300"
-              copyable={pool.network.contracts.paymaster}
+              copyable={pool.paymaster.address}
             />
             <InfoRow
               label="Created Block"
@@ -123,16 +104,6 @@ const TechnicalDetailsSection: React.FC<TechnicalDetailsSectionProps> = ({
           </h3>
           <div className="space-y-4">
             <InfoRow
-              label="Merkle Tree Depth"
-              value={pool.merkleTreeDepth.toString()}
-              valueClass="text-blue-400"
-            />
-            <InfoRow
-              label="Root Duration"
-              value={duration}
-              valueClass="text-green-400"
-            />
-            <InfoRow
               label="Root History Size"
               value={pool.rootHistoryCount.toString()}
               valueClass="text-yellow-400"
@@ -144,7 +115,7 @@ const TechnicalDetailsSection: React.FC<TechnicalDetailsSectionProps> = ({
             />
             <InfoRow
               label="Anonymity Set"
-              value={`${formatNumber(pool.membersCount)} members`}
+              value={`${formatNumber(pool.memberCount)} members`}
               valueClass="text-green-400"
             />
           </div>

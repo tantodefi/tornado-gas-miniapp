@@ -76,7 +76,7 @@ const PoolMembersList: React.FC<PoolMembersListProps> = ({
         <div className="text-4xl mb-4">👥</div>
         <h3 className="text-lg font-bold text-white mb-2">No Members Found</h3>
         <p className="text-slate-400">
-          This pool doesn't have any active members yet.
+          This pool doesn&apos;t have any active members yet.
         </p>
       </div>
     );
@@ -130,24 +130,8 @@ const PoolMembersList: React.FC<PoolMembersListProps> = ({
                 </button>
               </div>
               <div className="text-xs text-slate-400">
-                Joined: {formatDate(member.joinedAt)}
+                Joined: {formatDate(member.addedAtTimestamp)}
               </div>
-            </div>
-
-            {/* Status */}
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  member.isActive ? "bg-green-500" : "bg-red-500"
-                }`}
-              />
-              <span
-                className={`text-xs font-medium ${
-                  member.isActive ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {member.isActive ? "Active" : "Inactive"}
-              </span>
             </div>
           </motion.div>
         ))}

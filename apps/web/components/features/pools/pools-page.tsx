@@ -60,10 +60,6 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
     router.push(`/pools/${poolId}`);
   };
 
-  const handleViewDetails = (poolId: string) => {
-    router.push(`/pools/${poolId}`);
-  };
-
   const handleBackToHome = () => {
     router.push("/");
   };
@@ -197,11 +193,7 @@ const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <PrepaidPoolCard
-                  pool={pool}
-                  onCardClick={handleCardClick}
-                  onViewDetails={handleViewDetails}
-                />
+                <PrepaidPoolCard pool={pool} onCardClick={handleCardClick} />
               </motion.div>
             ))}
           </div>

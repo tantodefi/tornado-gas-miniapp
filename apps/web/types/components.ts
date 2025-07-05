@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/types/components.ts
 /**
  * UI component prop and styling type definitions
- * Single source of truth for component interfaces, variants, and UI state
+ * Updated to use new field names from data package
  */
 
 import type { ReactNode } from "react";
@@ -139,50 +139,45 @@ export interface InfoRowProps {
 
 /**
  * Pool overview section props
+ * Updated to use new field names from data package
  */
 export interface PoolOverviewProps {
   pool: {
     joiningFee: string;
     totalDeposits: string;
-    membersCount: string;
-    createdAt: string;
-    network: {
-      name: string;
-    };
+    memberCount: string; // Updated from membersCount
+    createdAtTimestamp: string; // Updated from createdAt
+    network: string; // Simplified from network object
   };
 }
 
 /**
  * Technical details section props
+ * Updated to use new field names from data package
  */
 export interface TechnicalDetailsSectionProps {
   pool: {
     poolId: string;
-    merkleTreeDuration: string;
-    merkleTreeDepth: string;
     rootHistoryCount: number;
     currentRootIndex: number;
-    membersCount: string;
+    memberCount: string; // Updated from membersCount
     createdAtBlock: string;
-    createdAt: string;
-    network: {
-      name: string;
-      chainId: number;
-      contracts: {
-        paymaster: string;
-      };
-    };
+    createdAtTimestamp: string; // Updated from createdAt
+    network: string; // Simplified from network object
+    chainId: string;
+    // Removed deprecated fields: merkleTreeDuration, merkleTreeDepth
   };
 }
 
 /**
  * Members section component props
+ * Updated to use new field names from data package
  */
 export interface MembersSectionProps {
   pool: {
     poolId: string;
-    membersCount: string;
-    createdAt: string;
+    memberCount: string; // Updated from membersCount
+    createdAtTimestamp: string; // Updated from createdAt
   };
   members: PoolMember[];
   showMembers: boolean;
@@ -238,9 +233,7 @@ export interface SuccessScreenProps {
   pool: {
     poolId: string;
     joiningFee: string;
-    network: {
-      name: string;
-    };
+    network: string; // Simplified from network object
   };
   onComplete: () => void;
 }
@@ -292,38 +285,35 @@ export interface SearchInputProps {
   onChange: (value: string) => void;
   onClear?: () => void;
   isLoading?: boolean;
+  disabled?: boolean;
 }
 
 /**
- * Pagination component props
+ * Pagination props
  */
 export interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
+  page: number;
+  limit: number;
+  total: number;
   hasMore: boolean;
   onPageChange: (page: number) => void;
-  onNext: () => void;
-  onPrevious: () => void;
-  isLoading?: boolean;
+  onLimitChange: (limit: number) => void;
 }
 
 /**
  * Card dashboard props
  */
 export interface CardDashboardProps {
-  cards: PoolCard[];
   stats: CardStats;
-  isLoading: boolean;
-  onRefresh: () => void;
+  isLoading?: boolean;
 }
 
 /**
  * Payment state display props
  */
 export interface PaymentStateDisplayProps {
-  paymentState: PaymentState;
-  error?: string | null;
-  onRetry?: () => void;
+  state: PaymentState;
+  error?: string;
 }
 
 /**
@@ -334,15 +324,9 @@ export interface ThemeConfig {
     primary: string;
     secondary: string;
     accent: string;
-    background: string;
-    surface: string;
-    text: string;
   };
   fonts: {
     body: string;
     heading: string;
-    mono: string;
   };
-  spacing: Record<string, string>;
-  breakpoints: Record<string, string>;
 }

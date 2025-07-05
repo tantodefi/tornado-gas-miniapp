@@ -57,7 +57,7 @@ const formatNumber = (num: string | number): string => {
 const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
   const joiningFeeEth = formatEthAmount(pool.joiningFee);
   const totalDepositsEth = formatEthAmount(pool.totalDeposits || "0");
-  const createdDate = new Date(parseInt(pool.createdAt) * 1000);
+  const createdDate = new Date(parseInt(pool.createdAtTimestamp) * 1000); // Updated field name
 
   return (
     <div className="card-prepaid-glass card-content-md">
@@ -81,7 +81,7 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
         </div>
         <div className="bg-slate-800/30 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-400">
-            {formatNumber(pool.membersCount)}
+            {formatNumber(pool.memberCount)} {/* Updated field name */}
           </div>
           <div className="text-xs text-slate-400">Members</div>
         </div>
@@ -89,19 +89,21 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
           <div className="text-lg font-bold text-yellow-400">
             {createdDate.getFullYear()}
           </div>
-          <div className="text-xs text-slate-400">Est. Year</div>
+          <div className="text-xs text-slate-400">
+            Est. {createdDate.getFullYear()}
+          </div>
         </div>
       </div>
 
-      {/* Quick Info */}
+      {/* Network and Privacy Info */}
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-slate-400">Network:</span>
-          <span className="text-blue-400">{pool.network.name}</span>
+          <span className="text-slate-400">Network</span>
+          <span className="text-blue-400">{pool.network}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-400">Privacy Level:</span>
-          <span className="text-green-400">High Anonymity</span>
+          <span className="text-slate-400">Privacy Level</span>
+          <span className="text-green-400">Anonymous</span>
         </div>
       </div>
     </div>

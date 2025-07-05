@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { PoolFields } from "@workspace/data";
 import { ClientFactory } from "@/lib/services/client-factory";
 import { CACHE_CONFIG } from "@/constants/network";
 import {
@@ -25,7 +24,6 @@ function validateQueryOptions(params: {
   page: string;
   limit: string;
   maxResults?: string;
-  fields?: string;
 }): ValidationResult {
   const errors: string[] = [];
 
@@ -47,37 +45,16 @@ function validateQueryOptions(params: {
     }
   }
 
-  if (params.fields) {
-    const fields = params.fields.split(",").map((f) => f.trim());
-    const validFields: PoolFields[] = [
-      "id",
-      "poolId",
-      "joiningFee",
-      "merkleTreeDuration",
-      "totalDeposits",
-      "currentMerkleTreeRoot",
-      "membersCount",
-      "merkleTreeDepth",
-      "createdAt",
-      "createdAtBlock",
-      "currentRootIndex",
-      "rootHistoryCount",
-    ];
-
-    const invalidFields = fields.filter(
-      (field) => !validFields.includes(field as PoolFields),
-    );
-    if (invalidFields.length > 0) {
-      errors.push(`Invalid fields: ${invalidFields.join(", ")}`);
-    }
-  }
-
   return {
     isValid: errors.length === 0,
     errors,
   };
 }
 
+/**
+ * GET /api/prepaid-pools - Get all pools
+ * Simplified: No network transformation needed since data package includes network info
+ */
 export async function GET(request: NextRequest) {
   const requestId = await getRequestId();
   const startTime = Date.now();
@@ -92,31 +69,25 @@ export async function GET(request: NextRequest) {
       ? parseInt(searchParams.get("maxResults")!, 10)
       : undefined;
     const paginated = searchParams.get("paginated") !== "false";
-    const fieldsParam = searchParams.get("fields");
-    const fields = fieldsParam
-      ? (fieldsParam.split(",").map((f) => f.trim()) as PoolFields[])
-      : undefined;
 
     // Validate parameters
     const validation = validateQueryOptions({
       page: page.toString(),
       limit: limit.toString(),
       maxResults: maxResults?.toString(),
-      fields: fieldsParam ?? undefined,
     });
 
     if (!validation.isValid) {
       return createValidationErrorResponse(validation.errors, requestId);
     }
 
-    // Validate server configuration and create client using factory
+    // Create client using factory
     const subgraphClient = ClientFactory.getSubgraphClient();
 
     // Calculate skip for pagination
     const skip = paginated ? page * limit : 0;
     const effectiveLimit = maxResults ? Math.min(limit, maxResults) : limit;
-
-    // Build query using the new query builder pattern
+    // Build query using the query builder pattern
     let poolQuery = subgraphClient.query().pools().limit(effectiveLimit);
 
     // Add skip for pagination
@@ -124,17 +95,9 @@ export async function GET(request: NextRequest) {
       poolQuery = poolQuery.skip(skip);
     }
 
-    // Add field selection if specified
-    if (fields && fields.length > 0) {
-      poolQuery = poolQuery.select(...fields);
-    }
-
     // Execute query and get serialized results
+    // No network transformation needed - data package already includes network info
     const serializedPools = await poolQuery.executeAndSerialize();
-
-    // Add network information to each pool using ClientFactory
-    const poolsWithNetwork =
-      ClientFactory.addNetworkInfoToPools(serializedPools);
 
     // Construct response metadata using ClientFactory
     const meta = {
@@ -148,14 +111,13 @@ export async function GET(request: NextRequest) {
     const pagination = {
       page,
       limit,
-      total: poolsWithNetwork.length,
-      hasMore: poolsWithNetwork.length === limit,
-      requestedFields: fields,
+      total: serializedPools.length,
+      hasMore: serializedPools.length === limit,
     };
 
-    // Create response
+    // Create response - pools already have network info
     const response = createSuccessResponse(
-      poolsWithNetwork,
+      serializedPools,
       meta,
       pagination,
       requestId,

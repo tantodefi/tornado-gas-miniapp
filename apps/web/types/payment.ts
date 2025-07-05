@@ -4,7 +4,7 @@
  * Single source of truth for payment processing, providers, and transaction data
  */
 
-import type { PoolNetwork } from "./pool";
+import type { Pool, PoolNetwork } from "./pool";
 import type { PoolCard } from "./card";
 
 /**
@@ -27,13 +27,7 @@ export type PaymentState =
 /**
  * Payment pool interface for payment operations
  */
-export interface PaymentPool {
-  id: string;
-  poolId: string;
-  joiningFee: string; // String from API serialization (wei amount)
-  membersCount: string;
-  network: PoolNetwork;
-}
+export type PaymentPool = Pool;
 
 /**
  * Payment data required for pool joining transaction
@@ -55,7 +49,7 @@ export interface PaymentDetails {
   network: {
     // Network information
     name: string;
-    chainId: number;
+    chainId: string;
   };
   timestamp: number; // Timestamp of payment completion
   blockNumber?: number; // Block number (if available)

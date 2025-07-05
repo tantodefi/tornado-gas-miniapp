@@ -281,7 +281,7 @@ const PendingCardItem: React.FC<PendingCardItemProps> = ({
           <div>
             <h3 className="text-lg font-bold text-white mb-1">{card.id}</h3>
             <p className="text-sm text-slate-400">
-              Pool {card.poolId} • {card.poolDetails.network.name}
+              Pool {card.poolId} • {card.poolDetails.network}
             </p>
           </div>
           <div className="text-xs px-2 py-1 rounded font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">

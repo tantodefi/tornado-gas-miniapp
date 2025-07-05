@@ -3,15 +3,16 @@
 
 import React from "react";
 import PoolMembersList from "./pool-members-list";
-import type { MemberData } from "@/types";
+import { MemberData, PoolMember } from "@/types";
 
 /**
  * Interface for pool data needed by members section
+ * Updated to use new field names from data package
  */
 interface PoolData {
   poolId: string;
-  membersCount: string;
-  createdAt: string;
+  memberCount: string; // Updated from membersCount
+  createdAtTimestamp: string; // Updated from createdAt
 }
 
 /**
@@ -21,7 +22,7 @@ interface MembersSectionProps {
   /** Pool data for member context */
   pool: PoolData;
   /** Array of member data */
-  members: MemberData[];
+  members: PoolMember[];
   /** Whether members list is currently shown */
   showMembers: boolean;
   /** Current member limit for pagination */
@@ -33,6 +34,7 @@ interface MembersSectionProps {
   /** Handler for changing member limit */
   onMemberLimitChange: (limit: number) => void;
 }
+
 /**
  * Format large numbers with K/M suffixes
  */
@@ -72,7 +74,7 @@ const MembersSection: React.FC<MembersSectionProps> = ({
     <div className="flex justify-between items-center mb-6">
       <h2 className="text-xl font-bold text-white flex items-center gap-2">
         <span className="text-2xl">👥</span>
-        Pool Members ({formatNumber(pool.membersCount)})
+        Pool Members ({formatNumber(pool.memberCount)})
       </h2>
 
       <div className="flex items-center gap-3">
@@ -112,24 +114,20 @@ const MembersSection: React.FC<MembersSectionProps> = ({
       <div className="text-center py-8">
         <div className="text-4xl mb-4 opacity-50">👥</div>
         <p className="text-slate-400 mb-4">
-          Click "Show Members" to view identity commitments and join history
+          Click &quot;Show Members&quot; to view identity commitments and join
+          history
         </p>
-        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto text-sm">
+        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto text-sm">
           <div className="bg-slate-800/30 rounded p-3">
             <div className="text-purple-400 font-bold">
-              {formatNumber(pool.membersCount)}
+              {formatNumber(pool.memberCount)}
             </div>
             <div className="text-slate-500">Total</div>
           </div>
-          <div className="bg-slate-800/30 rounded p-3">
-            <div className="text-green-400 font-bold">
-              ~{formatNumber(Math.floor(parseInt(pool.membersCount) * 0.9))}
-            </div>
-            <div className="text-slate-500">Active</div>
-          </div>
+
           <div className="bg-slate-800/30 rounded p-3">
             <div className="text-blue-400 font-bold">
-              {new Date(parseInt(pool.createdAt) * 1000).getFullYear()}
+              {new Date(parseInt(pool.createdAtTimestamp) * 1000).getFullYear()}
             </div>
             <div className="text-slate-500">Since</div>
           </div>

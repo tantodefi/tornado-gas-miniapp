@@ -1,9 +1,10 @@
 //file:prepaid-gas-website/apps/web/lib/services/client-factory.ts
-import { SubgraphClient, SerializedPool } from "@workspace/data";
+import { SubgraphClient } from "@workspace/data";
 import { NETWORK_CONFIG, getDefaultNetworkConfig } from "@/constants/network";
 
 /**
- * Singleton factory for creating and managing SubgraphClient instances
+ * Simplified factory for creating and managing SubgraphClient instances
+ * Network information is now included in data package types by default
  */
 class ClientFactory {
   private static subgraphClient: SubgraphClient | null = null;
@@ -48,47 +49,7 @@ class ClientFactory {
   }
 
   /**
-   * Add network information to serialized pools using default network config
-   */
-  static addNetworkInfoToPools(
-    pools: SerializedPool[],
-  ): (SerializedPool & { network: any })[] {
-    const networkConfig = getDefaultNetworkConfig();
-
-    return pools.map((pool) => ({
-      ...pool,
-      network: {
-        name: networkConfig.name,
-        chainId: networkConfig.chainId,
-        chainName: networkConfig.chainName,
-        networkName: networkConfig.networkName,
-        contracts: networkConfig.contracts,
-      },
-    }));
-  }
-
-  /**
-   * Add network information to a single serialized pool using default network config
-   */
-  static addNetworkInfoToPool(
-    pool: SerializedPool,
-  ): SerializedPool & { network: any } {
-    const networkConfig = getDefaultNetworkConfig();
-
-    return {
-      ...pool,
-      network: {
-        name: networkConfig.name,
-        chainId: networkConfig.chainId,
-        chainName: networkConfig.chainName,
-        networkName: networkConfig.networkName,
-        contracts: networkConfig.contracts,
-      },
-    };
-  }
-
-  /**
-   * Get network metadata for responses
+   * Get network metadata for API response metadata
    */
   static getNetworkMetadata() {
     const networkConfig = getDefaultNetworkConfig();

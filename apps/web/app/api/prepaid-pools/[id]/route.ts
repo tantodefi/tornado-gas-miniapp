@@ -48,13 +48,13 @@ export async function GET(
     // Create client using factory
     const subgraphClient = ClientFactory.getSubgraphClient();
 
-    // Build query using the new query builder pattern
-    const poolQuery = subgraphClient.query().pools().byId(id);
+    // Build query using the query builder pattern
+    const poolQuery = subgraphClient.query().pools().byPoolId(id);
 
-    // If members are requested, use the withMembers builder
+    // If members are requested, include them in the query
     if (includeMembers) {
-      const poolWithMembersQuery = poolQuery.withMembers(memberLimit);
-
+      const poolWithMembersQuery = poolQuery.withMembers().limit(memberLimit);
+      console.log({ poolWithMembersQuery });
       // Execute query and get serialized results
       const serializedPools = await poolWithMembersQuery.executeAndSerialize();
 
@@ -67,7 +67,6 @@ export async function GET(
         );
       }
 
-      // Get the first (and only) pool result
       const poolData = serializedPools[0];
 
       if (!poolData) {
@@ -79,9 +78,7 @@ export async function GET(
         );
       }
 
-      // Add network information using ClientFactory
-      const poolWithNetwork = ClientFactory.addNetworkInfoToPool(poolData);
-
+      // No network transformation needed - data package already includes network info
       // Construct response metadata using ClientFactory
       const enhancedMeta = {
         ...ClientFactory.getNetworkMetadata(),
@@ -101,9 +98,9 @@ export async function GET(
         hasMore: false,
       };
 
-      // Create response
+      // Create response - pool already has network info
       const response = createSuccessResponse(
-        poolWithNetwork,
+        poolData,
         enhancedMeta,
         pagination,
         requestId,
@@ -126,7 +123,6 @@ export async function GET(
         );
       }
 
-      // Get the first (and only) pool result
       const poolData = serializedPools[0];
 
       if (!poolData) {
@@ -138,9 +134,7 @@ export async function GET(
         );
       }
 
-      // Add network information using ClientFactory
-      const poolWithNetwork = ClientFactory.addNetworkInfoToPool(poolData);
-
+      // No network transformation needed - data package already includes network info
       // Construct response metadata using ClientFactory
       const enhancedMeta = {
         ...ClientFactory.getNetworkMetadata(),
@@ -160,9 +154,9 @@ export async function GET(
         hasMore: false,
       };
 
-      // Create response
+      // Create response - pool already has network info
       const response = createSuccessResponse(
-        poolWithNetwork,
+        poolData,
         enhancedMeta,
         pagination,
         requestId,

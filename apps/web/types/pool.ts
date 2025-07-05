@@ -1,75 +1,54 @@
 //file:prepaid-gas-website/apps/web/types/pool.ts
 /**
  * Pool-related type definitions
- * Single source of truth for all pool, member, and network types
+ * Simplified to directly use @workspace/data package types
+ */
+
+import type {
+  SerializedPool,
+  SerializedPoolMember,
+  SerializedMerkleRoot,
+  NetworkMetadata,
+} from "@workspace/data";
+
+/**
+ * ========================================
+ * CORE TYPES - Direct from Data Package
+ * ========================================
  */
 
 /**
- * Network configuration for a pool
+ * Pool type for web app - directly uses serialized data package type
+ * Network info is already included in the data package
  */
-export interface PoolNetwork {
-  name: string;
-  chainId: number;
-  chainName: string;
-  networkName: string;
-  contracts: {
-    paymaster: string;
-    verifier?: string;
-  };
-}
+export type Pool = SerializedPool;
 
 /**
- * Core Pool interface - matches API response format
- * All numeric values are strings due to BigInt serialization
+ * Pool member type for web app - directly uses serialized data package type
  */
-export interface Pool {
-  id: string;
-  poolId: string;
-  joiningFee: string;
-  merkleTreeDuration: string;
-  totalDeposits: string;
-  currentMerkleTreeRoot: string;
-  membersCount: string;
-  merkleTreeDepth: string;
-  createdAt: string;
-  createdAtBlock: string;
-  currentRootIndex: number;
-  rootHistoryCount: number;
-  network: PoolNetwork;
-}
+export type PoolMember = SerializedPoolMember;
 
 /**
- * Extended pool with member and root history data
+ * Merkle root history - directly uses serialized data package type
  */
-export interface DetailedPool extends Pool {
-  members?: PoolMember[];
-  rootHistory?: MerkleRootHistory[];
-}
+export type MerkleRootHistory = SerializedMerkleRoot;
 
 /**
- * Pool member information
+ * DetailedPool is just an alias for Pool since SerializedPool
+ * already includes members and merkleRoots
  */
-export interface PoolMember {
-  id: string;
-  identityCommitment: string;
-  memberIndex: string;
-  joinedAt: string;
-  joinedAtBlock: string;
-  isActive: boolean;
-}
+export type DetailedPool = Pool;
 
 /**
- * Merkle root history entry
+ * Network configuration - directly uses data package type
  */
-export interface MerkleRootHistory {
-  id: string;
-  index: number;
-  merkleRoot: string;
-  createdAt: string;
-  createdAtBlock: string;
-  isValid: boolean;
-  transactionHash: string;
-}
+export type PoolNetwork = string;
+
+/**
+ * ========================================
+ * UI/DISPLAY HELPER TYPES
+ * ========================================
+ */
 
 /**
  * Filter state for pool filtering and sorting
@@ -83,40 +62,31 @@ export interface FilterState {
 
 /**
  * Pool overview data for display components
+ * Updated to use new field names from data package
  */
 export interface PoolOverviewData {
   joiningFee: string;
   totalDeposits: string;
-  membersCount: string;
-  createdAt: string;
-  network: PoolNetwork;
+  memberCount: string; // Updated from membersCount
+  createdAtTimestamp: string; // Updated from createdAt
+  network: string; // Simplified to just network name
 }
 
 /**
  * Pool technical specifications for display
  */
-export interface PoolTechnicalData {
-  poolId: string;
-  merkleTreeDuration: string;
-  merkleTreeDepth: string;
-  rootHistoryCount: number;
-  currentRootIndex: number;
-  membersCount: string;
-  createdAtBlock: string;
-  createdAt: string;
-  network: PoolNetwork;
-}
+export type PoolTechnicalData = Pool;
 
 /**
  * Simplified member data for components
+ * Updated to use new field names from data package
  */
 export interface MemberData {
   id: string;
   identityCommitment: string;
   memberIndex: string;
-  joinedAt: string;
-  joinedAtBlock: string;
-  isActive: boolean;
+  addedAtTimestamp: string; // Updated from joinedAt
+  addedAtBlock: string; // Updated from joinedAtBlock
 }
 
 /**
@@ -128,6 +98,12 @@ export interface PoolStats {
   totalValue: string;
   averagePoolSize: number;
 }
+
+/**
+ * ========================================
+ * QUERY AND FILTER TYPES
+ * ========================================
+ */
 
 /**
  * Pool query options
