@@ -11,6 +11,7 @@
 import { SubgraphClient } from "./client/subgraph-client.js";
 import { getSupportedChainIds } from "./network/presets.js";
 import {
+  ChainId,
   PaymasterContract,
   PaymasterType,
   Pool,
@@ -70,66 +71,9 @@ export { SubgraphClient } from "./client/subgraph-client.js";
 
 /**
  * ========================================
- * GRAPHQL QUERIES (for advanced users)
- * ========================================
- */
-
-// Paymaster contract queries
-export {
-  GET_ALL_PAYMASTERS,
-  GET_PAYMASTER_BY_ADDRESS,
-  GET_PAYMASTERS_BY_TYPE,
-} from "./client/queries.js";
-
-// Pool queries
-export {
-  GET_ALL_POOLS,
-  GET_POOLS_BY_PAYMASTER,
-  GET_POOL_DETAILS,
-  GET_POOL_ROOT_HISTORY,
-  GET_VALID_ROOT_INDICES,
-  FIND_ROOT_INDEX,
-} from "./client/queries.js";
-
-// Pool member queries
-export { GET_POOL_MEMBERS, GET_POOLS_BY_IDENTITY } from "./client/queries.js";
-
-// User operation queries
-export {
-  GET_USER_OPERATIONS_BY_PAYMASTER,
-  GET_USER_OPERATIONS_BY_POOL,
-  GET_USER_OPERATIONS_BY_SENDER,
-} from "./client/queries.js";
-
-// Revenue and nullifier queries
-export {
-  GET_REVENUE_WITHDRAWALS_BY_PAYMASTER,
-  GET_REVENUE_WITHDRAWALS_BY_RECIPIENT,
-  GET_NULLIFIER_USAGE_BY_PAYMASTER,
-  GET_NULLIFIER_USAGE_BY_POOL,
-} from "./client/queries.js";
-
-// Analytics queries
-export {
-  GET_DAILY_POOL_STATS,
-  GET_DAILY_POOL_STATS_BY_DATE_RANGE,
-  GET_DAILY_GLOBAL_STATS,
-  GET_DAILY_GLOBAL_STATS_BY_DATE_RANGE,
-} from "./client/queries.js";
-
-// Query builder utilities
-export {
-  buildPoolsQuery,
-  buildPaymasterQuery,
-  buildUserOperationsQuery,
-} from "./client/queries.js";
-
-/**
- * ========================================
  * DATA TRANSFORMERS (for BigInt serialization)
  * ========================================
  */
-
 // Serialized type definitions
 export type {
   SerializedPaymasterContract,
@@ -141,7 +85,7 @@ export type {
   SerializedNullifierUsage,
   SerializedDailyPoolStats,
   SerializedDailyGlobalStats,
-} from "./transformers/index.js";
+} from "./types/subgraph.js";
 
 // Serialization functions
 export {
@@ -217,7 +161,6 @@ export {
   getPaymasterContracts,
   getPaymasterContract,
   supportsPaymasterType,
-  getSupportedPaymasterTypes,
 } from "./network/presets.js";
 
 /**
@@ -230,41 +173,23 @@ export {
 export { QueryBuilder } from "./query/query-builder.js";
 
 // Entity-specific query builders
-export {
-  PaymasterContractQueryBuilder,
-  PaymasterQueryWithRelatedBuilder,
-} from "./query/builders/paymaster-query-builder.js";
+export { PaymasterContractQueryBuilder } from "./query/builders/paymaster-query-builder.js";
 
-export {
-  PoolQueryBuilder,
-  PoolQueryWithMembersBuilder,
-} from "./query/builders/pool-query-builder.js";
+export { PoolQueryBuilder } from "./query/builders/pool-query-builder.js";
 
-export {
-  PoolMemberQueryBuilder,
-  MemberQueryWithPoolBuilder,
-} from "./query/builders/member-query-builder.js";
+export { PoolMemberQueryBuilder } from "./query/builders/member-query-builder.js";
 
-export {
-  UserOperationQueryBuilder,
-  UserOperationQueryWithRelatedBuilder,
-} from "./query/builders/user-operation-query-builder.js";
+export { UserOperationQueryBuilder } from "./query/builders/user-operation-query-builder.js";
 
-export {
-  RevenueWithdrawalQueryBuilder,
-  RevenueWithdrawalQueryWithPaymasterBuilder,
-} from "./query/builders/revenue-query-builder.js";
+export { RevenueWithdrawalQueryBuilder } from "./query/builders/revenue-query-builder.js";
 
-export {
-  NullifierUsageQueryBuilder,
-  NullifierUsageQueryWithRelatedBuilder,
-} from "./query/builders/nullifier-usage-query-builder.js";
+export { NullifierUsageQueryBuilder } from "./query/builders/nullifier-usage-query-builder.js";
 
-export {
-  DailyPoolStatsQueryBuilder,
-  DailyPoolStatsQueryWithPoolBuilder,
-  DailyGlobalStatsQueryBuilder,
-} from "./query/builders/analytics-query-builder.js";
+// export {
+//   DailyPoolStatsQueryBuilder,
+//   DailyPoolStatsQueryWithPoolBuilder,
+//   DailyGlobalStatsQueryBuilder,
+// } from "./query/builders/analytics-query-builder.js";
 
 // Base query builder (for advanced usage or extending)
 export { BaseQueryBuilder } from "./query/builders/base-query-builder.js";
@@ -423,7 +348,7 @@ export function isNetworkSupported(chainId: number): boolean {
  * console.log(paymasters); // [{ address: "0x...", type: "GasLimited" }]
  * ```
  */
-export function getNetworkPaymasters(chainId: number) {
+export function getNetworkPaymasters(chainId: ChainId) {
   return SubgraphClient.getPaymasterContracts(chainId);
 }
 

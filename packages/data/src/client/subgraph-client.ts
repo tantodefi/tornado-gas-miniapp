@@ -1,5 +1,5 @@
 import { GraphQLClient } from "graphql-request";
-import type { NetworkMetadata } from "../types/subgraph.js";
+import type { ChainId, NetworkMetadata } from "../types/subgraph.js";
 import {
   getValidatedNetworkPreset,
   NETWORK_PRESETS,
@@ -203,7 +203,7 @@ export class SubgraphClient {
    * console.log(paymasters); // [{ address: "0x...", type: "GasLimited" }, ...]
    * ```
    */
-  static getPaymasterContracts(chainId: number): Array<{
+  static getPaymasterContracts(chainId: ChainId): Array<{
     address: string;
     type: "GasLimited" | "OneTimeUse";
     startBlock: number;

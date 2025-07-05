@@ -3,20 +3,39 @@
  * Updated for new subgraph schema structure
  */
 
+import {
+  DailyGlobalStats,
+  DailyPoolStats,
+  MerkleRoot,
+  NetworkInfo,
+  NetworkName,
+  NullifierUsage,
+  PaymasterContract,
+  PaymasterType,
+  Pool,
+  PoolMember,
+  RevenueWithdrawal,
+  UserOperation,
+} from "../types/subgraph";
+
 /**
  * Base query configuration for GraphQL queries
  */
-export interface QueryConfig {
+export interface QueryConfig<TWhereInput, TOrderBy> {
   /** Number of items to fetch */
   first?: number;
   /** Number of items to skip (for pagination) */
   skip?: number;
   /** Field to order by */
-  orderBy?: string;
+  orderBy?: TOrderBy;
   /** Order direction */
   orderDirection?: "asc" | "desc";
   /** Where conditions */
-  where?: Record<string, any>;
+  where?: Partial<TWhereInput>;
+  /** Network name */
+  network?: NetworkName;
+  // For dynamic selection
+  selectedFields?: string[];
 }
 
 /**
@@ -29,132 +48,70 @@ export interface QueryConfig {
  * Available fields for PaymasterContract entity queries
  */
 export type PaymasterContractFields =
-  | "id"
-  | "contractType"
-  | "address"
-  | "totalUsersDeposit"
-  | "currentDeposit"
-  | "revenue"
-  | "deployedAtBlock"
-  | "deployedAtTransaction"
-  | "deployedAtTimestamp"
-  | "lastUpdatedBlock"
-  | "lastUpdatedTimestamp";
+  | keyof PaymasterContract
+  | "pools { id poolId network }" // Example of nested fields
+  | "userOperations { id userOpHash sender }"
+  | "revenueWithdrawals { id amount recipient }";
 
 /**
  * Available fields for Pool entity queries
  * Updated to match new subgraph schema
  */
 export type PoolFields =
-  | "id"
-  | "poolId"
-  | "joiningFee"
-  | "totalDeposits"
-  | "memberCount"
-  | "currentMerkleRoot"
-  | "currentRootIndex"
-  | "rootHistoryCount"
-  | "createdAtBlock"
-  | "createdAtTransaction"
-  | "createdAtTimestamp"
-  | "lastUpdatedBlock"
-  | "lastUpdatedTimestamp";
+  | keyof Pool
+  | "paymaster { id contractType address }"
+  | "members { id memberIndex }"
+  | "merkleRoots { id root }";
 
 /**
  * Available fields for PoolMember entity queries
  * Updated to match new subgraph schema
  */
 export type PoolMemberFields =
-  | "id"
-  | "memberIndex"
-  | "identityCommitment"
-  | "merkleRootWhenAdded"
-  | "rootIndexWhenAdded"
-  | "addedAtBlock"
-  | "addedAtTransaction"
-  | "addedAtTimestamp"
-  | "gasUsed"
-  | "nullifierUsed"
-  | "nullifier";
+  | keyof PoolMember
+  | "pool { id poolId network chainId }"
+  | "pool { paymaster { id address } }";
 
 /**
  * Available fields for MerkleRoot entity queries
  * Updated from MerkleRootHistoryFields
  */
-export type MerkleRootFields =
-  | "id"
-  | "root"
-  | "rootIndex"
-  | "createdAtBlock"
-  | "createdAtTransaction"
-  | "createdAtTimestamp";
+export type MerkleRootFields = keyof MerkleRoot;
 
 /**
  * Available fields for UserOperation entity queries
  */
 export type UserOperationFields =
-  | "id"
-  | "userOpHash"
-  | "sender"
-  | "actualGasCost"
-  | "nullifier"
-  | "executedAtBlock"
-  | "executedAtTransaction"
-  | "executedAtTimestamp"
-  | "gasPrice"
-  | "totalGasUsed";
+  | keyof UserOperation
+  | "paymaster { id address contractType }" // Example of nested fields
+  | "pool { id poolId }";
 
 /**
  * Available fields for RevenueWithdrawal entity queries
  */
 export type RevenueWithdrawalFields =
-  | "id"
-  | "recipient"
-  | "amount"
-  | "withdrawnAtBlock"
-  | "withdrawnAtTransaction"
-  | "withdrawnAtTimestamp";
+  | keyof RevenueWithdrawal
+  | "paymaster { id address contractType }"; // Example of nested fields
 
 /**
  * Available fields for NullifierUsage entity queries
  */
-export type NullifierUsageFields =
-  | "id"
-  | "nullifier"
-  | "isUsed"
-  | "gasUsed"
-  | "firstUsedAtBlock"
-  | "firstUsedAtTransaction"
-  | "firstUsedAtTimestamp"
-  | "lastUpdatedBlock"
-  | "lastUpdatedTimestamp";
+export type NullifierUsageFields = keyof NullifierUsage;
+
+/**
+ * Available fields for NetworkInfo entity queries
+ */
+export type NetworkInfoFields = keyof NetworkInfo;
 
 /**
  * Available fields for DailyPoolStats entity queries
  */
-export type DailyPoolStatsFields =
-  | "id"
-  | "date"
-  | "newMembers"
-  | "userOperations"
-  | "gasSpent"
-  | "revenueGenerated"
-  | "totalMembers"
-  | "totalDeposits";
+export type DailyPoolStatsFields = keyof DailyPoolStats;
 
 /**
  * Available fields for DailyGlobalStats entity queries
  */
-export type DailyGlobalStatsFields =
-  | "id"
-  | "date"
-  | "newPools"
-  | "totalNewMembers"
-  | "totalUserOperations"
-  | "totalGasSpent"
-  | "totalRevenueGenerated"
-  | "totalActivePools"
-  | "totalMembers";
+export type DailyGlobalStatsFields = keyof DailyGlobalStats;
 
 /**
  * ========================================
@@ -196,434 +153,238 @@ export interface WhereCondition<T = any> {
 /**
  * Typed where conditions for PaymasterContract entity
  */
-export type PaymasterContractWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  contractType: string;
-  address: string;
-
-  // Range operators for numeric fields
-  totalUsersDeposit_gte: string;
-  totalUsersDeposit_lte: string;
-  totalUsersDeposit_gt: string;
-  totalUsersDeposit_lt: string;
-
-  currentDeposit_gte: string;
-  currentDeposit_lte: string;
-  currentDeposit_gt: string;
-  currentDeposit_lt: string;
-
-  revenue_gte: string;
-  revenue_lte: string;
-  revenue_gt: string;
-  revenue_lt: string;
-
-  deployedAtTimestamp_gte: string;
-  deployedAtTimestamp_lte: string;
-  deployedAtTimestamp_gt: string;
-  deployedAtTimestamp_lt: string;
-
-  // Text search operators
-  contractType_in: string[];
-  contractType_not_in: string[];
-  address_in: string[];
-  address_not_in: string[];
-  address_contains: string;
-  address_not_contains: string;
-}>;
+export interface PaymasterContractWhereInput {
+  id?: string; // network-address composite ID
+  network?: NetworkName;
+  contractType?: PaymasterType;
+  address?: string;
+  revenue_gte?: string; // GraphQL expects BigInt as string
+  revenue_lte?: string; // GraphQL expects BigInt as string
+  currentDeposit_gte?: string; // GraphQL expects BigInt as string
+  currentDeposit_lte?: string; // GraphQL expects BigInt as string
+  deployedAtTimestamp_gte?: string; // GraphQL expects BigInt as string
+  deployedAtTimestamp_lte?: string; // GraphQL expects BigInt as string
+  revenue_gt?: string; // For isActive
+}
 
 /**
  * Typed where conditions for Pool entity
  * Updated to match new subgraph schema
  */
-export type PoolWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  poolId: string;
-  paymaster: string; // PaymasterContract ID filter
-
-  // Range operators for numeric/string fields
-  joiningFee_gte: string;
-  joiningFee_lte: string;
-  joiningFee_gt: string;
-  joiningFee_lt: string;
-  joiningFee_in: string[];
-
-  totalDeposits_gte: string;
-  totalDeposits_lte: string;
-  totalDeposits_gt: string;
-  totalDeposits_lt: string;
-
-  memberCount_gte: string;
-  memberCount_lte: string;
-  memberCount_gt: string;
-  memberCount_lt: string;
-  memberCount_in: string[];
-
-  createdAtTimestamp_gte: string;
-  createdAtTimestamp_lte: string;
-  createdAtTimestamp_gt: string;
-  createdAtTimestamp_lt: string;
-
-  currentMerkleRoot_gte: string;
-  currentMerkleRoot_lte: string;
-  currentMerkleRoot_gt: string;
-  currentMerkleRoot_lt: string;
-
-  // Text search operators
-  poolId_contains: string;
-  poolId_not_contains: string;
-  poolId_starts_with: string;
-  poolId_ends_with: string;
-  poolId_in: string[];
-  poolId_not_in: string[];
-
-  // Paymaster filtering
-  paymaster_in: string[]; // Multiple paymaster IDs
-  paymaster_not_in: string[]; // Exclude paymaster IDs
-}>;
+export interface PoolWhereInput {
+  id?: string;
+  poolId?: string; // GraphQL expects BigInt as string
+  network?: NetworkName;
+  paymaster_?: { address?: string };
+  memberCount_gte?: string;
+  memberCount_lte?: string;
+  totalDeposits_gte?: string;
+  totalDeposits_lte?: string;
+  joiningFee_gte?: string;
+  joiningFee_lte?: string;
+  createdAtTimestamp_gte?: string;
+  createdAtTimestamp_lte?: string;
+  memberCount_gt?: string; // For hasMembers
+  totalDeposits_gt?: string; // For isActive
+}
 
 /**
  * Typed where conditions for PoolMember entity
  * Updated to match new subgraph schema
  */
-export type PoolMemberWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  pool: string; // Pool ID filter
-  identityCommitment: string; // Exact identity match
-  memberIndex: string; // Exact member index
-  addedAtTimestamp: string; // Exact timestamp
-  addedAtBlock: string; // Exact block number
-
-  // Range operators for numeric fields
-  memberIndex_gte: string;
-  memberIndex_lte: string;
-  memberIndex_gt: string;
-  memberIndex_lt: string;
-  memberIndex_in: string[];
-
-  addedAtTimestamp_gte: string;
-  addedAtTimestamp_lte: string;
-  addedAtTimestamp_gt: string;
-  addedAtTimestamp_lt: string;
-
-  addedAtBlock_gte: string;
-  addedAtBlock_lte: string;
-  addedAtBlock_gt: string;
-  addedAtBlock_lt: string;
-
-  gasUsed_gte: string;
-  gasUsed_lte: string;
-  gasUsed_gt: string;
-  gasUsed_lt: string;
-
-  // Text search operators for identity commitment
-  identityCommitment_contains: string;
-  identityCommitment_not_contains: string;
-  identityCommitment_starts_with: string;
-  identityCommitment_ends_with: string;
-  identityCommitment_in: string[];
-  identityCommitment_not_in: string[];
-
-  // Pool filtering
-  pool_in: string[]; // Multiple pool IDs
-  pool_not_in: string[]; // Exclude pool IDs
-
-  // Boolean operators
-  nullifierUsed: boolean;
-  nullifierUsed_not: boolean;
-}>;
+export interface PoolMemberWhereInput {
+  id?: string;
+  network?: NetworkName;
+  pool_?: {
+    id?: string;
+    poolId?: string; // GraphQL expects BigInt as string for poolId
+    paymaster_?: { address?: string };
+  };
+  memberIndex?: string; // GraphQL expects BigInt as string
+  identityCommitment?: string; // GraphQL expects BigInt as string
+  gasUsed_gte?: string;
+  gasUsed_lte?: string;
+  nullifierUsed?: boolean;
+  addedAtTimestamp_gte?: string;
+  addedAtTimestamp_lte?: string;
+  rootIndexWhenAdded?: number;
+}
 
 /**
  * Typed where conditions for MerkleRoot entity
  * Updated from MerkleRootHistoryWhereInput
  */
-export type MerkleRootWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  pool: string; // Pool ID filter
-  root: string; // Exact root match
-  rootIndex: number; // Exact root index
-
-  // Range operators for numeric fields
-  rootIndex_gte: number;
-  rootIndex_lte: number;
-  rootIndex_gt: number;
-  rootIndex_lt: number;
-  rootIndex_in: number[];
-
-  createdAtTimestamp_gte: string;
-  createdAtTimestamp_lte: string;
-  createdAtTimestamp_gt: string;
-  createdAtTimestamp_lt: string;
-
-  createdAtBlock_gte: string;
-  createdAtBlock_lte: string;
-  createdAtBlock_gt: string;
-  createdAtBlock_lt: string;
-
-  // Text search operators for root
-  root_contains: string;
-  root_not_contains: string;
-  root_starts_with: string;
-  root_ends_with: string;
-  root_in: string[];
-  root_not_in: string[];
-
-  // Pool filtering
-  pool_in: string[]; // Multiple pool IDs
-  pool_not_in: string[]; // Exclude pool IDs
-}>;
+export interface MerkleRootWhereInput {
+  id?: string; // MerkleRoot's ID is often composite (e.g., poolId-rootIndex)
+  pool?: string; // Directly filter by pool ID
+  pool_in?: string[]; // For filtering by multiple pool IDs
+  network?: NetworkName; // Directly filter by network
+  network_in?: NetworkName[]; // For filtering by multiple networks
+  rootIndex?: number;
+  rootIndex_gte?: number;
+  rootIndex_lte?: number;
+  root?: string;
+  root_in?: string[];
+  createdAtTimestamp_gte?: string;
+  createdAtTimestamp_lte?: string;
+  createdAtBlock?: string;
+  createdAtTransaction?: string;
+}
 
 /**
  * Typed where conditions for UserOperation entity
  */
-export type UserOperationWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  userOpHash: string;
-  paymaster: string; // PaymasterContract ID filter
-  pool: string; // Pool ID filter
-  sender: string; // Exact sender match
-  nullifier: string; // Exact nullifier match
-
-  // Range operators for numeric fields
-  actualGasCost_gte: string;
-  actualGasCost_lte: string;
-  actualGasCost_gt: string;
-  actualGasCost_lt: string;
-
-  gasPrice_gte: string;
-  gasPrice_lte: string;
-  gasPrice_gt: string;
-  gasPrice_lt: string;
-
-  totalGasUsed_gte: string;
-  totalGasUsed_lte: string;
-  totalGasUsed_gt: string;
-  totalGasUsed_lt: string;
-
-  executedAtTimestamp_gte: string;
-  executedAtTimestamp_lte: string;
-  executedAtTimestamp_gt: string;
-  executedAtTimestamp_lt: string;
-
-  executedAtBlock_gte: string;
-  executedAtBlock_lte: string;
-  executedAtBlock_gt: string;
-  executedAtBlock_lt: string;
-
-  // Text search operators
-  userOpHash_contains: string;
-  userOpHash_not_contains: string;
-  userOpHash_starts_with: string;
-  userOpHash_ends_with: string;
-  userOpHash_in: string[];
-  userOpHash_not_in: string[];
-
-  sender_contains: string;
-  sender_not_contains: string;
-  sender_starts_with: string;
-  sender_ends_with: string;
-  sender_in: string[];
-  sender_not_in: string[];
-
-  // Filtering by related entities
-  paymaster_in: string[]; // Multiple paymaster IDs
-  paymaster_not_in: string[]; // Exclude paymaster IDs
-  pool_in: string[]; // Multiple pool IDs
-  pool_not_in: string[]; // Exclude pool IDs
-}>;
+export interface UserOperationWhereInput {
+  id?: string; // network-userOpHash composite ID
+  network?: NetworkName;
+  userOpHash?: string;
+  paymaster_?: {
+    address?: string;
+    contractType?: PaymasterType;
+  };
+  pool_?: { poolId?: string };
+  sender?: string;
+  nullifier?: string; // GraphQL expects BigInt as string
+  actualGasCost_gte?: string; // GraphQL expects BigInt as string
+  actualGasCost_lte?: string; // GraphQL expects BigInt as string
+  gasPrice_gte?: string; // GraphQL expects BigInt as string
+  gasPrice_lte?: string; // GraphQL expects BigInt as string
+  executedAtTimestamp_gte?: string; // GraphQL expects BigInt as string
+  executedAtTimestamp_lte?: string; // GraphQL expects BigInt as string
+  executedAtBlock?: string; // GraphQL expects BigInt as string
+  transactionHash?: string;
+}
 
 /**
  * Typed where conditions for RevenueWithdrawal entity
  */
-export type RevenueWithdrawalWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  paymaster: string; // PaymasterContract ID filter
-  recipient: string; // Exact recipient match
 
-  // Range operators for numeric fields
-  amount_gte: string;
-  amount_lte: string;
-  amount_gt: string;
-  amount_lt: string;
+export interface RevenueWithdrawalWhereInput {
+  id?: string; // network-transactionHash-logIndex composite ID if available, otherwise consider ID from subgraph
+  network?: NetworkName;
+  paymaster_?: {
+    address?: string;
+    contractType?: PaymasterType;
+  };
+  recipient?: string;
+  amount_gte?: string; // GraphQL expects BigInt as string
+  amount_lte?: string; // GraphQL expects BigInt as string
+  withdrawnAtTimestamp_gte?: string; // GraphQL expects BigInt as string
+  withdrawnAtTimestamp_lte?: string; // GraphQL expects BigInt as string
+  withdrawnAtBlock?: string; // GraphQL expects BigInt as string
+  transactionHash?: string;
+}
 
-  withdrawnAtTimestamp_gte: string;
-  withdrawnAtTimestamp_lte: string;
-  withdrawnAtTimestamp_gt: string;
-  withdrawnAtTimestamp_lt: string;
-
-  withdrawnAtBlock_gte: string;
-  withdrawnAtBlock_lte: string;
-  withdrawnAtBlock_gt: string;
-  withdrawnAtBlock_lt: string;
-
-  // Text search operators
-  recipient_contains: string;
-  recipient_not_contains: string;
-  recipient_starts_with: string;
-  recipient_ends_with: string;
-  recipient_in: string[];
-  recipient_not_in: string[];
-
-  // Filtering by related entities
-  paymaster_in: string[]; // Multiple paymaster IDs
-  paymaster_not_in: string[]; // Exclude paymaster IDs
-}>;
+/**
+ * Typed where conditions for NetworkInfo entity
+ */
+export interface NetworkInfoWhereInput {
+  id?: NetworkName; // The ID is typically the network name in this entity
+  totalPaymasters_gte?: string;
+  totalPaymasters_lte?: string;
+  totalPools_gte?: string;
+  totalPools_lte?: string;
+  totalMembers_gte?: string;
+  totalMembers_lte?: string;
+  totalUserOperations_gte?: string;
+  totalUserOperations_lte?: string;
+  totalGasSpent_gte?: string;
+  totalGasSpent_lte?: string;
+  totalRevenue_gte?: string;
+  totalRevenue_lte?: string;
+  firstDeploymentTimestamp_gte?: string;
+  firstDeploymentTimestamp_lte?: string;
+  lastActivityTimestamp_gte?: string;
+  lastActivityTimestamp_lte?: string;
+}
 
 /**
  * Typed where conditions for NullifierUsage entity
  */
-export type NullifierUsageWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  nullifier: string; // Exact nullifier match
-  paymaster: string; // PaymasterContract ID filter
-  pool: string; // Pool ID filter
-  isUsed: boolean; // Boolean filter
-
-  // Range operators for numeric fields
-  gasUsed_gte: string;
-  gasUsed_lte: string;
-  gasUsed_gt: string;
-  gasUsed_lt: string;
-
-  firstUsedAtTimestamp_gte: string;
-  firstUsedAtTimestamp_lte: string;
-  firstUsedAtTimestamp_gt: string;
-  firstUsedAtTimestamp_lt: string;
-
-  lastUpdatedTimestamp_gte: string;
-  lastUpdatedTimestamp_lte: string;
-  lastUpdatedTimestamp_gt: string;
-  lastUpdatedTimestamp_lt: string;
-
-  // Text search operators
-  nullifier_contains: string;
-  nullifier_not_contains: string;
-  nullifier_starts_with: string;
-  nullifier_ends_with: string;
-  nullifier_in: string[];
-  nullifier_not_in: string[];
-
-  // Boolean operators
-  isUsed_not: boolean;
-
-  // Filtering by related entities
-  paymaster_in: string[]; // Multiple paymaster IDs
-  paymaster_not_in: string[]; // Exclude paymaster IDs
-  pool_in: string[]; // Multiple pool IDs
-  pool_not_in: string[]; // Exclude pool IDs
-}>;
+export interface NullifierUsageWhereInput {
+  id?: string;
+  nullifier?: string;
+  nullifier_in?: string[];
+  paymasterAddress?: string;
+  paymasterAddress_in?: string[];
+  paymasterType?: PaymasterType;
+  paymasterType_in?: PaymasterType[];
+  poolId?: string;
+  poolId_in?: string[];
+  network?: NetworkName;
+  network_in?: NetworkName[];
+  isUsed?: boolean;
+  gasUsed_gte?: string;
+  gasUsed_lte?: string;
+  userOperation_not?: string; // To check if userOperation is not null/empty
+  firstUsedAtTimestamp_gte?: string;
+  firstUsedAtTimestamp_lte?: string;
+  lastUpdatedTimestamp_gte?: string;
+  lastUpdatedTimestamp_lte?: string;
+  createdAtBlock?: string;
+  createdAtBlock_gte?: string;
+  createdAtBlock_lte?: string;
+  createdAtTimestamp?: string;
+  createdAtTimestamp_gte?: string;
+  createdAtTimestamp_lte?: string;
+}
 
 /**
  * Typed where conditions for DailyPoolStats entity
  */
-export type DailyPoolStatsWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  date: string; // Exact date match (YYYY-MM-DD)
-  pool: string; // Pool ID filter
-
-  // Range operators for numeric fields
-  newMembers_gte: string;
-  newMembers_lte: string;
-  newMembers_gt: string;
-  newMembers_lt: string;
-
-  userOperations_gte: string;
-  userOperations_lte: string;
-  userOperations_gt: string;
-  userOperations_lt: string;
-
-  gasSpent_gte: string;
-  gasSpent_lte: string;
-  gasSpent_gt: string;
-  gasSpent_lt: string;
-
-  revenueGenerated_gte: string;
-  revenueGenerated_lte: string;
-  revenueGenerated_gt: string;
-  revenueGenerated_lt: string;
-
-  totalMembers_gte: string;
-  totalMembers_lte: string;
-  totalMembers_gt: string;
-  totalMembers_lt: string;
-
-  totalDeposits_gte: string;
-  totalDeposits_lte: string;
-  totalDeposits_gt: string;
-  totalDeposits_lt: string;
-
-  // Date range operators
-  date_gte: string; // Date greater than or equal
-  date_lte: string; // Date less than or equal
-  date_gt: string; // Date greater than
-  date_lt: string; // Date less than
-  date_in: string[]; // Multiple dates
-  date_not_in: string[]; // Exclude dates
-
-  // Filtering by related entities
-  pool_in: string[]; // Multiple pool IDs
-  pool_not_in: string[]; // Exclude pool IDs
-}>;
+export interface DailyPoolStatsWhereInput {
+  id?: string;
+  poolId?: string;
+  poolId_in?: string[];
+  network?: NetworkName;
+  network_in?: NetworkName[];
+  date?: string;
+  date_gte?: string;
+  date_lte?: string;
+  newMembers_gte?: string;
+  newMembers_lte?: string;
+  userOperations_gte?: string;
+  userOperations_lte?: string;
+  gasSpent_gte?: string;
+  gasSpent_lte?: string;
+  revenueGenerated_gte?: string;
+  revenueGenerated_lte?: string;
+  totalMembers_gte?: string;
+  totalMembers_lte?: string;
+  totalDeposits_gte?: string;
+  totalDeposits_lte?: string;
+  createdAtBlock?: string;
+  createdAtBlock_gte?: string;
+  createdAtBlock_lte?: string;
+  createdAtTimestamp?: string;
+  createdAtTimestamp_gte?: string;
+  createdAtTimestamp_lte?: string;
+}
 
 /**
  * Typed where conditions for DailyGlobalStats entity
  */
-export type DailyGlobalStatsWhereInput = Partial<{
-  // Direct field matches
-  id: string;
-  date: string; // Exact date match (YYYY-MM-DD)
-
-  // Range operators for numeric fields
-  newPools_gte: string;
-  newPools_lte: string;
-  newPools_gt: string;
-  newPools_lt: string;
-
-  totalNewMembers_gte: string;
-  totalNewMembers_lte: string;
-  totalNewMembers_gt: string;
-  totalNewMembers_lt: string;
-
-  totalUserOperations_gte: string;
-  totalUserOperations_lte: string;
-  totalUserOperations_gt: string;
-  totalUserOperations_lt: string;
-
-  totalGasSpent_gte: string;
-  totalGasSpent_lte: string;
-  totalGasSpent_gt: string;
-  totalGasSpent_lt: string;
-
-  totalRevenueGenerated_gte: string;
-  totalRevenueGenerated_lte: string;
-  totalRevenueGenerated_gt: string;
-  totalRevenueGenerated_lt: string;
-
-  totalActivePools_gte: string;
-  totalActivePools_lte: string;
-  totalActivePools_gt: string;
-  totalActivePools_lt: string;
-
-  totalMembers_gte: string;
-  totalMembers_lte: string;
-  totalMembers_gt: string;
-  totalMembers_lt: string;
-
-  // Date range operators
-  date_gte: string; // Date greater than or equal
-  date_lte: string; // Date less than or equal
-  date_gt: string; // Date greater than
-  date_lt: string; // Date less than
-  date_in: string[]; // Multiple dates
-  date_not_in: string[]; // Exclude dates
-}>;
+export interface DailyGlobalStatsWhereInput {
+  id?: string; // The ID of DailyGlobalStats is typically a combination of network and date (e.g., "base-sepolia-2024-01-01")
+  network_in?: NetworkName[]; // For filtering by network (if the ID isn't directly the network)
+  date?: string; // For a specific date query (if ID is not used for this)
+  date_gte?: string;
+  date_lte?: string;
+  newPools_gte?: string;
+  newPools_lte?: string;
+  totalNewMembers_gte?: string;
+  totalNewMembers_lte?: string;
+  totalUserOperations_gte?: string;
+  totalUserOperations_lte?: string;
+  totalGasSpent_gte?: string;
+  totalGasSpent_lte?: string;
+  totalRevenueGenerated_gte?: string;
+  totalRevenueGenerated_lte?: string;
+  totalActivePools_gte?: string;
+  totalActivePools_lte?: string;
+  totalMembers_gte?: string;
+  totalMembers_lte?: string;
+}
 
 /**
  * ========================================

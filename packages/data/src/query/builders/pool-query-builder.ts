@@ -1,674 +1,495 @@
-import { BaseQueryBuilder } from "./base-query-builder.js";
-import { PoolFields, PoolWhereInput, RootHistoryItem } from "../types.js";
-import { Pool, PoolMember, MerkleRoot } from "../../types/subgraph.js";
-import type { SubgraphClient } from "../../client/subgraph-client.js";
-import { serializePool, SerializedPool } from "../../transformers/index.js";
-
 /**
- * Default fields to fetch when no specific fields are selected
- * Updated to match new subgraph schema
+ * Query builder for Pool entities
+ * Updated for the new network-aware schema structure
  */
-const DEFAULT_POOL_FIELDS: PoolFields[] = [
-  "id",
-  "poolId",
-  "joiningFee",
-  "memberCount",
-  "createdAtTimestamp",
-];
+
+import type { SubgraphClient } from "../../client/subgraph-client.js";
+import type { Pool, NetworkName } from "../../types/subgraph.js";
+import { BaseQueryBuilder } from "./base-query-builder.js";
+
+import { GET_POOL_DETAILS } from "../../client/queries.js";
+import { PoolFields, PoolWhereInput } from "../types.js";
+
+export type PoolOrderBy =
+  | "createdAtTimestamp"
+  | "memberCount"
+  | "totalDeposits"
+  | "joiningFee"
+  | "lastUpdatedTimestamp"
+  | "poolId";
 
 /**
- * Query builder for Pool entities with pool-specific convenience methods
+ * Query builder for Pool entities
  *
- * Updated for new PaymasterContract-based subgraph structure
+ * Provides a fluent interface for building complex pool queries
+ * with full support for the new network-aware schema.
  */
 export class PoolQueryBuilder extends BaseQueryBuilder<
   Pool,
   PoolFields,
-  PoolWhereInput
+  PoolWhereInput,
+  PoolOrderBy
 > {
-  constructor(private client: SubgraphClient) {
-    super();
+  private includeMembers: boolean = false;
+  private membersLimit: number = 10;
+
+  constructor(client: SubgraphClient) {
+    super(client, "pools", "poolId", "desc");
   }
 
   /**
-   * Filter by specific pool ID
-   *
-   * @param poolId - The pool ID to filter by
-   * @returns this for method chaining
+   * Override default fields for Pool entity.
    */
-  byId(poolId: string): this {
-    return this.where({ poolId });
+  protected getDefaultFields(): string {
+    const baseFields = `
+      id
+      poolId
+      network
+      chainId
+      joiningFee
+      totalDeposits
+      memberCount
+      currentMerkleRoot
+      currentRootIndex
+      rootHistoryCount
+      createdAtBlock
+      createdAtTransaction
+      createdAtTimestamp
+      lastUpdatedBlock
+      lastUpdatedTimestamp
+      paymaster {
+        id
+        contractType
+        address
+      }
+    `;
+
+    // If members are requested, include them in the query
+    if (this.includeMembers) {
+      return (
+        baseFields +
+        `
+      members(first: ${this.membersLimit}, orderBy: addedAtTimestamp, orderDirection: desc) {
+        id
+        memberIndex
+        identityCommitment
+        merkleRootWhenAdded
+        rootIndexWhenAdded
+        addedAtBlock
+        addedAtTransaction
+        addedAtTimestamp
+        gasUsed
+        nullifierUsed
+        nullifier
+      }
+      `
+      );
+    }
+
+    return baseFields;
   }
+  /**
+   * ========================================
+   * FILTERING METHODS
+   * ========================================
+   */
 
   /**
-   * Filter by paymaster contract address
+   * Filter by network
    *
-   * @param paymasterAddress - The paymaster contract address
-   * @returns this for method chaining
-   */
-  byPaymaster(paymasterAddress: string): this {
-    return this.where({ paymaster: paymasterAddress });
-  }
-
-  /**
-   * Filter by multiple paymaster contracts
+   * @param network - Network identifier
+   * @returns PoolQueryBuilder for method chaining
    *
-   * @param paymasterAddresses - Array of paymaster contract addresses
-   * @returns this for method chaining
+   * @example
+   * ```typescript
+   * const pools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .execute();
+   * ```
    */
-  byPaymasters(paymasterAddresses: string[]): this {
-    return this.where({ paymaster_in: paymasterAddresses });
-  }
-
-  /**
-   * Filter pools by joining fee range
-   *
-   * @param min - Minimum joining fee (in wei as string)
-   * @param max - Maximum joining fee (in wei as string)
-   * @returns this for method chaining
-   */
-  joiningFeeBetween(min: string, max: string): this {
-    return this.where({
-      joiningFee_gte: min,
-      joiningFee_lte: max,
-    });
-  }
-
-  /**
-   * Filter pools with joining fee less than or equal to specified amount
-   *
-   * @param maxFee - Maximum joining fee (in wei as string)
-   * @returns this for method chaining
-   */
-  maxJoiningFee(maxFee: string): this {
-    return this.where({ joiningFee_lte: maxFee });
-  }
-
-  /**
-   * Filter pools with minimum joining fee
-   *
-   * @param minFee - Minimum joining fee (in wei as string)
-   * @returns this for method chaining
-   */
-  minJoiningFee(minFee: string): this {
-    return this.where({ joiningFee_gte: minFee });
-  }
-
-  /**
-   * Filter pools with minimum number of members
-   *
-   * @param count - Minimum member count
-   * @returns this for method chaining
-   */
-  withMinMembers(count: number): this {
-    return this.where({ memberCount_gte: count.toString() });
-  }
-
-  /**
-   * Filter pools with maximum number of members
-   *
-   * @param count - Maximum member count
-   * @returns this for method chaining
-   */
-  withMaxMembers(count: number): this {
-    return this.where({ memberCount_lte: count.toString() });
-  }
-
-  /**
-   * Filter pools by member count range
-   *
-   * @param min - Minimum member count
-   * @param max - Maximum member count
-   * @returns this for method chaining
-   */
-  memberCountBetween(min: number, max: number): this {
-    return this.where({
-      memberCount_gte: min.toString(),
-      memberCount_lte: max.toString(),
-    });
-  }
-
-  /**
-   * Filter pools by total deposits range
-   *
-   * @param min - Minimum total deposits (in wei as string)
-   * @param max - Maximum total deposits (in wei as string)
-   * @returns this for method chaining
-   */
-  totalDepositsBetween(min: string, max: string): this {
-    return this.where({
-      totalDeposits_gte: min,
-      totalDeposits_lte: max,
-    });
-  }
-
-  /**
-   * Filter pools created after specific timestamp
-   *
-   * @param timestamp - Minimum creation timestamp
-   * @returns this for method chaining
-   */
-  createdAfter(timestamp: string): this {
-    return this.where({ createdAtTimestamp_gt: timestamp });
-  }
-
-  /**
-   * Filter pools created before specific timestamp
-   *
-   * @param timestamp - Maximum creation timestamp
-   * @returns this for method chaining
-   */
-  createdBefore(timestamp: string): this {
-    return this.where({ createdAtTimestamp_lt: timestamp });
-  }
-
-  /**
-   * Order pools by specific field and direction
-   *
-   * @param field - Field to order by
-   * @param direction - Order direction ("asc" or "desc")
-   * @returns this for method chaining
-   */
-  orderBy(field: string, direction: "asc" | "desc" = "asc"): this {
-    this.config.orderBy = field;
-    this.config.orderDirection = direction;
+  byNetwork(network: NetworkName): this {
+    this.where({ network: network });
     return this;
   }
 
   /**
-   * Order pools by creation date (newest first)
+   * Filter by pool ID
    *
-   * @returns this for method chaining
+   * @param poolId - Pool ID
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const pool = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .byPoolId("123")
+   *   .first();
+   * ```
    */
-  orderByNewest(): this {
-    return this.orderBy("createdAtTimestamp", "desc");
+  byPoolId(poolId: string): this {
+    // Note: The GraphQL schema expects `poolId` as a `BigInt` for direct filtering,
+    // but the `id` field (network-prefixed) is the primary ID.
+    // If filtering by numeric `poolId`, it should be converted to string.
+    // For `GET_POOL_DETAILS`, the `id` is "network-poolId".
+    // This method will set the `id` for `GET_POOL_DETAILS` or `poolId` for general filtering.
+    this.where({ poolId: poolId });
+    return this;
   }
 
   /**
-   * Order pools by creation date (oldest first)
+   * Filter by paymaster address
    *
-   * @returns this for method chaining
+   * @param paymaster - Paymaster contract address
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const pools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .byPaymaster("0x3BEeC075aC5A77fFE0F9ee4bbb3DCBd07fA93fbf")
+   *   .execute();
+   * ```
    */
-  orderByOldest(): this {
-    return this.orderBy("createdAtTimestamp", "asc");
+  byPaymaster(paymaster: string): this {
+    this.where({ paymaster_: { address: paymaster } });
+    return this;
   }
 
   /**
-   * Order pools by member count (highest first)
+   * Filter by minimum member count
    *
-   * @returns this for method chaining
+   * @param minMembers - Minimum number of members
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const popularPools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .withMinMembers(10)
+   *   .execute();
+   * ```
    */
-  orderByPopularity(): this {
-    return this.orderBy("memberCount", "desc");
+  withMinMembers(minMembers: number): this {
+    this.where({ memberCount_gte: minMembers.toString() });
+    return this;
   }
 
   /**
-   * Order pools by joining fee (lowest first)
+   * Filter by maximum member count
    *
-   * @returns this for method chaining
+   * @param maxMembers - Maximum number of members
+   * @returns PoolQueryBuilder for method chaining
    */
-  orderByAffordability(): this {
-    return this.orderBy("joiningFee", "asc");
+  withMaxMembers(maxMembers: number): this {
+    this.where({ memberCount_lte: maxMembers.toString() });
+    return this;
   }
 
   /**
-   * Order pools by total deposits (highest first)
+   * Filter by minimum total deposits
    *
-   * @returns this for method chaining
+   * @param minDeposits - Minimum total deposits in wei (as string)
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const wellFundedPools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .withMinDeposits("1000000000000000000") // 1 ETH
+   *   .execute();
+   * ```
    */
-  orderByTotalDeposits(): this {
-    return this.orderBy("totalDeposits", "desc");
+  withMinDeposits(minDeposits: string): this {
+    this.where({ totalDeposits_gte: minDeposits });
+    return this;
   }
 
   /**
-   * Build GraphQL query string for pools
+   * Filter by maximum total deposits
    *
-   * @private
-   * @param fields - Fields to include in the query
-   * @returns GraphQL query string
+   * @param maxDeposits - Maximum total deposits in wei (as string)
+   * @returns PoolQueryBuilder for method chaining
    */
-  private buildPoolsQuery(fields: PoolFields[]): string {
-    const fieldsList = fields.map((field) => `      ${field}`).join("\n");
-    return `
-      query GetPools(
-        $first: Int!
-        $skip: Int!
-        $orderBy: Pool_orderBy
-        $orderDirection: OrderDirection
-        $where: Pool_filter
-      ) {
-        pools(
-          first: $first
-          skip: $skip
-          orderBy: $orderBy
-          orderDirection: $orderDirection
-          where: $where
-        ) {
-${fieldsList}
-          paymaster {
-            id
-            contractType
-            address
-          }
-        }
-      }
-    `;
+  withMaxDeposits(maxDeposits: string): this {
+    this.where({ totalDeposits_lte: maxDeposits });
+    return this;
   }
 
   /**
-   * Build query variables from current configuration
+   * Filter by minimum joining fee
    *
-   * @private
-   * @returns Query variables object
+   * @param minJoiningFee - Minimum joining fee in wei (as string)
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const expensivePools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .withMinJoiningFee("100000000000000000") // 0.1 ETH
+   *   .execute();
+   * ```
    */
-  private buildQueryVariables(): Record<string, any> {
-    const config = this.getConfig();
-
-    const variables: Record<string, any> = {
-      first: config.first || 100,
-      skip: config.skip || 0,
-    };
-
-    if (config.orderBy) {
-      variables.orderBy = config.orderBy;
-    }
-
-    if (config.orderDirection) {
-      variables.orderDirection = config.orderDirection;
-    }
-
-    if (config.where && Object.keys(config.where).length > 0) {
-      variables.where = config.where;
-    }
-
-    return variables;
+  withMinJoiningFee(minJoiningFee: string): this {
+    this.where({ joiningFee_gte: minJoiningFee });
+    return this;
   }
 
   /**
-   * Execute the query and return pool results
+   * Filter by maximum joining fee
    *
-   * @returns Promise resolving to array of Pool entities
+   * @param maxJoiningFee - Maximum joining fee in wei (as string)
+   * @returns PoolQueryBuilder for method chaining
    */
-  async execute(): Promise<Pool[]> {
-    const fields = this.selectedFields || DEFAULT_POOL_FIELDS;
-    const query = this.buildPoolsQuery(fields);
-    const variables = this.buildQueryVariables();
-
-    const response = await this.client.executeQuery<{ pools: Pool[] }>(
-      query,
-      variables,
-    );
-    return response.pools;
+  withMaxJoiningFee(maxJoiningFee: string): this {
+    this.where({ joiningFee_lte: maxJoiningFee });
+    return this;
   }
 
   /**
-   * Execute the query and return serialized pool results
+   * Filter by creation date (after)
    *
-   * @returns Promise resolving to array of SerializedPool entities
+   * @param timestamp - Timestamp string or number
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const recentPools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .createdAfter("1704067200") // 2024-01-01
+   *   .execute();
+   * ```
    */
-  async executeAndSerialize(): Promise<SerializedPool[]> {
-    const pools = await this.execute();
-    return pools.map(serializePool);
+  createdAfter(timestamp: string | number): this {
+    this.where({ createdAtTimestamp_gte: timestamp.toString() });
+    return this;
   }
 
   /**
-   * Get pool with members included
+   * Filter by creation date (before)
    *
-   * @param memberLimit - Maximum number of members to fetch per pool
-   * @returns PoolQueryWithMembersBuilder for extended functionality
+   * @param timestamp - Timestamp string or number
+   * @returns PoolQueryBuilder for method chaining
    */
-  withMembers(memberLimit: number = 100): PoolQueryWithMembersBuilder {
-    return new PoolQueryWithMembersBuilder(
-      this.client,
-      this.getConfig(),
-      memberLimit,
-    );
+  createdBefore(timestamp: string | number): this {
+    this.where({ createdAtTimestamp_lte: timestamp.toString() });
+    return this;
   }
 
   /**
-   * Get detailed pool information by ID
+   * Filter only pools with members
    *
-   * @param poolId - Pool ID to fetch
-   * @param includeMembers - Whether to include members list and root history
-   * @param memberLimit - Maximum members to fetch when includeMembers=true
-   * @returns Promise resolving to pool with optional members and root history, or null if not found
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const activePools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .withMembers(20)  // Include up to 20 members
+   *   .execute();
+   * ```
    */
-  async getPoolById(
-    poolId: string,
-    includeMembers: boolean = false,
-    memberLimit: number = 100,
+  withMembers(limit: number = 10): this {
+    this.includeMembers = true;
+    this.membersLimit = limit;
+    return this;
+  }
+
+  /**
+   * Filter only active pools (positive deposits)
+   *
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const activePools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .onlyActive()
+   *   .execute();
+   * ```
+   */
+  onlyActive(): this {
+    this.where({ totalDeposits_gt: "0" });
+    return this;
+  }
+
+  /**
+   * ========================================
+   * ORDERING METHODS
+   * ========================================
+   */
+
+  /**
+   * Order by member count (most popular first)
+   *
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const popularPools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .orderByPopularity()
+   *   .limit(10)
+   *   .execute();
+   * ```
+   */
+  orderByPopularity(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("memberCount", direction);
+    return this;
+  }
+
+  /**
+   * Order by total deposits
+   *
+   * @returns PoolQueryBuilder for method chaining
+   */
+  orderByDeposits(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("totalDeposits", direction);
+    return this;
+  }
+
+  /**
+   * Order by joining fee
+   *
+   * @returns PoolQueryBuilder for method chaining
+   */
+  orderByJoiningFee(direction: "asc" | "desc" = "asc"): this {
+    this.orderBy("joiningFee", direction);
+    return this;
+  }
+
+  /**
+   * Order by creation date (newest first)
+   *
+   * @returns PoolQueryBuilder for method chaining
+   */
+  orderByCreation(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("createdAtTimestamp", direction);
+    return this;
+  }
+
+  /**
+   * Order by last activity
+   *
+   * @returns PoolQueryBuilder for method chaining
+   */
+  orderByActivity(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("lastUpdatedTimestamp", direction);
+    return this;
+  }
+
+  /**
+   * Order by pool ID
+   *
+   * @returns PoolQueryBuilder for method chaining
+   */
+  orderByPoolId(direction: "asc" | "desc" = "asc"): this {
+    this.orderBy("poolId", direction);
+    return this;
+  }
+
+  /**
+   * ========================================
+   * SPECIAL QUERIES
+   * ========================================
+   */
+
+  /**
+   * Get pool with detailed information including members and merkle roots
+   *
+   * @param membersLimit - Maximum number of members to fetch
+   * @param rootsLimit - Maximum number of merkle roots to fetch
+   * @returns Promise resolving to pool with detailed information
+   */
+  async withDetails(
+    membersLimit: number = 100,
+    rootsLimit: number = 50,
   ): Promise<
-    (Pool & { members?: PoolMember[]; merkleRoots?: MerkleRoot[] }) | null
+    | (Pool & {
+        members: any[];
+        merkleRoots: any[];
+      })
+    | null
   > {
-    const poolQuery = new PoolQueryBuilder(this.client);
-
-    if (includeMembers) {
-      const poolsWithMembers = await poolQuery
-        .byId(poolId)
-        .withMembers(memberLimit)
-        .execute();
-
-      return poolsWithMembers.length > 0 ? poolsWithMembers[0] || null : null;
-    } else {
-      return await poolQuery.byId(poolId).first();
-    }
-  }
-
-  /**
-   * Get merkle root history for a specific pool
-   *
-   * @param poolId - Pool ID to get root history for
-   * @param options - Pagination options
-   * @returns Promise resolving to array of MerkleRoot entries
-   */
-  async getPoolRootHistory(
-    poolId: string,
-    options: { first?: number; skip?: number } = {},
-  ): Promise<MerkleRoot[]> {
-    const { first = 100, skip = 0 } = options;
-
-    const query = `
-      query GetPoolRootHistory(
-        $poolId: String!
-        $first: Int!
-        $skip: Int!
-      ) {
-        merkleRoots(
-          where: { pool: $poolId }
-          first: $first
-          skip: $skip
-          orderBy: createdAtTimestamp
-          orderDirection: desc
-        ) {
-          id
-          root
-          rootIndex
-          createdAtBlock
-          createdAtTransaction
-          createdAtTimestamp
-        }
-      }
-    `;
-
-    const variables = { poolId, first, skip };
-
-    const response = await this.client.executeQuery<{
-      merkleRoots: MerkleRoot[];
-    }>(query, variables);
-
-    return response.merkleRoots;
-  }
-
-  /**
-   * Get valid root indices for a specific pool
-   *
-   * @param poolId - Pool ID to get valid root indices for
-   * @returns Promise resolving to array of valid root history items
-   */
-  async getValidRootIndices(poolId: string): Promise<RootHistoryItem[]> {
-    const query = `
-      query GetValidRootIndices($poolId: String!) {
-        pool(id: $poolId) {
-          id
-          currentRootIndex
-          rootHistoryCount
-          merkleRoots(orderBy: rootIndex, orderDirection: asc) {
-            id
-            root
-            rootIndex
-            createdAtTimestamp
-            createdAtBlock
-          }
-        }
-      }
-    `;
-
-    const variables = { poolId };
-
-    const response = await this.client.executeQuery<{
-      pool: {
-        id: string;
-        currentRootIndex: number;
-        rootHistoryCount: number;
-        merkleRoots: RootHistoryItem[];
-      } | null;
-    }>(query, variables);
-
-    return response.pool?.merkleRoots || [];
-  }
-
-  /**
-   * Find the index for a specific merkle root in a pool
-   *
-   * @param poolId - Pool ID to search in
-   * @param merkleRoot - Merkle root to find
-   * @returns Promise resolving to root index info or null if not found
-   */
-  async findRootIndex(
-    poolId: string,
-    merkleRoot: string,
-  ): Promise<{ id: string; root: string; rootIndex: number } | null> {
-    const query = `
-      query FindRootIndex($poolId: String!, $merkleRoot: BigInt!) {
-        merkleRoots(where: { 
-          pool: $poolId, 
-          root: $merkleRoot
-        }) {
-          id
-          root
-          rootIndex
-          createdAtTimestamp
-        }
-      }
-    `;
-
-    const variables = { poolId, merkleRoot };
-
-    const response = await this.client.executeQuery<{
-      merkleRoots: Array<{
-        id: string;
-        root: string;
-        rootIndex: number;
-        createdAtTimestamp: string;
-      }>;
-    }>(query, variables);
-
-    const result = response.merkleRoots[0];
-    return result
-      ? {
-          id: result.id,
-          root: result.root,
-          rootIndex: result.rootIndex,
-        }
-      : null;
-  }
-
-  /**
-   * Check if a pool exists by ID
-   *
-   * @param poolId - Pool ID to check
-   * @returns Promise resolving to true if pool exists, false otherwise
-   */
-  async poolExists(poolId: string): Promise<boolean> {
-    const poolQuery = new PoolQueryBuilder(this.client);
-    return await poolQuery.byId(poolId).exists();
-  }
-
-  /**
-   * Clone the current query builder
-   *
-   * @returns New PoolQueryBuilder instance with same configuration
-   */
-  clone(): PoolQueryBuilder {
-    const cloned = new PoolQueryBuilder(this.client);
-    cloned.config = { ...this.config };
-    cloned.selectedFields = this.selectedFields
-      ? [...this.selectedFields]
-      : undefined;
-    return cloned;
-  }
-}
-
-/**
- * Extended query builder for pools that includes member data
- */
-export class PoolQueryWithMembersBuilder extends BaseQueryBuilder<
-  Pool & { members: PoolMember[]; merkleRoots: MerkleRoot[] },
-  PoolFields,
-  PoolWhereInput
-> {
-  constructor(
-    private client: SubgraphClient,
-    private baseConfig: any,
-    private memberLimit: number,
-  ) {
-    super();
-    this.config = { ...baseConfig };
-  }
-
-  /**
-   * Build GraphQL query string for pools with members
-   *
-   * @private
-   * @returns GraphQL query string
-   */
-  private buildPoolsWithMembersQuery(): string {
-    return `
-      query GetPoolsWithMembers(
-        $first: Int!
-        $skip: Int!
-        $orderBy: Pool_orderBy
-        $orderDirection: OrderDirection
-        $where: Pool_filter
-        $memberLimit: Int!
-      ) {
-        pools(
-          first: $first
-          skip: $skip
-          orderBy: $orderBy
-          orderDirection: $orderDirection
-          where: $where
-        ) {
-          id
-          poolId
-          joiningFee
-          totalDeposits
-          memberCount
-          currentMerkleRoot
-          currentRootIndex
-          rootHistoryCount
-          createdAtBlock
-          createdAtTransaction
-          createdAtTimestamp
-          lastUpdatedBlock
-          lastUpdatedTimestamp
-          paymaster {
-            id
-            contractType
-            address
-          }
-          members(first: $memberLimit, orderBy: addedAtTimestamp, orderDirection: desc) {
-            id
-            memberIndex
-            identityCommitment
-            merkleRootWhenAdded
-            rootIndexWhenAdded
-            addedAtBlock
-            addedAtTransaction
-            addedAtTimestamp
-            gasUsed
-            nullifierUsed
-            nullifier
-          }
-          merkleRoots(orderBy: rootIndex, orderDirection: asc) {
-            id
-            root
-            rootIndex
-            createdAtBlock
-            createdAtTransaction
-            createdAtTimestamp
-          }
-        }
-      }
-    `;
-  }
-
-  /**
-   * Build query variables from current configuration
-   *
-   * @private
-   * @returns Query variables object
-   */
-  private buildQueryVariables(): Record<string, any> {
-    const config = this.getConfig();
-
-    const variables: Record<string, any> = {
-      first: config.first || 100,
-      skip: config.skip || 0,
-      memberLimit: this.memberLimit,
-    };
-
-    if (config.orderBy) {
-      variables.orderBy = config.orderBy;
+    if (!this.config.where?.poolId || !this.config.where?.network) {
+      throw new Error("Pool ID and network are required for withDetails query");
     }
 
-    if (config.orderDirection) {
-      variables.orderDirection = config.orderDirection;
+    const network = this.config.where.network;
+    const poolId = this.config.where.poolId;
+    const id = `${network}-${poolId}`;
+
+    const result = await this.client.executeQuery<{
+      pool: Pool & {
+        members: any[];
+        merkleRoots: any[];
+      };
+    }>(GET_POOL_DETAILS, {
+      id,
+      membersFirst: membersLimit,
+      rootsFirst: rootsLimit,
+    });
+
+    return result.pool || null;
+  }
+
+  /**
+   * Get pools with minimum member count
+   *
+   * @param minMembers - Minimum number of members
+   * @returns Promise resolving to array of pools with minimum members
+   */
+  async withMinimumMembers(minMembers: number): Promise<Pool[]> {
+    if (!this.config.where?.network) {
+      throw new Error("Network is required for withMinimumMembers query");
     }
 
-    if (config.where && Object.keys(config.where).length > 0) {
-      variables.where = config.where;
-    }
-
-    return variables;
+    return this.clone()
+      .withMinMembers(minMembers)
+      .orderByPopularity("desc")
+      .execute();
   }
 
   /**
-   * Execute query and return pools with their members and root history
+   * Get pool statistics
    *
-   * @returns Promise resolving to pools with member data and root history included
+   * @returns Promise resolving to pool statistics
    */
-  async execute(): Promise<
-    (Pool & { members: PoolMember[]; merkleRoots: MerkleRoot[] })[]
-  > {
-    const query = this.buildPoolsWithMembersQuery();
-    const variables = this.buildQueryVariables();
+  async getStatistics(): Promise<{
+    totalPools: number;
+    totalMembers: string;
+    totalDeposits: string;
+    averageJoiningFee: string;
+    averageMemberCount: number;
+  }> {
+    // Fetch all relevant pools using the current builder's filters
+    const pools = await this.execute();
 
-    const response = await this.client.executeQuery<{
-      pools: (Pool & {
-        members: PoolMember[];
-        merkleRoots: MerkleRoot[];
-      })[];
-    }>(query, variables);
-
-    return response.pools;
-  }
-
-  /**
-   * Execute query and return serialized pools with members and root history
-   *
-   * @returns Promise resolving to array of SerializedPool entities with members and root history
-   */
-  async executeAndSerialize(): Promise<SerializedPool[]> {
-    const poolsWithMembers = await this.execute();
-    return poolsWithMembers.map(serializePool);
-  }
-
-  /**
-   * Clone the current query builder
-   *
-   * @returns New PoolQueryWithMembersBuilder instance with same configuration
-   */
-  clone(): PoolQueryWithMembersBuilder {
-    const cloned = new PoolQueryWithMembersBuilder(
-      this.client,
-      this.baseConfig,
-      this.memberLimit,
+    const totalPools = pools.length;
+    const totalMembers = pools.reduce(
+      (sum, pool) => sum + pool.memberCount,
+      0n,
     );
-    cloned.config = { ...this.config };
-    cloned.selectedFields = this.selectedFields
-      ? [...this.selectedFields]
-      : undefined;
-    return cloned;
+    const totalDeposits = pools.reduce(
+      (sum, pool) => sum + pool.totalDeposits,
+      0n,
+    );
+    const totalJoiningFees = pools.reduce(
+      (sum, pool) => sum + pool.joiningFee,
+      0n,
+    );
+
+    // Ensure division by BigInt(totalPools) to avoid issues with large numbers
+    const averageJoiningFee =
+      totalPools > 0 ? totalJoiningFees / BigInt(totalPools) : 0n;
+    const averageMemberCount =
+      totalPools > 0 ? Number(totalMembers) / totalPools : 0;
+
+    return {
+      totalPools,
+      totalMembers: totalMembers.toString(),
+      totalDeposits: totalDeposits.toString(),
+      averageJoiningFee: averageJoiningFee.toString(),
+      averageMemberCount: Math.round(averageMemberCount * 100) / 100,
+    };
   }
 }

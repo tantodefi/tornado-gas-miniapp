@@ -1,37 +1,52 @@
-import type { SubgraphClient } from "../client/subgraph-client.js";
-import { PoolQueryBuilder } from "./builders/pool-query-builder.js";
-import { PoolMemberQueryBuilder } from "./builders/member-query-builder.js";
-import { PaymasterContractQueryBuilder } from "./builders/paymaster-query-builder.js";
-import { UserOperationQueryBuilder } from "./builders/user-operation-query-builder.js";
-import {
-  DailyPoolStatsQueryBuilder,
-  DailyGlobalStatsQueryBuilder,
-} from "./builders/analytics-query-builder.js";
-import { RevenueWithdrawalQueryBuilder } from "./builders/revenue-query-builder.js";
-import { NullifierUsageQueryBuilder } from "./builders/nullifier-usage-query-builder.js";
-
 /**
  * Main query builder that provides access to all entity-specific query builders
+ * Updated for the new network-aware schema structure
  *
  * This is the entry point for the fluent query API. It provides methods to start
  * building queries for different entity types and includes convenience methods
  * for common cross-entity queries.
+ */
+
+import type { SubgraphClient } from "../client/subgraph-client.js";
+import type { NetworkName } from "../types/subgraph.js";
+import { PaymasterContractQueryBuilder } from "./builders/paymaster-query-builder.js";
+import { PoolQueryBuilder } from "./builders/pool-query-builder.js";
+import { PoolMemberQueryBuilder } from "./builders/member-query-builder.js";
+import { MerkleRootQueryBuilder } from "./builders/merkle-root-query-builder.js";
+import { UserOperationQueryBuilder } from "./builders/user-operation-query-builder.js";
+import { RevenueWithdrawalQueryBuilder } from "./builders/revenue-query-builder.js";
+import { NullifierUsageQueryBuilder } from "./builders/nullifier-usage-query-builder.js";
+import { DailyPoolStatsQueryBuilder } from "./builders/daily-pool-stats-query-builder.js";
+import { DailyGlobalStatsQueryBuilder } from "./builders/daily-global-stats-query-builder.js";
+import { NetworkInfoQueryBuilder } from "./builders/network-info-query-builder.js";
+
+/**
+ * Main query builder that provides access to all entity-specific query builders
  *
- * Updated to include all new entity query builders for the enhanced subgraph schema.
+ * This class serves as the entry point for the fluent query API and provides
+ * methods to start building queries for different entity types.
  */
 export class QueryBuilder {
   constructor(private client: SubgraphClient) {}
 
   /**
-   * Start building a paymaster contract query
+   * ========================================
+   * ENTITY-SPECIFIC QUERY BUILDERS
+   * ========================================
+   */
+
+  /**
+   * Start building a query for paymaster contracts
    *
-   * @returns PaymasterContractQueryBuilder for fluent paymaster queries
+   * @returns PaymasterContractQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const paymasters = await query.paymasters()
+   * const paymasters = await client.query()
+   *   .paymasters()
+   *   .byNetwork("base-sepolia")
    *   .byType("GasLimited")
-   *   .withMinRevenue("1000000000000000000") // 1 ETH
+   *   .withMinRevenue("1000000000000000000")
    *   .orderByRevenue()
    *   .limit(10)
    *   .execute();
@@ -42,16 +57,17 @@ export class QueryBuilder {
   }
 
   /**
-   * Start building a pools query
+   * Start building a query for pools
    *
-   * @returns PoolQueryBuilder for fluent pool queries
+   * @returns PoolQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const pools = await query.pools()
-   *   .select("poolId", "joiningFee", "memberCount")
-   *   .withMinMembers(5)
-   *   .maxJoiningFee("1000000000000000000") // 1 ETH
+   * const pools = await client.query()
+   *   .pools()
+   *   .byNetwork("base-sepolia")
+   *   .byPaymaster("0x456...")
+   *   .withMinMembers(10)
    *   .orderByPopularity()
    *   .limit(20)
    *   .execute();
@@ -62,37 +78,60 @@ export class QueryBuilder {
   }
 
   /**
-   * Start building a pool members query
+   * Start building a query for pool members
    *
-   * @returns PoolMemberQueryBuilder for fluent member queries
+   * @returns PoolMemberQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const members = await query.members()
-   *   .inPool("1")
-   *   .select("identityCommitment", "addedAtTimestamp", "memberIndex")
-   *   .orderByNewestAdded()
+   * const members = await client.query()
+   *   .poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .byPool("123")
+   *   .withNullifierUsed()
+   *   .orderByJoinDate()
    *   .limit(50)
    *   .execute();
    * ```
    */
-  members(): PoolMemberQueryBuilder {
+  poolMembers(): PoolMemberQueryBuilder {
     return new PoolMemberQueryBuilder(this.client);
   }
 
   /**
-   * Start building a user operations query
+   * Start building a query for merkle roots
    *
-   * @returns UserOperationQueryBuilder for fluent user operation queries
+   * @returns MerkleRootQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const userOps = await query.userOperations()
-   *   .bySender("0x123...")
-   *   .byPaymaster("0x456...")
-   *   .withMinGasCost("1000000000000000") // 0.001 ETH
-   *   .orderByNewestExecuted()
+   * const roots = await client.query()
+   *   .merkleRoots()
+   *   .byNetwork("base-sepolia")
+   *   .byPool("123")
+   *   .orderByIndex()
    *   .limit(100)
+   *   .execute();
+   * ```
+   */
+  merkleRoots(): MerkleRootQueryBuilder {
+    return new MerkleRootQueryBuilder(this.client);
+  }
+
+  /**
+   * Start building a query for user operations
+   *
+   * @returns UserOperationQueryBuilder for fluent query building
+   *
+   * @example
+   * ```typescript
+   * const userOps = await client.query()
+   *   .userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .byPaymaster("0x456...")
+   *   .bySender("0x789...")
+   *   .orderByTimestamp()
+   *   .limit(25)
    *   .execute();
    * ```
    */
@@ -101,17 +140,19 @@ export class QueryBuilder {
   }
 
   /**
-   * Start building a revenue withdrawals query
+   * Start building a query for revenue withdrawals
    *
-   * @returns RevenueWithdrawalQueryBuilder for fluent revenue withdrawal queries
+   * @returns RevenueWithdrawalQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const withdrawals = await query.revenueWithdrawals()
+   * const withdrawals = await client.query()
+   *   .revenueWithdrawals()
+   *   .byNetwork("base-sepolia")
    *   .byPaymaster("0x456...")
-   *   .withMinAmount("1000000000000000000") // 1 ETH
-   *   .orderByNewestWithdrawn()
-   *   .limit(50)
+   *   .withMinAmount("1000000000000000000")
+   *   .orderByAmount()
+   *   .limit(10)
    *   .execute();
    * ```
    */
@@ -120,17 +161,19 @@ export class QueryBuilder {
   }
 
   /**
-   * Start building a nullifier usage query
+   * Start building a query for nullifier usage (enhanced)
    *
-   * @returns NullifierUsageQueryBuilder for fluent nullifier usage queries
+   * @returns NullifierUsageQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const nullifierUsage = await query.nullifierUsage()
-   *   .byPool("1")
-   *   .usedOnly()
-   *   .withMinGasUsed("1000000000000000") // 0.001 ETH
-   *   .orderByNewestUsed()
+   * const nullifierUsage = await client.query()
+   *   .nullifierUsage()
+   *   .byNetwork("base-sepolia")
+   *   .byPaymaster("0x456...")
+   *   .onlyUsed()
+   *   .withGasUsed()
+   *   .orderByUsage()
    *   .limit(100)
    *   .execute();
    * ```
@@ -140,17 +183,18 @@ export class QueryBuilder {
   }
 
   /**
-   * Start building a daily pool stats query
+   * Start building a query for daily pool statistics
    *
-   * @returns DailyPoolStatsQueryBuilder for fluent daily pool stats queries
+   * @returns DailyPoolStatsQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const poolStats = await query.dailyPoolStats()
-   *   .forPool("1")
+   * const poolStats = await client.query()
+   *   .dailyPoolStats()
+   *   .byNetwork("base-sepolia")
+   *   .byPool("123")
    *   .forDateRange("2024-01-01", "2024-01-31")
-   *   .withMinNewMembers(5)
-   *   .orderByNewest()
+   *   .orderByDate()
    *   .execute();
    * ```
    */
@@ -159,21 +203,40 @@ export class QueryBuilder {
   }
 
   /**
-   * Start building a daily global stats query
+   * Start building a query for daily global statistics
    *
-   * @returns DailyGlobalStatsQueryBuilder for fluent daily global stats queries
+   * @returns DailyGlobalStatsQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const globalStats = await query.dailyGlobalStats()
+   * const globalStats = await client.query()
+   *   .dailyGlobalStats()
+   *   .byNetwork("base-sepolia")
    *   .forDateRange("2024-01-01", "2024-01-31")
    *   .withMinNewPools(2)
-   *   .orderByNewest()
+   *   .orderByDate()
    *   .execute();
    * ```
    */
   dailyGlobalStats(): DailyGlobalStatsQueryBuilder {
     return new DailyGlobalStatsQueryBuilder(this.client);
+  }
+
+  /**
+   * Start building a query for network information
+   *
+   * @returns NetworkInfoQueryBuilder for fluent query building
+   *
+   * @example
+   * ```typescript
+   * const networkInfo = await client.query()
+   *   .networkInfo()
+   *   .byNetwork("base-sepolia")
+   *   .execute();
+   * ```
+   */
+  networkInfo(): NetworkInfoQueryBuilder {
+    return new NetworkInfoQueryBuilder(this.client);
   }
 
   /**
@@ -183,500 +246,413 @@ export class QueryBuilder {
    */
 
   /**
-   * Get popular pools (convenience method)
+   * Get all data for a specific network
    *
-   * @param minMembers - Minimum number of members to consider popular
-   * @param limit - Maximum number of pools to return
-   * @returns Promise resolving to array of popular pools
-   *
-   * @example
-   * ```typescript
-   * const popularPools = await query.getPopularPools(10, 20);
-   * ```
-   */
-  async getPopularPools(minMembers: number = 10, limit: number = 20) {
-    return await this.pools()
-      .withMinMembers(minMembers)
-      .orderByPopularity()
-      .limit(limit)
-      .execute();
-  }
-
-  /**
-   * Get affordable pools (convenience method)
-   *
-   * @param maxJoiningFee - Maximum joining fee in wei
-   * @param limit - Maximum number of pools to return
-   * @returns Promise resolving to array of affordable pools
+   * @param network - Network identifier
+   * @returns Promise with comprehensive network data
    *
    * @example
    * ```typescript
-   * const affordablePools = await query.getAffordablePools("100000000000000000", 15); // 0.1 ETH max
+   * const networkData = await client.query().getNetworkOverview("base-sepolia");
+   * console.log(networkData.paymasters.length);
+   * console.log(networkData.pools.length);
+   * console.log(networkData.networkInfo.totalMembers);
    * ```
    */
-  async getAffordablePools(maxJoiningFee: string, limit: number = 20) {
-    return await this.pools()
-      .maxJoiningFee(maxJoiningFee)
-      .orderByAffordability()
-      .limit(limit)
-      .execute();
-  }
-
-  /**
-   * Get newest pools (convenience method)
-   *
-   * @param limit - Maximum number of pools to return
-   * @returns Promise resolving to array of newest pools
-   *
-   * @example
-   * ```typescript
-   * const newestPools = await query.getNewestPools(10);
-   * ```
-   */
-  async getNewestPools(limit: number = 20) {
-    return await this.pools().orderByNewest().limit(limit).execute();
-  }
-
-  /**
-   * Get pools by paymaster type (convenience method)
-   *
-   * @param paymasterType - Type of paymaster ("GasLimited" or "OneTimeUse")
-   * @param limit - Maximum number of pools to return
-   * @returns Promise resolving to array of pools from specified paymaster type
-   *
-   * @example
-   * ```typescript
-   * const gasLimitedPools = await query.getPoolsByPaymasterType("GasLimited", 25);
-   * ```
-   */
-  async getPoolsByPaymasterType(
-    paymasterType: "GasLimited" | "OneTimeUse",
-    limit: number = 20,
-  ) {
-    const paymasters = await this.paymasters().byType(paymasterType).execute();
-
-    const paymasterAddresses = paymasters.map((p) => p.address);
-
-    return await this.pools()
-      .byPaymasters(paymasterAddresses)
-      .orderByNewest()
-      .limit(limit)
-      .execute();
-  }
-
-  /**
-   * Get user's pool memberships (convenience method)
-   *
-   * @param identityCommitment - Identity commitment to search for
-   * @param limit - Maximum number of memberships to return
-   * @returns Promise resolving to array of pool memberships
-   *
-   * @example
-   * ```typescript
-   * const memberships = await query.getUserPoolMemberships("0x123...", 10);
-   * ```
-   */
-  async getUserPoolMemberships(identityCommitment: string, limit: number = 20) {
-    return await this.members().findPoolsByIdentity(identityCommitment, {
-      first: limit,
-    });
-  }
-
-  /**
-   * Get user's transaction history (convenience method)
-   *
-   * @param senderAddress - Sender address to search for
-   * @param limit - Maximum number of operations to return
-   * @returns Promise resolving to array of user operations
-   *
-   * @example
-   * ```typescript
-   * const userHistory = await query.getUserTransactionHistory("0x123...", 50);
-   * ```
-   */
-  async getUserTransactionHistory(senderAddress: string, limit: number = 50) {
-    return await this.userOperations()
-      .bySender(senderAddress)
-      .orderByNewestExecuted()
-      .limit(limit)
-      .withRelated()
-      .execute();
-  }
-
-  /**
-   * Get paymaster performance stats (convenience method)
-   *
-   * @param paymasterAddress - Paymaster contract address
-   * @returns Promise resolving to paymaster performance data
-   *
-   * @example
-   * ```typescript
-   * const stats = await query.getPaymasterStats("0x456...");
-   * ```
-   */
-  async getPaymasterStats(paymasterAddress: string) {
-    const paymaster = await this.paymasters()
-      .byAddress(paymasterAddress)
-      .withRelated()
-      .first();
-
-    if (!paymaster) {
-      return null;
-    }
-
-    const userOps = await this.userOperations()
-      .byPaymaster(paymasterAddress)
-      .execute();
-
-    const totalGasSpent = userOps.reduce((total, op) => {
-      return (BigInt(total) + op.actualGasCost).toString();
-    }, "0");
-
-    const avgGasCost =
-      userOps.length > 0
-        ? (BigInt(totalGasSpent) / BigInt(userOps.length)).toString()
-        : "0";
+  async getNetworkOverview(network: NetworkName): Promise<{
+    networkInfo: any;
+    paymasters: any[];
+    pools: any[];
+    recentUserOps: any[];
+    recentWithdrawals: any[];
+    dailyStats: any[];
+  }> {
+    const [
+      networkInfo,
+      paymasters,
+      pools,
+      recentUserOps,
+      recentWithdrawals,
+      dailyStats,
+    ] = await Promise.all([
+      this.networkInfo().byNetwork(network).first(),
+      this.paymasters().byNetwork(network).limit(10).execute(),
+      this.pools().byNetwork(network).limit(20).execute(),
+      this.userOperations().byNetwork(network).limit(10).execute(),
+      this.revenueWithdrawals().byNetwork(network).limit(5).execute(),
+      this.dailyGlobalStats().byNetwork(network).limit(30).execute(),
+    ]);
 
     return {
-      paymaster,
-      totalUserOperations: userOps.length,
-      totalGasSpent,
-      averageGasCost: avgGasCost,
-      totalPools: paymaster.pools.length,
-      totalWithdrawals: paymaster.revenueWithdrawals.length,
+      networkInfo,
+      paymasters,
+      pools,
+      recentUserOps,
+      recentWithdrawals,
+      dailyStats,
     };
   }
 
   /**
-   * Get pool analytics (convenience method)
+   * Get comprehensive pool data with related entities
    *
-   * @param poolId - Pool ID to analyze
-   * @returns Promise resolving to pool analytics data
+   * @param poolId - Pool ID
+   * @param network - Network identifier
+   * @returns Promise with comprehensive pool data
    *
    * @example
    * ```typescript
-   * const analytics = await query.getPoolAnalytics("1");
+   * const poolData = await client.query().getPoolOverview("123", "base-sepolia");
+   * console.log(poolData.pool.memberCount);
+   * console.log(poolData.members.length);
+   * console.log(poolData.userOperations.length);
    * ```
    */
-  async getPoolAnalytics(poolId: string) {
-    const pool = await this.pools().byId(poolId).withMembers().first();
-
-    if (!pool) {
-      return null;
-    }
-
-    const userOps = await this.userOperations().byPool(poolId).execute();
-
-    const totalGasSpent = userOps.reduce((total, op) => {
-      return (BigInt(total) + op.actualGasCost).toString();
-    }, "0");
-
-    const avgGasCostPerOperation =
-      userOps.length > 0
-        ? (BigInt(totalGasSpent) / BigInt(userOps.length)).toString()
-        : "0";
-
-    const avgGasCostPerMember =
-      pool.members.length > 0
-        ? (BigInt(totalGasSpent) / BigInt(pool.members.length)).toString()
-        : "0";
+  async getPoolOverview(
+    poolId: string,
+    network: NetworkName,
+  ): Promise<{
+    pool: any;
+    members: any[];
+    merkleRoots: any[];
+    userOperations: any[];
+    nullifierUsage: any[];
+    dailyStats: any[];
+  }> {
+    const [
+      pool,
+      members,
+      merkleRoots,
+      userOperations,
+      nullifierUsage,
+      dailyStats,
+    ] = await Promise.all([
+      this.pools().byNetwork(network).byPoolId(poolId).first(),
+      this.poolMembers().byNetwork(network).byPool(poolId).limit(100).execute(),
+      this.merkleRoots().byNetwork(network).byPool(poolId).limit(50).execute(),
+      this.userOperations()
+        .byNetwork(network)
+        .byPool(poolId)
+        .limit(50)
+        .execute(),
+      this.nullifierUsage()
+        .byNetwork(network)
+        .byPool(poolId)
+        .limit(100)
+        .execute(),
+      this.dailyPoolStats()
+        .byNetwork(network)
+        .byPool(poolId)
+        .limit(90)
+        .execute(),
+    ]);
 
     return {
       pool,
-      totalUserOperations: userOps.length,
-      totalGasSpent,
-      averageGasCostPerOperation: avgGasCostPerOperation,
-      averageGasCostPerMember: avgGasCostPerMember,
-      utilizationRate:
-        pool.members.length > 0
-          ? ((userOps.length / pool.members.length) * 100).toFixed(2) + "%"
-          : "0%",
+      members,
+      merkleRoots,
+      userOperations,
+      nullifierUsage,
+      dailyStats,
     };
   }
 
   /**
-   * Get network overview (convenience method)
+   * Get user activity across all pools and paymasters
    *
-   * @returns Promise resolving to network overview data
+   * @param identityCommitment - User's identity commitment
+   * @param network - Network identifier
+   * @returns Promise with user activity data
    *
    * @example
    * ```typescript
-   * const overview = await query.getNetworkOverview();
+   * const userActivity = await client.query().getUserActivity("0x123...", "base-sepolia");
+   * console.log(userActivity.poolMemberships.length);
+   * console.log(userActivity.userOperations.length);
    * ```
    */
-  async getNetworkOverview() {
-    const [paymasters, pools, recentUserOps] = await Promise.all([
-      this.paymasters().execute(),
-      this.pools().execute(),
-      this.userOperations().orderByNewestExecuted().limit(100).execute(),
+  async getUserActivity(
+    identityCommitment: string,
+    network: NetworkName,
+  ): Promise<{
+    poolMemberships: any[];
+    userOperations: any[];
+    nullifierUsage: any[];
+  }> {
+    const [poolMemberships, userOperations, nullifierUsage] = await Promise.all(
+      [
+        this.poolMembers()
+          .byNetwork(network)
+          .byIdentityCommitment(identityCommitment)
+          .execute(),
+        this.userOperations().byNetwork(network).limit(100).execute(), // Note: Would need sender filtering
+        this.nullifierUsage().byNetwork(network).limit(100).execute(), // Note: Would need nullifier filtering
+      ],
+    );
+
+    return {
+      poolMemberships,
+      userOperations,
+      nullifierUsage,
+    };
+  }
+
+  /**
+   * Get paymaster performance metrics
+   *
+   * @param paymasterAddress - Paymaster contract address
+   * @param network - Network identifier
+   * @returns Promise with paymaster performance data
+   *
+   * @example
+   * ```typescript
+   * const metrics = await client.query().getPaymasterMetrics("0x456...", "base-sepolia");
+   * console.log(metrics.paymaster.revenue);
+   * console.log(metrics.pools.length);
+   * console.log(metrics.userOperations.length);
+   * ```
+   */
+  async getPaymasterMetrics(
+    paymasterAddress: string,
+    network: NetworkName,
+  ): Promise<{
+    paymaster: any;
+    pools: any[];
+    userOperations: any[];
+    revenueWithdrawals: any[];
+    nullifierUsage: any[];
+  }> {
+    const [
+      paymaster,
+      pools,
+      userOperations,
+      revenueWithdrawals,
+      nullifierUsage,
+    ] = await Promise.all([
+      this.paymasters().byNetwork(network).byAddress(paymasterAddress).first(),
+      this.pools().byNetwork(network).byPaymaster(paymasterAddress).execute(),
+      this.userOperations()
+        .byNetwork(network)
+        .byPaymaster(paymasterAddress)
+        .limit(100)
+        .execute(),
+      this.revenueWithdrawals()
+        .byNetwork(network)
+        .byPaymaster(paymasterAddress)
+        .execute(),
+      this.nullifierUsage()
+        .byNetwork(network)
+        .byPaymaster(paymasterAddress)
+        .limit(100)
+        .execute(),
     ]);
 
-    const gasLimitedPaymasters = paymasters.filter(
-      (p) => p.contractType === "GasLimited",
-    );
-    const oneTimeUsePaymasters = paymasters.filter(
-      (p) => p.contractType === "OneTimeUse",
-    );
-
-    const totalMembers = pools.reduce((total, pool) => {
-      return total + Number(pool.memberCount);
-    }, 0);
-
-    const totalDeposits = pools.reduce((total, pool) => {
-      return (BigInt(total) + pool.totalDeposits).toString();
-    }, "0");
-
-    const totalRevenue = paymasters.reduce((total, paymaster) => {
-      return (BigInt(total) + paymaster.revenue).toString();
-    }, "0");
-
-    const totalGasSpent = recentUserOps.reduce((total, op) => {
-      return (BigInt(total) + op.actualGasCost).toString();
-    }, "0");
-
     return {
-      totalPaymasters: paymasters.length,
-      gasLimitedPaymasters: gasLimitedPaymasters.length,
-      oneTimeUsePaymasters: oneTimeUsePaymasters.length,
-      totalPools: pools.length,
-      totalMembers,
-      totalDeposits,
-      totalRevenue,
-      recentUserOperations: recentUserOps.length,
-      totalGasSpent,
+      paymaster,
+      pools,
+      userOperations,
+      revenueWithdrawals,
+      nullifierUsage,
     };
   }
 
   /**
-   * Get revenue analytics (convenience method)
+   * Get analytics data for a date range
    *
-   * @param paymasterAddress - Paymaster contract address (optional)
-   * @param dateRange - Date range filter (optional)
-   * @returns Promise resolving to revenue analytics data
-   *
-   * @example
-   * ```typescript
-   * const revenueAnalytics = await query.getRevenueAnalytics("0x456...", {
-   *   startDate: "2024-01-01",
-   *   endDate: "2024-01-31"
-   * });
-   * ```
-   */
-  async getRevenueAnalytics(
-    paymasterAddress?: string,
-    dateRange?: { startDate: string; endDate: string },
-  ) {
-    let withdrawalQuery = this.revenueWithdrawals();
-
-    if (paymasterAddress) {
-      withdrawalQuery = withdrawalQuery.byPaymaster(paymasterAddress);
-    }
-
-    if (dateRange) {
-      withdrawalQuery = withdrawalQuery.withdrawnBetween(
-        new Date(dateRange.startDate).getTime().toString(),
-        new Date(dateRange.endDate).getTime().toString(),
-      );
-    }
-
-    const withdrawals = await withdrawalQuery.execute();
-
-    const totalWithdrawals = withdrawals.length;
-    const totalWithdrawnAmount = withdrawals.reduce((total, withdrawal) => {
-      return (BigInt(total) + withdrawal.amount).toString();
-    }, "0");
-
-    const avgWithdrawalAmount =
-      totalWithdrawals > 0
-        ? (BigInt(totalWithdrawnAmount) / BigInt(totalWithdrawals)).toString()
-        : "0";
-
-    // Get unique recipients
-    const uniqueRecipients = new Set(withdrawals.map((w) => w.recipient));
-
-    return {
-      totalWithdrawals,
-      totalWithdrawnAmount,
-      averageWithdrawalAmount: avgWithdrawalAmount,
-      uniqueRecipients: uniqueRecipients.size,
-      withdrawals: withdrawals.slice(0, 10), // Latest 10 withdrawals
-    };
-  }
-
-  /**
-   * Get usage analytics (convenience method)
-   *
-   * @param paymasterAddress - Paymaster contract address (optional)
-   * @param poolId - Pool ID filter (optional)
-   * @returns Promise resolving to usage analytics data
-   *
-   * @example
-   * ```typescript
-   * const usageAnalytics = await query.getUsageAnalytics("0x456...", "1");
-   * ```
-   */
-  async getUsageAnalytics(paymasterAddress?: string, poolId?: string) {
-    let nullifierQuery = this.nullifierUsage();
-
-    if (paymasterAddress) {
-      nullifierQuery = nullifierQuery.byPaymaster(paymasterAddress);
-    }
-
-    if (poolId) {
-      nullifierQuery = nullifierQuery.byPool(poolId);
-    }
-
-    const nullifierUsages = await nullifierQuery.execute();
-
-    const totalNullifiers = nullifierUsages.length;
-    const usedNullifiers = nullifierUsages.filter(
-      (usage) => usage.isUsed,
-    ).length;
-    const unusedNullifiers = totalNullifiers - usedNullifiers;
-
-    const totalGasUsed = nullifierUsages.reduce((total, usage) => {
-      return (BigInt(total) + usage.gasUsed).toString();
-    }, "0");
-
-    const avgGasUsed =
-      usedNullifiers > 0
-        ? (BigInt(totalGasUsed) / BigInt(usedNullifiers)).toString()
-        : "0";
-
-    return {
-      totalNullifiers,
-      usedNullifiers,
-      unusedNullifiers,
-      usageRate:
-        totalNullifiers > 0
-          ? ((usedNullifiers / totalNullifiers) * 100).toFixed(2) + "%"
-          : "0%",
-      totalGasUsed,
-      averageGasUsed: avgGasUsed,
-    };
-  }
-
-  /**
-   * Get time series analytics (convenience method)
-   *
+   * @param network - Network identifier
    * @param startDate - Start date (YYYY-MM-DD)
    * @param endDate - End date (YYYY-MM-DD)
-   * @param poolId - Pool ID filter (optional)
-   * @returns Promise resolving to time series data
+   * @returns Promise with analytics data
    *
    * @example
    * ```typescript
-   * const timeSeries = await query.getTimeSeriesAnalytics("2024-01-01", "2024-01-31", "1");
+   * const analytics = await client.query().getAnalytics("base-sepolia", "2024-01-01", "2024-01-31");
+   * console.log(analytics.globalStats.length);
+   * console.log(analytics.poolStats.length);
    * ```
    */
-  async getTimeSeriesAnalytics(
+  async getAnalytics(
+    network: NetworkName,
     startDate: string,
     endDate: string,
-    poolId?: string,
-  ) {
+  ): Promise<{
+    globalStats: any[];
+    poolStats: any[];
+    totalGasSpent: string;
+    totalRevenue: string;
+    activePools: number;
+  }> {
     const [globalStats, poolStats] = await Promise.all([
       this.dailyGlobalStats()
+        .byNetwork(network)
         .forDateRange(startDate, endDate)
-        .orderByOldest()
+        .orderByDate()
         .execute(),
-      poolId
-        ? this.dailyPoolStats()
-            .forPool(poolId)
-            .forDateRange(startDate, endDate)
-            .orderByOldest()
-            .execute()
-        : Promise.resolve([]),
+      this.dailyPoolStats()
+        .byNetwork(network)
+        .forDateRange(startDate, endDate)
+        .orderByDate()
+        .execute(),
     ]);
+
+    // Calculate aggregated metrics
+    const totalGasSpent = globalStats.reduce(
+      (sum, stat) => sum + BigInt(stat.totalGasSpent),
+      0n,
+    );
+    const totalRevenue = globalStats.reduce(
+      (sum, stat) => sum + BigInt(stat.totalRevenueGenerated),
+      0n,
+    );
+    const activePools =
+      globalStats[globalStats.length - 1]?.totalActivePools || 0;
 
     return {
       globalStats,
       poolStats,
-      dateRange: { startDate, endDate },
-      poolId,
+      totalGasSpent: totalGasSpent.toString(),
+      totalRevenue: totalRevenue.toString(),
+      activePools: parseInt(activePools.toString()),
     };
   }
 
   /**
-   * Search across multiple entities (convenience method)
+   * Search for entities across multiple types
    *
-   * @param query - Search query string
-   * @param limit - Maximum results per entity type
-   * @returns Promise resolving to search results across all entities
+   * @param query - Search query
+   * @param network - Network identifier
+   * @returns Promise with search results
    *
    * @example
    * ```typescript
-   * const results = await query.search("0x123", 10);
+   * const results = await client.query().search("0x123...", "base-sepolia");
+   * console.log(results.paymasters.length);
+   * console.log(results.pools.length);
+   * console.log(results.userOperations.length);
    * ```
    */
-  async search(query: string, limit: number = 10) {
-    const [pools, members, userOps, paymasters, withdrawals, nullifierUsage] =
-      await Promise.all([
-        this.pools()
-          .where({ poolId_contains: query })
-          .limit(limit)
-          .execute()
-          .catch(() => []),
+  async search(
+    query: string,
+    network: NetworkName,
+  ): Promise<{
+    paymasters: any[];
+    pools: any[];
+    userOperations: any[];
+    poolMembers: any[];
+  }> {
+    const isAddress = /^0x[a-fA-F0-9]{40}$/i.test(query);
+    const isHash = /^0x[a-fA-F0-9]{64}$/i.test(query);
+    const isNumber = /^\d+$/.test(query);
 
-        this.members()
-          .identityContains(query)
-          .limit(limit)
-          .execute()
-          .catch(() => []),
+    const searchPromises: Promise<any>[] = [];
 
-        this.userOperations()
-          .hashContains(query)
-          .limit(limit)
-          .execute()
-          .catch(() => []),
-
-        this.paymasters()
-          .addressContains(query)
-          .limit(limit)
-          .execute()
-          .catch(() => []),
-
+    if (isAddress) {
+      // Search by address
+      searchPromises.push(
+        this.paymasters().byNetwork(network).byAddress(query).execute(),
+        this.userOperations().byNetwork(network).bySender(query).execute(),
         this.revenueWithdrawals()
-          .recipientContains(query)
-          .limit(limit)
-          .execute()
-          .catch(() => []),
+          .byNetwork(network)
+          .byRecipient(query)
+          .execute(),
+      );
+    }
 
-        this.nullifierUsage()
-          .nullifierContains(query)
+    if (isHash) {
+      // Search by hash
+      searchPromises.push(
+        this.userOperations().byNetwork(network).byHash(query).execute(),
+      );
+    }
+
+    if (isNumber) {
+      // Search by ID/index
+      searchPromises.push(
+        this.pools().byNetwork(network).byPoolId(query).execute(),
+        this.poolMembers().byNetwork(network).byMemberIndex(query).execute(),
+      );
+    }
+
+    // Search by identity commitment (if it looks like a big number)
+    if (query.length > 10) {
+      searchPromises.push(
+        this.poolMembers()
+          .byNetwork(network)
+          .byIdentityCommitment(query)
+          .execute(),
+      );
+    }
+
+    const results = await Promise.allSettled(searchPromises);
+    const successfulResults = results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => (result as PromiseFulfilledResult<any>).value)
+      .flat();
+
+    return {
+      paymasters: successfulResults.filter((item) => item.contractType),
+      pools: successfulResults.filter(
+        (item) => item.poolId && !item.memberIndex,
+      ),
+      userOperations: successfulResults.filter((item) => item.userOpHash),
+      poolMembers: successfulResults.filter(
+        (item) => item.memberIndex !== undefined,
+      ),
+    };
+  }
+
+  /**
+   * Get real-time network activity
+   *
+   * @param network - Network identifier
+   * @param limit - Number of recent items to fetch
+   * @returns Promise with recent activity data
+   *
+   * @example
+   * ```typescript
+   * const activity = await client.query().getRecentActivity("base-sepolia", 10);
+   * console.log(activity.recentUserOps.length);
+   * console.log(activity.recentMembers.length);
+   * ```
+   */
+  async getRecentActivity(
+    network: NetworkName,
+    limit: number = 10,
+  ): Promise<{
+    recentUserOps: any[];
+    recentMembers: any[];
+    recentWithdrawals: any[];
+    recentPools: any[];
+  }> {
+    const [recentUserOps, recentMembers, recentWithdrawals, recentPools] =
+      await Promise.all([
+        this.userOperations()
+          .byNetwork(network)
+          .orderByTimestamp()
           .limit(limit)
-          .execute()
-          .catch(() => []),
+          .execute(),
+        this.poolMembers()
+          .byNetwork(network)
+          .orderByJoinDate()
+          .limit(limit)
+          .execute(),
+        this.revenueWithdrawals()
+          .byNetwork(network)
+          .orderByTimestamp()
+          .limit(limit)
+          .execute(),
+        this.pools()
+          .byNetwork(network)
+          .orderByCreation()
+          .limit(limit)
+          .execute(),
       ]);
 
     return {
-      pools,
-      members,
-      userOperations: userOps,
-      paymasters,
-      revenueWithdrawals: withdrawals,
-      nullifierUsage,
-      totalResults:
-        pools.length +
-        members.length +
-        userOps.length +
-        paymasters.length +
-        withdrawals.length +
-        nullifierUsage.length,
+      recentUserOps,
+      recentMembers,
+      recentWithdrawals,
+      recentPools,
     };
-  }
-
-  /**
-   * Get the underlying SubgraphClient for advanced operations
-   *
-   * @returns The SubgraphClient instance
-   *
-   * @example
-   * ```typescript
-   * const client = query.getClient();
-   * const customResponse = await client.executeQuery(customQuery, variables);
-   * ```
-   */
-  getClient(): SubgraphClient {
-    return this.client;
   }
 }

@@ -1,7 +1,9 @@
 /**
- * Data transformation utilities
- * Handles conversion between different data representations
- * Updated for new subgraph schema structure
+ * Data transformers for the prepaid gas paymaster system
+ * Updated for the new network-aware schema structure
+ *
+ * Handles BigInt serialization/deserialization and provides utility functions
+ * for formatting blockchain data for API responses and client consumption.
  */
 
 import type {
@@ -14,579 +16,18 @@ import type {
   NullifierUsage,
   DailyPoolStats,
   DailyGlobalStats,
+  NetworkInfo,
+  SerializedPaymasterContract,
+  SerializedPool,
+  SerializedPoolMember,
+  SerializedMerkleRoot,
+  SerializedUserOperation,
+  SerializedRevenueWithdrawal,
+  SerializedNullifierUsage,
+  SerializedDailyPoolStats,
+  SerializedDailyGlobalStats,
+  SerializedNetworkInfo,
 } from "../types/subgraph.js";
-
-/**
- * ========================================
- * SERIALIZED TYPE DEFINITIONS
- * ========================================
- */
-
-/**
- * Serialized PaymasterContract (for API responses)
- */
-export interface SerializedPaymasterContract {
-  id: string;
-  contractType: string;
-  address: string;
-  totalUsersDeposit: string;
-  currentDeposit: string;
-  revenue: string;
-  deployedAtBlock: string;
-  deployedAtTransaction: string;
-  deployedAtTimestamp: string;
-  lastUpdatedBlock: string;
-  lastUpdatedTimestamp: string;
-  pools: SerializedPool[];
-  userOperations: SerializedUserOperation[];
-  revenueWithdrawals: SerializedRevenueWithdrawal[];
-}
-
-/**
- * Serialized Pool (for API responses)
- */
-export interface SerializedPool {
-  id: string;
-  poolId: string;
-  joiningFee: string;
-  totalDeposits: string;
-  memberCount: string;
-  currentMerkleRoot: string;
-  currentRootIndex: number;
-  rootHistoryCount: number;
-  createdAtBlock: string;
-  createdAtTransaction: string;
-  createdAtTimestamp: string;
-  lastUpdatedBlock: string;
-  lastUpdatedTimestamp: string;
-  paymaster: SerializedPaymasterContract;
-  members: SerializedPoolMember[];
-  userOperations: SerializedUserOperation[];
-  merkleRoots: SerializedMerkleRoot[];
-}
-
-/**
- * Serialized PoolMember (for API responses)
- */
-export interface SerializedPoolMember {
-  id: string;
-  memberIndex: string;
-  identityCommitment: string;
-  merkleRootWhenAdded: string;
-  rootIndexWhenAdded: number;
-  addedAtBlock: string;
-  addedAtTransaction: string;
-  addedAtTimestamp: string;
-  gasUsed?: string;
-  nullifierUsed?: boolean;
-  nullifier?: string;
-  pool: SerializedPool;
-}
-
-/**
- * Serialized MerkleRoot (for API responses)
- */
-export interface SerializedMerkleRoot {
-  id: string;
-  root: string;
-  rootIndex: number;
-  createdAtBlock: string;
-  createdAtTransaction: string;
-  createdAtTimestamp: string;
-  pool: SerializedPool;
-}
-
-/**
- * Serialized UserOperation (for API responses)
- */
-export interface SerializedUserOperation {
-  id: string;
-  userOpHash: string;
-  sender: string;
-  actualGasCost: string;
-  nullifier: string;
-  executedAtBlock: string;
-  executedAtTransaction: string;
-  executedAtTimestamp: string;
-  gasPrice?: string;
-  totalGasUsed?: string;
-  paymaster: SerializedPaymasterContract;
-  pool: SerializedPool;
-}
-
-/**
- * Serialized RevenueWithdrawal (for API responses)
- */
-export interface SerializedRevenueWithdrawal {
-  id: string;
-  recipient: string;
-  amount: string;
-  withdrawnAtBlock: string;
-  withdrawnAtTransaction: string;
-  withdrawnAtTimestamp: string;
-  paymaster: SerializedPaymasterContract;
-}
-
-/**
- * Serialized NullifierUsage (for API responses)
- */
-export interface SerializedNullifierUsage {
-  id: string;
-  nullifier: string;
-  isUsed: boolean;
-  gasUsed: string;
-  firstUsedAtBlock?: string;
-  firstUsedAtTransaction?: string;
-  firstUsedAtTimestamp?: string;
-  lastUpdatedBlock: string;
-  lastUpdatedTimestamp: string;
-  paymaster: SerializedPaymasterContract;
-  pool: SerializedPool;
-  userOperation?: SerializedUserOperation;
-}
-
-/**
- * Serialized DailyPoolStats (for API responses)
- */
-export interface SerializedDailyPoolStats {
-  id: string;
-  date: string;
-  newMembers: string;
-  userOperations: string;
-  gasSpent: string;
-  revenueGenerated: string;
-  totalMembers: string;
-  totalDeposits: string;
-  pool: SerializedPool;
-}
-
-/**
- * Serialized DailyGlobalStats (for API responses)
- */
-export interface SerializedDailyGlobalStats {
-  id: string;
-  date: string;
-  newPools: string;
-  totalNewMembers: string;
-  totalUserOperations: string;
-  totalGasSpent: string;
-  totalRevenueGenerated: string;
-  totalActivePools: string;
-  totalMembers: string;
-}
-
-/**
- * ========================================
- * SERIALIZATION FUNCTIONS
- * ========================================
- */
-
-/**
- * Serialize PaymasterContract (transform BigInt fields to strings)
- */
-export function serializePaymasterContract(
-  paymaster: PaymasterContract | Partial<PaymasterContract>,
-): SerializedPaymasterContract {
-  return {
-    id: paymaster.id || "",
-    contractType: paymaster.contractType || "",
-    address: paymaster.address || "",
-    totalUsersDeposit: paymaster.totalUsersDeposit?.toString() || "0",
-    currentDeposit: paymaster.currentDeposit?.toString() || "0",
-    revenue: paymaster.revenue?.toString() || "0",
-    deployedAtBlock: paymaster.deployedAtBlock?.toString() || "0",
-    deployedAtTransaction: paymaster.deployedAtTransaction || "",
-    deployedAtTimestamp: paymaster.deployedAtTimestamp?.toString() || "0",
-    lastUpdatedBlock: paymaster.lastUpdatedBlock?.toString() || "0",
-    lastUpdatedTimestamp: paymaster.lastUpdatedTimestamp?.toString() || "0",
-    pools: paymaster.pools?.map(serializePool) || [],
-    userOperations: paymaster.userOperations?.map(serializeUserOperation) || [],
-    revenueWithdrawals:
-      paymaster.revenueWithdrawals?.map(serializeRevenueWithdrawal) || [],
-  };
-}
-
-/**
- * Serialize Pool (transform BigInt fields to strings)
- */
-export function serializePool(pool: Pool | Partial<Pool>): SerializedPool {
-  return {
-    id: pool.id || "",
-    poolId: pool.poolId?.toString() || "0",
-    joiningFee: pool.joiningFee?.toString() || "0",
-    totalDeposits: pool.totalDeposits?.toString() || "0",
-    memberCount: pool.memberCount?.toString() || "0",
-    currentMerkleRoot: pool.currentMerkleRoot?.toString() || "0",
-    currentRootIndex: pool.currentRootIndex || 0,
-    rootHistoryCount: pool.rootHistoryCount || 0,
-    createdAtBlock: pool.createdAtBlock?.toString() || "0",
-    createdAtTransaction: pool.createdAtTransaction || "",
-    createdAtTimestamp: pool.createdAtTimestamp?.toString() || "0",
-    lastUpdatedBlock: pool.lastUpdatedBlock?.toString() || "0",
-    lastUpdatedTimestamp: pool.lastUpdatedTimestamp?.toString() || "0",
-    paymaster: pool.paymaster
-      ? serializePaymasterContract(pool.paymaster)
-      : ({} as SerializedPaymasterContract),
-    members: pool.members?.map(serializePoolMember) || [],
-    userOperations: pool.userOperations?.map(serializeUserOperation) || [],
-    merkleRoots: pool.merkleRoots?.map(serializeMerkleRoot) || [],
-  };
-}
-
-/**
- * Serialize PoolMember (transform BigInt fields to strings)
- */
-export function serializePoolMember(
-  member: PoolMember | Partial<PoolMember>,
-): SerializedPoolMember {
-  return {
-    id: member.id || "",
-    memberIndex: member.memberIndex?.toString() || "0",
-    identityCommitment: member.identityCommitment?.toString() || "0",
-    merkleRootWhenAdded: member.merkleRootWhenAdded?.toString() || "0",
-    rootIndexWhenAdded: member.rootIndexWhenAdded || 0,
-    addedAtBlock: member.addedAtBlock?.toString() || "0",
-    addedAtTransaction: member.addedAtTransaction || "",
-    addedAtTimestamp: member.addedAtTimestamp?.toString() || "0",
-    gasUsed: member.gasUsed?.toString(),
-    nullifierUsed: member.nullifierUsed,
-    nullifier: member.nullifier?.toString(),
-    pool: member.pool ? serializePool(member.pool) : ({} as SerializedPool),
-  };
-}
-
-/**
- * Serialize MerkleRoot (transform BigInt fields to strings)
- */
-export function serializeMerkleRoot(
-  merkleRoot: MerkleRoot | Partial<MerkleRoot>,
-): SerializedMerkleRoot {
-  return {
-    id: merkleRoot.id || "",
-    root: merkleRoot.root?.toString() || "0",
-    rootIndex: merkleRoot.rootIndex || 0,
-    createdAtBlock: merkleRoot.createdAtBlock?.toString() || "0",
-    createdAtTransaction: merkleRoot.createdAtTransaction || "",
-    createdAtTimestamp: merkleRoot.createdAtTimestamp?.toString() || "0",
-    pool: merkleRoot.pool
-      ? serializePool(merkleRoot.pool)
-      : ({} as SerializedPool),
-  };
-}
-
-/**
- * Serialize UserOperation (transform BigInt fields to strings)
- */
-export function serializeUserOperation(
-  userOp: UserOperation | Partial<UserOperation>,
-): SerializedUserOperation {
-  return {
-    id: userOp.id || "",
-    userOpHash: userOp.userOpHash || "",
-    sender: userOp.sender || "",
-    actualGasCost: userOp.actualGasCost?.toString() || "0",
-    nullifier: userOp.nullifier?.toString() || "0",
-    executedAtBlock: userOp.executedAtBlock?.toString() || "0",
-    executedAtTransaction: userOp.executedAtTransaction || "",
-    executedAtTimestamp: userOp.executedAtTimestamp?.toString() || "0",
-    gasPrice: userOp.gasPrice?.toString(),
-    totalGasUsed: userOp.totalGasUsed?.toString(),
-    paymaster: userOp.paymaster
-      ? serializePaymasterContract(userOp.paymaster)
-      : ({} as SerializedPaymasterContract),
-    pool: userOp.pool ? serializePool(userOp.pool) : ({} as SerializedPool),
-  };
-}
-
-/**
- * Serialize RevenueWithdrawal (transform BigInt fields to strings)
- */
-export function serializeRevenueWithdrawal(
-  withdrawal: RevenueWithdrawal | Partial<RevenueWithdrawal>,
-): SerializedRevenueWithdrawal {
-  return {
-    id: withdrawal.id || "",
-    recipient: withdrawal.recipient || "",
-    amount: withdrawal.amount?.toString() || "0",
-    withdrawnAtBlock: withdrawal.withdrawnAtBlock?.toString() || "0",
-    withdrawnAtTransaction: withdrawal.withdrawnAtTransaction || "",
-    withdrawnAtTimestamp: withdrawal.withdrawnAtTimestamp?.toString() || "0",
-    paymaster: withdrawal.paymaster
-      ? serializePaymasterContract(withdrawal.paymaster)
-      : ({} as SerializedPaymasterContract),
-  };
-}
-
-/**
- * Serialize NullifierUsage (transform BigInt fields to strings)
- */
-export function serializeNullifierUsage(
-  nullifierUsage: NullifierUsage | Partial<NullifierUsage>,
-): SerializedNullifierUsage {
-  return {
-    id: nullifierUsage.id || "",
-    nullifier: nullifierUsage.nullifier?.toString() || "0",
-    isUsed: nullifierUsage.isUsed || false,
-    gasUsed: nullifierUsage.gasUsed?.toString() || "0",
-    firstUsedAtBlock: nullifierUsage.firstUsedAtBlock?.toString(),
-    firstUsedAtTransaction: nullifierUsage.firstUsedAtTransaction,
-    firstUsedAtTimestamp: nullifierUsage.firstUsedAtTimestamp?.toString(),
-    lastUpdatedBlock: nullifierUsage.lastUpdatedBlock?.toString() || "0",
-    lastUpdatedTimestamp:
-      nullifierUsage.lastUpdatedTimestamp?.toString() || "0",
-    paymaster: nullifierUsage.paymaster
-      ? serializePaymasterContract(nullifierUsage.paymaster)
-      : ({} as SerializedPaymasterContract),
-    pool: nullifierUsage.pool
-      ? serializePool(nullifierUsage.pool)
-      : ({} as SerializedPool),
-    userOperation: nullifierUsage.userOperation
-      ? serializeUserOperation(nullifierUsage.userOperation)
-      : undefined,
-  };
-}
-
-/**
- * Serialize DailyPoolStats (transform BigInt fields to strings)
- */
-export function serializeDailyPoolStats(
-  stats: DailyPoolStats | Partial<DailyPoolStats>,
-): SerializedDailyPoolStats {
-  return {
-    id: stats.id || "",
-    date: stats.date || "",
-    newMembers: stats.newMembers?.toString() || "0",
-    userOperations: stats.userOperations?.toString() || "0",
-    gasSpent: stats.gasSpent?.toString() || "0",
-    revenueGenerated: stats.revenueGenerated?.toString() || "0",
-    totalMembers: stats.totalMembers?.toString() || "0",
-    totalDeposits: stats.totalDeposits?.toString() || "0",
-    pool: stats.pool ? serializePool(stats.pool) : ({} as SerializedPool),
-  };
-}
-
-/**
- * Serialize DailyGlobalStats (transform BigInt fields to strings)
- */
-export function serializeDailyGlobalStats(
-  stats: DailyGlobalStats | Partial<DailyGlobalStats>,
-): SerializedDailyGlobalStats {
-  return {
-    id: stats.id || "",
-    date: stats.date || "",
-    newPools: stats.newPools?.toString() || "0",
-    totalNewMembers: stats.totalNewMembers?.toString() || "0",
-    totalUserOperations: stats.totalUserOperations?.toString() || "0",
-    totalGasSpent: stats.totalGasSpent?.toString() || "0",
-    totalRevenueGenerated: stats.totalRevenueGenerated?.toString() || "0",
-    totalActivePools: stats.totalActivePools?.toString() || "0",
-    totalMembers: stats.totalMembers?.toString() || "0",
-  };
-}
-
-/**
- * ========================================
- * DESERIALIZATION FUNCTIONS
- * ========================================
- */
-
-/**
- * Deserialize PaymasterContract (transform string fields back to BigInt)
- */
-export function deserializePaymasterContract(
-  serialized: SerializedPaymasterContract,
-): PaymasterContract {
-  return {
-    id: serialized.id,
-    contractType: serialized.contractType,
-    address: serialized.address,
-    totalUsersDeposit: BigInt(serialized.totalUsersDeposit),
-    currentDeposit: BigInt(serialized.currentDeposit),
-    revenue: BigInt(serialized.revenue),
-    deployedAtBlock: BigInt(serialized.deployedAtBlock),
-    deployedAtTransaction: serialized.deployedAtTransaction,
-    deployedAtTimestamp: BigInt(serialized.deployedAtTimestamp),
-    lastUpdatedBlock: BigInt(serialized.lastUpdatedBlock),
-    lastUpdatedTimestamp: BigInt(serialized.lastUpdatedTimestamp),
-    pools: serialized.pools?.map(deserializePool) || [],
-    userOperations:
-      serialized.userOperations?.map(deserializeUserOperation) || [],
-    revenueWithdrawals:
-      serialized.revenueWithdrawals?.map(deserializeRevenueWithdrawal) || [],
-  };
-}
-
-/**
- * Deserialize Pool (transform string fields back to BigInt)
- */
-export function deserializePool(serialized: SerializedPool): Pool {
-  return {
-    id: serialized.id,
-    poolId: BigInt(serialized.poolId),
-    joiningFee: BigInt(serialized.joiningFee),
-    totalDeposits: BigInt(serialized.totalDeposits),
-    memberCount: BigInt(serialized.memberCount),
-    currentMerkleRoot: BigInt(serialized.currentMerkleRoot),
-    currentRootIndex: serialized.currentRootIndex,
-    rootHistoryCount: serialized.rootHistoryCount,
-    createdAtBlock: BigInt(serialized.createdAtBlock),
-    createdAtTransaction: serialized.createdAtTransaction,
-    createdAtTimestamp: BigInt(serialized.createdAtTimestamp),
-    lastUpdatedBlock: BigInt(serialized.lastUpdatedBlock),
-    lastUpdatedTimestamp: BigInt(serialized.lastUpdatedTimestamp),
-    paymaster: deserializePaymasterContract(serialized.paymaster),
-    members: serialized.members?.map(deserializePoolMember) || [],
-    userOperations:
-      serialized.userOperations?.map(deserializeUserOperation) || [],
-    merkleRoots: serialized.merkleRoots?.map(deserializeMerkleRoot) || [],
-  };
-}
-
-/**
- * Deserialize PoolMember (transform string fields back to BigInt)
- */
-export function deserializePoolMember(
-  serialized: SerializedPoolMember,
-): PoolMember {
-  return {
-    id: serialized.id,
-    memberIndex: BigInt(serialized.memberIndex),
-    identityCommitment: BigInt(serialized.identityCommitment),
-    merkleRootWhenAdded: BigInt(serialized.merkleRootWhenAdded),
-    rootIndexWhenAdded: serialized.rootIndexWhenAdded,
-    addedAtBlock: BigInt(serialized.addedAtBlock),
-    addedAtTransaction: serialized.addedAtTransaction,
-    addedAtTimestamp: BigInt(serialized.addedAtTimestamp),
-    gasUsed: serialized.gasUsed ? BigInt(serialized.gasUsed) : undefined,
-    nullifierUsed: serialized.nullifierUsed,
-    nullifier: serialized.nullifier ? BigInt(serialized.nullifier) : undefined,
-    pool: deserializePool(serialized.pool),
-  };
-}
-
-/**
- * Deserialize MerkleRoot (transform string fields back to BigInt)
- */
-export function deserializeMerkleRoot(
-  serialized: SerializedMerkleRoot,
-): MerkleRoot {
-  return {
-    id: serialized.id,
-    root: BigInt(serialized.root),
-    rootIndex: serialized.rootIndex,
-    createdAtBlock: BigInt(serialized.createdAtBlock),
-    createdAtTransaction: serialized.createdAtTransaction,
-    createdAtTimestamp: BigInt(serialized.createdAtTimestamp),
-    pool: deserializePool(serialized.pool),
-  };
-}
-
-/**
- * Deserialize UserOperation (transform string fields back to BigInt)
- */
-export function deserializeUserOperation(
-  serialized: SerializedUserOperation,
-): UserOperation {
-  return {
-    id: serialized.id,
-    userOpHash: serialized.userOpHash,
-    sender: serialized.sender,
-    actualGasCost: BigInt(serialized.actualGasCost),
-    nullifier: BigInt(serialized.nullifier),
-    executedAtBlock: BigInt(serialized.executedAtBlock),
-    executedAtTransaction: serialized.executedAtTransaction,
-    executedAtTimestamp: BigInt(serialized.executedAtTimestamp),
-    gasPrice: serialized.gasPrice ? BigInt(serialized.gasPrice) : undefined,
-    totalGasUsed: serialized.totalGasUsed
-      ? BigInt(serialized.totalGasUsed)
-      : undefined,
-    paymaster: deserializePaymasterContract(serialized.paymaster),
-    pool: deserializePool(serialized.pool),
-  };
-}
-
-/**
- * Deserialize RevenueWithdrawal (transform string fields back to BigInt)
- */
-export function deserializeRevenueWithdrawal(
-  serialized: SerializedRevenueWithdrawal,
-): RevenueWithdrawal {
-  return {
-    id: serialized.id,
-    recipient: serialized.recipient,
-    amount: BigInt(serialized.amount),
-    withdrawnAtBlock: BigInt(serialized.withdrawnAtBlock),
-    withdrawnAtTransaction: serialized.withdrawnAtTransaction,
-    withdrawnAtTimestamp: BigInt(serialized.withdrawnAtTimestamp),
-    paymaster: deserializePaymasterContract(serialized.paymaster),
-  };
-}
-
-/**
- * Deserialize NullifierUsage (transform string fields back to BigInt)
- */
-export function deserializeNullifierUsage(
-  serialized: SerializedNullifierUsage,
-): NullifierUsage {
-  return {
-    id: serialized.id,
-    nullifier: BigInt(serialized.nullifier),
-    isUsed: serialized.isUsed,
-    gasUsed: BigInt(serialized.gasUsed),
-    firstUsedAtBlock: serialized.firstUsedAtBlock
-      ? BigInt(serialized.firstUsedAtBlock)
-      : undefined,
-    firstUsedAtTransaction: serialized.firstUsedAtTransaction,
-    firstUsedAtTimestamp: serialized.firstUsedAtTimestamp
-      ? BigInt(serialized.firstUsedAtTimestamp)
-      : undefined,
-    lastUpdatedBlock: BigInt(serialized.lastUpdatedBlock),
-    lastUpdatedTimestamp: BigInt(serialized.lastUpdatedTimestamp),
-    paymaster: deserializePaymasterContract(serialized.paymaster),
-    pool: deserializePool(serialized.pool),
-    userOperation: serialized.userOperation
-      ? deserializeUserOperation(serialized.userOperation)
-      : undefined,
-  };
-}
-
-/**
- * Deserialize DailyPoolStats (transform string fields back to BigInt)
- */
-export function deserializeDailyPoolStats(
-  serialized: SerializedDailyPoolStats,
-): DailyPoolStats {
-  return {
-    id: serialized.id,
-    date: serialized.date,
-    newMembers: BigInt(serialized.newMembers),
-    userOperations: BigInt(serialized.userOperations),
-    gasSpent: BigInt(serialized.gasSpent),
-    revenueGenerated: BigInt(serialized.revenueGenerated),
-    totalMembers: BigInt(serialized.totalMembers),
-    totalDeposits: BigInt(serialized.totalDeposits),
-    pool: deserializePool(serialized.pool),
-  };
-}
-
-/**
- * Deserialize DailyGlobalStats (transform string fields back to BigInt)
- */
-export function deserializeDailyGlobalStats(
-  serialized: SerializedDailyGlobalStats,
-): DailyGlobalStats {
-  return {
-    id: serialized.id,
-    date: serialized.date,
-    newPools: BigInt(serialized.newPools),
-    totalNewMembers: BigInt(serialized.totalNewMembers),
-    totalUserOperations: BigInt(serialized.totalUserOperations),
-    totalGasSpent: BigInt(serialized.totalGasSpent),
-    totalRevenueGenerated: BigInt(serialized.totalRevenueGenerated),
-    totalActivePools: BigInt(serialized.totalActivePools),
-    totalMembers: BigInt(serialized.totalMembers),
-  };
-}
 
 /**
  * ========================================
@@ -595,18 +36,33 @@ export function deserializeDailyGlobalStats(
  */
 
 /**
- * Utility: Safe BigInt conversion with error handling
+ * Safely parse a BigInt from a string
+ *
+ * @param value - String value to parse
+ * @returns BigInt value or 0n if invalid
  */
 export function safeBigIntParse(value: string | number | bigint): bigint {
+  if (typeof value === "bigint") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return BigInt(Math.floor(value));
+  }
+
   try {
     return BigInt(value);
   } catch (error) {
-    throw new Error(`Invalid BigInt value: ${value}`);
+    console.warn(`Failed to parse BigInt from value: ${value}`, error);
+    return 0n;
   }
 }
 
 /**
- * Utility: Check if a value looks like a valid BigInt string
+ * Check if a string is a valid BigInt
+ *
+ * @param value - String to validate
+ * @returns True if valid BigInt string
  */
 export function isValidBigIntString(value: string): boolean {
   try {
@@ -618,84 +74,914 @@ export function isValidBigIntString(value: string): boolean {
 }
 
 /**
- * Utility: Format BigInt values for display (e.g., wei to ETH)
+ * Format a BigInt value for display
+ *
+ * @param value - BigInt value
+ * @param decimals - Number of decimals to show
+ * @returns Formatted string
  */
-export function formatBigIntValue(
-  value: bigint,
-  decimals: number = 18,
-  precision: number = 4,
-): string {
-  const divisor = BigInt(10 ** decimals);
-  const quotient = value / divisor;
-  const remainder = value % divisor;
+export function formatBigIntValue(value: bigint, decimals: number = 4): string {
+  if (value === 0n) return "0";
 
-  if (remainder === 0n) {
-    return quotient.toString();
+  const valueStr = value.toString();
+  if (valueStr.length <= decimals) {
+    return `0.${"0".repeat(decimals - valueStr.length)}${valueStr}`;
   }
 
-  const decimalPart = remainder.toString().padStart(decimals, "0");
-  const trimmed = decimalPart.slice(0, precision).replace(/0+$/, "");
+  const intPart = valueStr.slice(0, -decimals);
+  const decPart = valueStr.slice(-decimals);
 
-  return trimmed ? `${quotient}.${trimmed}` : quotient.toString();
+  return `${intPart}.${decPart}`;
 }
 
 /**
- * Utility: Format gas values for display
+ * Format gas values (wei to ETH)
+ *
+ * @param gasValue - Gas value in wei
+ * @param decimals - Number of decimals to show
+ * @returns Formatted ETH string
  */
-export function formatGasValue(gasValue: bigint): string {
-  if (gasValue === 0n) {
-    return "0";
-  }
-
-  // Format with commas for readability
-  return gasValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+export function formatGasValue(gasValue: bigint, decimals: number = 6): string {
+  const ethValue = gasValue * 10n ** 12n; // Convert wei to ETH (18 decimals)
+  return formatBigIntValue(ethValue, 18).substring(0, decimals + 2);
 }
 
 /**
- * Utility: Format currency values (wei to ETH with symbol)
+ * Format currency values (wei to ETH)
+ *
+ * @param value - Value in wei
+ * @param symbol - Currency symbol
+ * @param decimals - Number of decimals to show
+ * @returns Formatted currency string
  */
 export function formatCurrencyValue(
   value: bigint,
-  decimals: number = 18,
-  precision: number = 4,
   symbol: string = "ETH",
+  decimals: number = 6,
 ): string {
-  const formatted = formatBigIntValue(value, decimals, precision);
-  return `${formatted} ${symbol}`;
+  const ethValue = Number(value) / 10 ** 18;
+  return `${ethValue.toFixed(decimals)} ${symbol}`;
 }
 
 /**
- * Utility: Calculate percentage change
+ * Calculate percentage change
+ *
+ * @param oldValue - Previous value
+ * @param newValue - Current value
+ * @returns Percentage change
  */
 export function calculatePercentageChange(
-  current: bigint,
-  previous: bigint,
-): string {
-  if (previous === 0n) {
-    return current > 0n ? "+∞%" : "0%";
+  oldValue: bigint,
+  newValue: bigint,
+): number {
+  if (oldValue === 0n) return newValue > 0n ? 100 : 0;
+
+  const change = newValue - oldValue;
+  const percentage = (Number(change) / Number(oldValue)) * 100;
+
+  return Math.round(percentage * 100) / 100;
+}
+
+/**
+ * Format timestamp to human-readable date
+ *
+ * @param timestamp - Unix timestamp
+ * @returns Formatted date string
+ */
+export function formatTimestamp(timestamp: bigint | string): string {
+  const ts =
+    typeof timestamp === "string" ? parseInt(timestamp) : Number(timestamp);
+  return new Date(ts * 1000).toLocaleDateString();
+}
+
+/**
+ * Format timestamp to human-readable date with time
+ *
+ * @param timestamp - Unix timestamp
+ * @returns Formatted date and time string
+ */
+export function formatTimestampWithTime(timestamp: bigint | string): string {
+  const ts =
+    typeof timestamp === "string" ? parseInt(timestamp) : Number(timestamp);
+  return new Date(ts * 1000).toLocaleString();
+}
+
+/**
+ * ========================================
+ * PAYMASTER CONTRACT TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize PaymasterContract (BigInt -> string)
+ *
+ * @param paymaster - PaymasterContract entity
+ * @returns Serialized paymaster contract
+ */
+export function serializePaymasterContract(
+  paymaster: PaymasterContract,
+): SerializedPaymasterContract {
+  return {
+    id: paymaster.id,
+    contractType: paymaster.contractType,
+    address: paymaster.address,
+    network: paymaster.network,
+    chainId: paymaster.chainId.toString(),
+    totalUsersDeposit: paymaster.totalUsersDeposit.toString(),
+    currentDeposit: paymaster.currentDeposit.toString(),
+    revenue: paymaster.revenue.toString(),
+    deployedAtBlock: paymaster.deployedAtBlock.toString(),
+    deployedAtTransaction: paymaster.deployedAtTransaction,
+    deployedAtTimestamp: paymaster.deployedAtTimestamp.toString(),
+    pools: paymaster.pools.map(serializePool),
+    userOperations: paymaster.userOperations.map(serializeUserOperation),
+    revenueWithdrawals: paymaster.revenueWithdrawals.map(
+      serializeRevenueWithdrawal,
+    ),
+    lastUpdatedBlock: paymaster.lastUpdatedBlock.toString(),
+    lastUpdatedTimestamp: paymaster.lastUpdatedTimestamp.toString(),
+  };
+}
+
+/**
+ * Deserialize PaymasterContract (string -> BigInt)
+ *
+ * @param serialized - Serialized paymaster contract
+ * @returns PaymasterContract entity
+ */
+export function deserializePaymasterContract(
+  serialized: SerializedPaymasterContract,
+): PaymasterContract {
+  return {
+    id: serialized.id,
+    contractType: serialized.contractType,
+    address: serialized.address,
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    totalUsersDeposit: safeBigIntParse(serialized.totalUsersDeposit),
+    currentDeposit: safeBigIntParse(serialized.currentDeposit),
+    revenue: safeBigIntParse(serialized.revenue),
+    deployedAtBlock: safeBigIntParse(serialized.deployedAtBlock),
+    deployedAtTransaction: serialized.deployedAtTransaction,
+    deployedAtTimestamp: safeBigIntParse(serialized.deployedAtTimestamp),
+    pools: serialized.pools.map(deserializePool),
+    userOperations: serialized.userOperations.map(deserializeUserOperation),
+    revenueWithdrawals: serialized.revenueWithdrawals.map(
+      deserializeRevenueWithdrawal,
+    ),
+    lastUpdatedBlock: safeBigIntParse(serialized.lastUpdatedBlock),
+    lastUpdatedTimestamp: safeBigIntParse(serialized.lastUpdatedTimestamp),
+  };
+}
+
+/**
+ * ========================================
+ * POOL TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize Pool (BigInt -> string)
+ *
+ * @param pool - Pool entity
+ * @returns Serialized pool
+ */
+export function serializePool(pool: Pool): SerializedPool {
+  return {
+    id: pool.id,
+    poolId: pool.poolId.toString(),
+    paymaster: serializePaymasterContract(pool.paymaster),
+    network: pool.network,
+    chainId: pool.chainId.toString(),
+    joiningFee: pool.joiningFee.toString(),
+    totalDeposits: pool.totalDeposits.toString(),
+    memberCount: pool.memberCount.toString(),
+    currentMerkleRoot: pool.currentMerkleRoot.toString(),
+    currentRootIndex: pool.currentRootIndex,
+    rootHistoryCount: pool.rootHistoryCount,
+    createdAtBlock: pool.createdAtBlock.toString(),
+    createdAtTransaction: pool.createdAtTransaction,
+    createdAtTimestamp: pool.createdAtTimestamp.toString(),
+    members: pool.members.map(serializePoolMember),
+    userOperations: pool.userOperations.map(serializeUserOperation),
+    merkleRoots: pool.merkleRoots.map(serializeMerkleRoot),
+    lastUpdatedBlock: pool.lastUpdatedBlock.toString(),
+    lastUpdatedTimestamp: pool.lastUpdatedTimestamp.toString(),
+  };
+}
+
+/**
+ * Deserialize Pool (string -> BigInt)
+ *
+ * @param serialized - Serialized pool
+ * @returns Pool entity
+ */
+export function deserializePool(serialized: SerializedPool): Pool {
+  return {
+    id: serialized.id,
+    poolId: safeBigIntParse(serialized.poolId),
+    paymaster: deserializePaymasterContract(serialized.paymaster),
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    joiningFee: safeBigIntParse(serialized.joiningFee),
+    totalDeposits: safeBigIntParse(serialized.totalDeposits),
+    memberCount: safeBigIntParse(serialized.memberCount),
+    currentMerkleRoot: safeBigIntParse(serialized.currentMerkleRoot),
+    currentRootIndex: serialized.currentRootIndex,
+    rootHistoryCount: serialized.rootHistoryCount,
+    createdAtBlock: safeBigIntParse(serialized.createdAtBlock),
+    createdAtTransaction: serialized.createdAtTransaction,
+    createdAtTimestamp: safeBigIntParse(serialized.createdAtTimestamp),
+    members: serialized.members.map(deserializePoolMember),
+    userOperations: serialized.userOperations.map(deserializeUserOperation),
+    merkleRoots: serialized.merkleRoots.map(deserializeMerkleRoot),
+    lastUpdatedBlock: safeBigIntParse(serialized.lastUpdatedBlock),
+    lastUpdatedTimestamp: safeBigIntParse(serialized.lastUpdatedTimestamp),
+  };
+}
+
+/**
+ * ========================================
+ * POOL MEMBER TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize PoolMember (BigInt -> string)
+ *
+ * @param member - PoolMember entity
+ * @returns Serialized pool member
+ */
+export function serializePoolMember(member: PoolMember): SerializedPoolMember {
+  return {
+    id: member.id,
+    pool: serializePool(member.pool),
+    network: member.network,
+    chainId: member.chainId.toString(),
+    memberIndex: member.memberIndex.toString(),
+    identityCommitment: member.identityCommitment.toString(),
+    merkleRootWhenAdded: member.merkleRootWhenAdded.toString(),
+    rootIndexWhenAdded: member.rootIndexWhenAdded,
+    addedAtBlock: member.addedAtBlock.toString(),
+    addedAtTransaction: member.addedAtTransaction,
+    addedAtTimestamp: member.addedAtTimestamp.toString(),
+    gasUsed: member.gasUsed?.toString(),
+    nullifierUsed: member.nullifierUsed,
+    nullifier: member.nullifier?.toString(),
+  };
+}
+
+/**
+ * Deserialize PoolMember (string -> BigInt)
+ *
+ * @param serialized - Serialized pool member
+ * @returns PoolMember entity
+ */
+export function deserializePoolMember(
+  serialized: SerializedPoolMember,
+): PoolMember {
+  return {
+    id: serialized.id,
+    pool: deserializePool(serialized.pool),
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    memberIndex: safeBigIntParse(serialized.memberIndex),
+    identityCommitment: safeBigIntParse(serialized.identityCommitment),
+    merkleRootWhenAdded: safeBigIntParse(serialized.merkleRootWhenAdded),
+    rootIndexWhenAdded: serialized.rootIndexWhenAdded,
+    addedAtBlock: safeBigIntParse(serialized.addedAtBlock),
+    addedAtTransaction: serialized.addedAtTransaction,
+    addedAtTimestamp: safeBigIntParse(serialized.addedAtTimestamp),
+    gasUsed: serialized.gasUsed
+      ? safeBigIntParse(serialized.gasUsed)
+      : undefined,
+    nullifierUsed: serialized.nullifierUsed,
+    nullifier: serialized.nullifier
+      ? safeBigIntParse(serialized.nullifier)
+      : undefined,
+  };
+}
+
+/**
+ * ========================================
+ * MERKLE ROOT TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize MerkleRoot (BigInt -> string)
+ *
+ * @param merkleRoot - MerkleRoot entity
+ * @returns Serialized merkle root
+ */
+export function serializeMerkleRoot(
+  merkleRoot: MerkleRoot,
+): SerializedMerkleRoot {
+  return {
+    id: merkleRoot.id,
+    pool: serializePool(merkleRoot.pool),
+    network: merkleRoot.network,
+    chainId: merkleRoot.chainId.toString(),
+    root: merkleRoot.root.toString(),
+    rootIndex: merkleRoot.rootIndex,
+    createdAtBlock: merkleRoot.createdAtBlock.toString(),
+    createdAtTransaction: merkleRoot.createdAtTransaction,
+    createdAtTimestamp: merkleRoot.createdAtTimestamp.toString(),
+  };
+}
+
+/**
+ * Deserialize MerkleRoot (string -> BigInt)
+ *
+ * @param serialized - Serialized merkle root
+ * @returns MerkleRoot entity
+ */
+export function deserializeMerkleRoot(
+  serialized: SerializedMerkleRoot,
+): MerkleRoot {
+  return {
+    id: serialized.id,
+    pool: deserializePool(serialized.pool),
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    root: safeBigIntParse(serialized.root),
+    rootIndex: serialized.rootIndex,
+    createdAtBlock: safeBigIntParse(serialized.createdAtBlock),
+    createdAtTransaction: serialized.createdAtTransaction,
+    createdAtTimestamp: safeBigIntParse(serialized.createdAtTimestamp),
+  };
+}
+
+/**
+ * ========================================
+ * USER OPERATION TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize UserOperation (BigInt -> string)
+ *
+ * @param userOp - UserOperation entity
+ * @returns Serialized user operation
+ */
+export function serializeUserOperation(
+  userOp: UserOperation,
+): SerializedUserOperation {
+  return {
+    id: userOp.id,
+    userOpHash: userOp.userOpHash,
+    paymaster: serializePaymasterContract(userOp.paymaster),
+    pool: serializePool(userOp.pool),
+    network: userOp.network,
+    chainId: userOp.chainId.toString(),
+    sender: userOp.sender,
+    actualGasCost: userOp.actualGasCost.toString(),
+    nullifier: userOp.nullifier.toString(),
+    executedAtBlock: userOp.executedAtBlock.toString(),
+    executedAtTransaction: userOp.executedAtTransaction,
+    executedAtTimestamp: userOp.executedAtTimestamp.toString(),
+    gasPrice: userOp.gasPrice?.toString(),
+    totalGasUsed: userOp.totalGasUsed?.toString(),
+  };
+}
+
+/**
+ * Deserialize UserOperation (string -> BigInt)
+ *
+ * @param serialized - Serialized user operation
+ * @returns UserOperation entity
+ */
+export function deserializeUserOperation(
+  serialized: SerializedUserOperation,
+): UserOperation {
+  return {
+    id: serialized.id,
+    userOpHash: serialized.userOpHash,
+    paymaster: deserializePaymasterContract(serialized.paymaster),
+    pool: deserializePool(serialized.pool),
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    sender: serialized.sender,
+    actualGasCost: safeBigIntParse(serialized.actualGasCost),
+    nullifier: safeBigIntParse(serialized.nullifier),
+    executedAtBlock: safeBigIntParse(serialized.executedAtBlock),
+    executedAtTransaction: serialized.executedAtTransaction,
+    executedAtTimestamp: safeBigIntParse(serialized.executedAtTimestamp),
+    gasPrice: serialized.gasPrice
+      ? safeBigIntParse(serialized.gasPrice)
+      : undefined,
+    totalGasUsed: serialized.totalGasUsed
+      ? safeBigIntParse(serialized.totalGasUsed)
+      : undefined,
+  };
+}
+
+/**
+ * ========================================
+ * REVENUE WITHDRAWAL TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize RevenueWithdrawal (BigInt -> string)
+ *
+ * @param withdrawal - RevenueWithdrawal entity
+ * @returns Serialized revenue withdrawal
+ */
+export function serializeRevenueWithdrawal(
+  withdrawal: RevenueWithdrawal,
+): SerializedRevenueWithdrawal {
+  return {
+    id: withdrawal.id,
+    paymaster: serializePaymasterContract(withdrawal.paymaster),
+    network: withdrawal.network,
+    chainId: withdrawal.chainId.toString(),
+    recipient: withdrawal.recipient,
+    amount: withdrawal.amount.toString(),
+    withdrawnAtBlock: withdrawal.withdrawnAtBlock.toString(),
+    withdrawnAtTransaction: withdrawal.withdrawnAtTransaction,
+    withdrawnAtTimestamp: withdrawal.withdrawnAtTimestamp.toString(),
+  };
+}
+
+/**
+ * Deserialize RevenueWithdrawal (string -> BigInt)
+ *
+ * @param serialized - Serialized revenue withdrawal
+ * @returns RevenueWithdrawal entity
+ */
+export function deserializeRevenueWithdrawal(
+  serialized: SerializedRevenueWithdrawal,
+): RevenueWithdrawal {
+  return {
+    id: serialized.id,
+    paymaster: deserializePaymasterContract(serialized.paymaster),
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    recipient: serialized.recipient,
+    amount: safeBigIntParse(serialized.amount),
+    withdrawnAtBlock: safeBigIntParse(serialized.withdrawnAtBlock),
+    withdrawnAtTransaction: serialized.withdrawnAtTransaction,
+    withdrawnAtTimestamp: safeBigIntParse(serialized.withdrawnAtTimestamp),
+  };
+}
+
+/**
+ * ========================================
+ * ENHANCED NULLIFIER USAGE TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize NullifierUsage (BigInt -> string)
+ *
+ * @param nullifierUsage - NullifierUsage entity
+ * @returns Serialized nullifier usage
+ */
+export function serializeNullifierUsage(
+  nullifierUsage: NullifierUsage,
+): SerializedNullifierUsage {
+  return {
+    id: nullifierUsage.id,
+    nullifier: nullifierUsage.nullifier.toString(),
+    paymaster: serializePaymasterContract(nullifierUsage.paymaster),
+    pool: serializePool(nullifierUsage.pool),
+    network: nullifierUsage.network,
+    chainId: nullifierUsage.chainId.toString(),
+    isUsed: nullifierUsage.isUsed,
+    gasUsed: nullifierUsage.gasUsed.toString(),
+    userOperation: nullifierUsage.userOperation
+      ? serializeUserOperation(nullifierUsage.userOperation)
+      : undefined,
+    firstUsedAtBlock: nullifierUsage.firstUsedAtBlock?.toString(),
+    firstUsedAtTransaction: nullifierUsage.firstUsedAtTransaction,
+    firstUsedAtTimestamp: nullifierUsage.firstUsedAtTimestamp?.toString(),
+    lastUpdatedBlock: nullifierUsage.lastUpdatedBlock.toString(),
+    lastUpdatedTimestamp: nullifierUsage.lastUpdatedTimestamp.toString(),
+  };
+}
+
+/**
+ * Deserialize NullifierUsage (string -> BigInt)
+ *
+ * @param serialized - Serialized nullifier usage
+ * @returns NullifierUsage entity
+ */
+export function deserializeNullifierUsage(
+  serialized: SerializedNullifierUsage,
+): NullifierUsage {
+  return {
+    id: serialized.id,
+    nullifier: safeBigIntParse(serialized.nullifier),
+    paymaster: deserializePaymasterContract(serialized.paymaster),
+    pool: deserializePool(serialized.pool),
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    isUsed: serialized.isUsed,
+    gasUsed: safeBigIntParse(serialized.gasUsed),
+    userOperation: serialized.userOperation
+      ? deserializeUserOperation(serialized.userOperation)
+      : undefined,
+    firstUsedAtBlock: serialized.firstUsedAtBlock
+      ? safeBigIntParse(serialized.firstUsedAtBlock)
+      : undefined,
+    firstUsedAtTransaction: serialized.firstUsedAtTransaction,
+    firstUsedAtTimestamp: serialized.firstUsedAtTimestamp
+      ? safeBigIntParse(serialized.firstUsedAtTimestamp)
+      : undefined,
+    lastUpdatedBlock: safeBigIntParse(serialized.lastUpdatedBlock),
+    lastUpdatedTimestamp: safeBigIntParse(serialized.lastUpdatedTimestamp),
+  };
+}
+
+/**
+ * ========================================
+ * DAILY POOL STATS TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize DailyPoolStats (BigInt -> string)
+ *
+ * @param stats - DailyPoolStats entity
+ * @returns Serialized daily pool stats
+ */
+export function serializeDailyPoolStats(
+  stats: DailyPoolStats,
+): SerializedDailyPoolStats {
+  return {
+    id: stats.id,
+    date: stats.date,
+    pool: serializePool(stats.pool),
+    network: stats.network,
+    chainId: stats.chainId.toString(),
+    newMembers: stats.newMembers.toString(),
+    userOperations: stats.userOperations.toString(),
+    gasSpent: stats.gasSpent.toString(),
+    revenueGenerated: stats.revenueGenerated.toString(),
+    totalMembers: stats.totalMembers.toString(),
+    totalDeposits: stats.totalDeposits.toString(),
+  };
+}
+
+/**
+ * Deserialize DailyPoolStats (string -> BigInt)
+ *
+ * @param serialized - Serialized daily pool stats
+ * @returns DailyPoolStats entity
+ */
+export function deserializeDailyPoolStats(
+  serialized: SerializedDailyPoolStats,
+): DailyPoolStats {
+  return {
+    id: serialized.id,
+    date: serialized.date,
+    pool: deserializePool(serialized.pool),
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    newMembers: safeBigIntParse(serialized.newMembers),
+    userOperations: safeBigIntParse(serialized.userOperations),
+    gasSpent: safeBigIntParse(serialized.gasSpent),
+    revenueGenerated: safeBigIntParse(serialized.revenueGenerated),
+    totalMembers: safeBigIntParse(serialized.totalMembers),
+    totalDeposits: safeBigIntParse(serialized.totalDeposits),
+  };
+}
+
+/**
+ * ========================================
+ * DAILY GLOBAL STATS TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize DailyGlobalStats (BigInt -> string)
+ *
+ * @param stats - DailyGlobalStats entity
+ * @returns Serialized daily global stats
+ */
+export function serializeDailyGlobalStats(
+  stats: DailyGlobalStats,
+): SerializedDailyGlobalStats {
+  return {
+    id: stats.id,
+    date: stats.date,
+    network: stats.network,
+    chainId: stats.chainId.toString(),
+    newPools: stats.newPools.toString(),
+    totalNewMembers: stats.totalNewMembers.toString(),
+    totalUserOperations: stats.totalUserOperations.toString(),
+    totalGasSpent: stats.totalGasSpent.toString(),
+    totalRevenueGenerated: stats.totalRevenueGenerated.toString(),
+    totalActivePools: stats.totalActivePools.toString(),
+    totalMembers: stats.totalMembers.toString(),
+  };
+}
+
+/**
+ * Deserialize DailyGlobalStats (string -> BigInt)
+ *
+ * @param serialized - Serialized daily global stats
+ * @returns DailyGlobalStats entity
+ */
+export function deserializeDailyGlobalStats(
+  serialized: SerializedDailyGlobalStats,
+): DailyGlobalStats {
+  return {
+    id: serialized.id,
+    date: serialized.date,
+    network: serialized.network,
+    chainId: safeBigIntParse(serialized.chainId),
+    newPools: safeBigIntParse(serialized.newPools),
+    totalNewMembers: safeBigIntParse(serialized.totalNewMembers),
+    totalUserOperations: safeBigIntParse(serialized.totalUserOperations),
+    totalGasSpent: safeBigIntParse(serialized.totalGasSpent),
+    totalRevenueGenerated: safeBigIntParse(serialized.totalRevenueGenerated),
+    totalActivePools: safeBigIntParse(serialized.totalActivePools),
+    totalMembers: safeBigIntParse(serialized.totalMembers),
+  };
+}
+
+/**
+ * ========================================
+ * NETWORK INFO TRANSFORMERS
+ * ========================================
+ */
+
+/**
+ * Serialize NetworkInfo (BigInt -> string)
+ *
+ * @param networkInfo - NetworkInfo entity
+ * @returns Serialized network info
+ */
+export function serializeNetworkInfo(
+  networkInfo: NetworkInfo,
+): SerializedNetworkInfo {
+  return {
+    id: networkInfo.id,
+    name: networkInfo.name,
+    chainId: networkInfo.chainId.toString(),
+    totalPaymasters: networkInfo.totalPaymasters.toString(),
+    totalPools: networkInfo.totalPools.toString(),
+    totalMembers: networkInfo.totalMembers.toString(),
+    totalUserOperations: networkInfo.totalUserOperations.toString(),
+    totalGasSpent: networkInfo.totalGasSpent.toString(),
+    totalRevenue: networkInfo.totalRevenue.toString(),
+    firstDeploymentBlock: networkInfo.firstDeploymentBlock.toString(),
+    firstDeploymentTimestamp: networkInfo.firstDeploymentTimestamp.toString(),
+    lastActivityBlock: networkInfo.lastActivityBlock.toString(),
+    lastActivityTimestamp: networkInfo.lastActivityTimestamp.toString(),
+  };
+}
+
+/**
+ * Deserialize NetworkInfo (string -> BigInt)
+ *
+ * @param serialized - Serialized network info
+ * @returns NetworkInfo entity
+ */
+export function deserializeNetworkInfo(
+  serialized: SerializedNetworkInfo,
+): NetworkInfo {
+  return {
+    id: serialized.id,
+    name: serialized.name,
+    chainId: safeBigIntParse(serialized.chainId),
+    totalPaymasters: safeBigIntParse(serialized.totalPaymasters),
+    totalPools: safeBigIntParse(serialized.totalPools),
+    totalMembers: safeBigIntParse(serialized.totalMembers),
+    totalUserOperations: safeBigIntParse(serialized.totalUserOperations),
+    totalGasSpent: safeBigIntParse(serialized.totalGasSpent),
+    totalRevenue: safeBigIntParse(serialized.totalRevenue),
+    firstDeploymentBlock: safeBigIntParse(serialized.firstDeploymentBlock),
+    firstDeploymentTimestamp: safeBigIntParse(
+      serialized.firstDeploymentTimestamp,
+    ),
+    lastActivityBlock: safeBigIntParse(serialized.lastActivityBlock),
+    lastActivityTimestamp: safeBigIntParse(serialized.lastActivityTimestamp),
+  };
+}
+
+/**
+ * ========================================
+ * BATCH TRANSFORMATION UTILITIES
+ * ========================================
+ */
+
+/**
+ * Serialize an array of entities
+ *
+ * @param entities - Array of entities to serialize
+ * @param serializeFn - Serialization function
+ * @returns Array of serialized entities
+ */
+export function serializeArray<T, S>(
+  entities: T[],
+  serializeFn: (entity: T) => S,
+): S[] {
+  return entities.map(serializeFn);
+}
+
+/**
+ * Deserialize an array of entities
+ *
+ * @param serializedEntities - Array of serialized entities
+ * @param deserializeFn - Deserialization function
+ * @returns Array of deserialized entities
+ */
+export function deserializeArray<T, S>(
+  serializedEntities: S[],
+  deserializeFn: (serialized: S) => T,
+): T[] {
+  return serializedEntities.map(deserializeFn);
+}
+
+/**
+ * ========================================
+ * VALIDATION UTILITIES
+ * ========================================
+ */
+
+/**
+ * Validate serialized entity structure
+ *
+ * @param entity - Entity to validate
+ * @param requiredFields - Required fields
+ * @returns True if valid
+ */
+export function validateSerializedEntity(
+  entity: any,
+  requiredFields: string[],
+): boolean {
+  if (!entity || typeof entity !== "object") {
+    return false;
   }
 
-  const change = current - previous;
-  const percentage = (Number(change) / Number(previous)) * 100;
-
-  const sign = percentage > 0 ? "+" : "";
-  return `${sign}${percentage.toFixed(2)}%`;
+  return requiredFields.every((field) => field in entity);
 }
 
 /**
- * Utility: Format timestamp to human-readable date
+ * Validate network consistency across entities
+ *
+ * @param entities - Entities to validate
+ * @param expectedNetwork - Expected network
+ * @returns True if all entities belong to expected network
  */
-export function formatTimestamp(timestamp: bigint): string {
-  const date = new Date(Number(timestamp) * 1000);
-  const isoString = date.toISOString();
-  const datePart = isoString.split("T")[0];
-  return datePart ?? isoString; // YYYY-MM-DD format
+export function validateNetworkConsistency(
+  entities: Array<{ network: string }>,
+  expectedNetwork: string,
+): boolean {
+  return entities.every((entity) => entity.network === expectedNetwork);
 }
 
 /**
- * Utility: Format timestamp to human-readable date and time
+ * ========================================
+ * ANALYTICS TRANSFORMATION UTILITIES
+ * ========================================
  */
-export function formatTimestampWithTime(timestamp: bigint): string {
-  const date = new Date(Number(timestamp) * 1000);
-  return date.toISOString().replace("T", " ").replace("Z", "");
+
+/**
+ * Transform analytics data for charts
+ *
+ * @param dailyStats - Daily statistics
+ * @returns Chart-ready data
+ */
+export function transformAnalyticsForCharts(
+  dailyStats: DailyGlobalStats[],
+): Array<{
+  date: string;
+  newPools: number;
+  newMembers: number;
+  userOperations: number;
+  gasSpent: number;
+  revenue: number;
+}> {
+  return dailyStats.map((stat) => ({
+    date: stat.date,
+    newPools: Number(stat.newPools),
+    newMembers: Number(stat.totalNewMembers),
+    userOperations: Number(stat.totalUserOperations),
+    gasSpent: Number(stat.totalGasSpent) / 10 ** 18, // Convert to ETH
+    revenue: Number(stat.totalRevenueGenerated) / 10 ** 18, // Convert to ETH
+  }));
+}
+
+/**
+ * Calculate growth rates from time series data
+ *
+ * @param timeSeries - Time series data
+ * @param valueField - Field to calculate growth for
+ * @returns Growth rates
+ */
+export function calculateGrowthRates(
+  timeSeries: Array<{ date: string; [key: string]: any }>,
+  valueField: string,
+): Array<{ date: string; value: number; growthRate: number }> {
+  const result: Array<{ date: string; value: number; growthRate: number }> = [];
+
+  for (let i = 0; i < timeSeries.length; i++) {
+    const current = timeSeries[i];
+    if (!current || current[valueField] === undefined) continue;
+
+    const previous = timeSeries[i - 1];
+    const currentValue = Number(current[valueField]);
+
+    const growthRate =
+      previous && previous[valueField] !== undefined
+        ? calculatePercentageChange(
+            BigInt(previous[valueField]),
+            BigInt(current[valueField]),
+          )
+        : 0;
+
+    result.push({
+      date: current.date,
+      value: currentValue,
+      growthRate,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * ========================================
+ * EXPORT CONVENIENCE FUNCTIONS
+ * ========================================
+ */
+
+/**
+ * All serialization functions
+ */
+export const serializers = {
+  paymasterContract: serializePaymasterContract,
+  pool: serializePool,
+  poolMember: serializePoolMember,
+  merkleRoot: serializeMerkleRoot,
+  userOperation: serializeUserOperation,
+  revenueWithdrawal: serializeRevenueWithdrawal,
+  nullifierUsage: serializeNullifierUsage,
+  dailyPoolStats: serializeDailyPoolStats,
+  dailyGlobalStats: serializeDailyGlobalStats,
+  networkInfo: serializeNetworkInfo,
+};
+
+/**
+ * All deserialization functions
+ */
+export const deserializers = {
+  paymasterContract: deserializePaymasterContract,
+  pool: deserializePool,
+  poolMember: deserializePoolMember,
+  merkleRoot: deserializeMerkleRoot,
+  userOperation: deserializeUserOperation,
+  revenueWithdrawal: deserializeRevenueWithdrawal,
+  nullifierUsage: deserializeNullifierUsage,
+  dailyPoolStats: deserializeDailyPoolStats,
+  dailyGlobalStats: deserializeDailyGlobalStats,
+  networkInfo: deserializeNetworkInfo,
+};
+
+/**
+ * All formatting functions
+ */
+export const formatters = {
+  bigInt: formatBigIntValue,
+  gas: formatGasValue,
+  currency: formatCurrencyValue,
+  timestamp: formatTimestamp,
+  timestampWithTime: formatTimestampWithTime,
+  percentageChange: calculatePercentageChange,
+};
+
+/**
+ * All validation functions
+ */
+export const validators = {
+  bigIntString: isValidBigIntString,
+  serializedEntity: validateSerializedEntity,
+  networkConsistency: validateNetworkConsistency,
+};
+
+export function convertBigIntsToStrings(
+  obj: Record<string, any>,
+): Record<string, any> {
+  const newObj: Record<string, any> = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+      if (typeof value === "bigint") {
+        newObj[key] = value.toString();
+      } else if (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        newObj[key] = convertBigIntsToStrings(value);
+      } else {
+        newObj[key] = value;
+      }
+    }
+  }
+  return newObj;
 }

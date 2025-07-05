@@ -1,550 +1,494 @@
-import { BaseQueryBuilder } from "./base-query-builder.js";
-import { PoolMemberFields, PoolMemberWhereInput } from "../types.js";
-import { PoolMember, Pool, SubgraphResponse } from "../../types/subgraph.js";
-import type { SubgraphClient } from "../../client/subgraph-client.js";
-import {
-  serializePoolMember,
-  serializePool,
-  SerializedPoolMember,
-  SerializedPool,
-} from "../../transformers/index.js";
-
 /**
- * Default fields to fetch when no specific fields are selected
- * Updated to match new subgraph schema
+ * Query builder for PoolMember entities
+ * Updated for the new network-aware schema structure
  */
-const DEFAULT_MEMBER_FIELDS: PoolMemberFields[] = [
-  "id",
-  "memberIndex",
-  "identityCommitment",
-  "merkleRootWhenAdded",
-  "rootIndexWhenAdded",
-  "addedAtBlock",
-  "addedAtTransaction",
-  "addedAtTimestamp",
-];
+
+import type { SubgraphClient } from "../../client/subgraph-client.js";
+import type { PoolMember, NetworkName } from "../../types/subgraph.js";
+
+import { PoolMemberFields, PoolMemberWhereInput } from "../types.js";
+import { BaseQueryBuilder } from "./base-query-builder.js";
+
+export type PoolMemberOrderBy =
+  | "addedAtTimestamp"
+  | "memberIndex"
+  | "gasUsed"
+  | "rootIndexWhenAdded";
 
 /**
- * Query builder for PoolMember entities with member-specific convenience methods
+ * Query builder for PoolMember entities
  *
- * Updated for new PaymasterContract-based subgraph structure
+ * Provides a fluent interface for building complex pool member queries
+ * with support for identity tracking and nullifier usage.
  */
 export class PoolMemberQueryBuilder extends BaseQueryBuilder<
   PoolMember,
   PoolMemberFields,
-  PoolMemberWhereInput
+  PoolMemberWhereInput,
+  PoolMemberOrderBy
 > {
-  private poolId?: string;
+  // private config: PoolMemberQueryConfig = {};
 
-  constructor(private client: SubgraphClient) {
-    super();
+  constructor(client: SubgraphClient) {
+    super(client, "poolMembers", "addedAtTimestamp", "desc");
   }
 
   /**
-   * Filter members by specific pool ID
-   *
-   * @param poolId - The pool ID to filter members by
-   * @returns this for method chaining
+   * Override default fields for PoolMember entity.
    */
-  inPool(poolId: string): this {
-    this.poolId = poolId;
-    return this.where({ pool: poolId });
+  protected getDefaultFields(): string {
+    return `
+      id
+      network
+      chainId
+      memberIndex
+      identityCommitment
+      merkleRootWhenAdded
+      rootIndexWhenAdded
+      addedAtBlock
+      addedAtTransaction
+      addedAtTimestamp
+      gasUsed
+      nullifierUsed
+      nullifier
+      pool {
+        id
+        poolId
+        network
+        chainId
+        paymaster {
+          id
+          address
+        }
+      }
+    `;
   }
 
   /**
-   * Filter members by multiple pool IDs
-   *
-   * @param poolIds - Array of pool IDs to filter members by
-   * @returns this for method chaining
+   * ========================================
+   * FILTERING METHODS
+   * ========================================
    */
-  inPools(poolIds: string[]): this {
-    return this.where({ pool_in: poolIds });
-  }
 
   /**
-   * Filter by specific identity commitment
+   * Filter by network
    *
-   * @param identityCommitment - The identity commitment to filter by
-   * @returns this for method chaining
-   */
-  byIdentity(identityCommitment: string): this {
-    return this.where({ identityCommitment });
-  }
-
-  /**
-   * Filter by multiple identity commitments
+   * @param network - Network identifier
+   * @returns PoolMemberQueryBuilder for method chaining
    *
-   * @param identityCommitments - Array of identity commitments to filter by
-   * @returns this for method chaining
+   * @example
+   * ```typescript
+   * const members = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .execute();
+   * ```
    */
-  byIdentities(identityCommitments: string[]): this {
-    return this.where({ identityCommitment_in: identityCommitments });
-  }
-
-  /**
-   * Filter by identity commitment pattern
-   *
-   * @param pattern - Pattern to match in identity commitment
-   * @returns this for method chaining
-   */
-  identityContains(pattern: string): this {
-    return this.where({ identityCommitment_contains: pattern });
-  }
-
-  /**
-   * Filter members by member index range
-   *
-   * @param min - Minimum member index
-   * @param max - Maximum member index
-   * @returns this for method chaining
-   */
-  memberIndexBetween(min: string, max: string): this {
-    return this.where({
-      memberIndex_gte: min,
-      memberIndex_lte: max,
-    });
-  }
-
-  /**
-   * Filter members with minimum member index
-   *
-   * @param minIndex - Minimum member index
-   * @returns this for method chaining
-   */
-  memberIndexFrom(minIndex: string): this {
-    return this.where({ memberIndex_gte: minIndex });
-  }
-
-  /**
-   * Filter members with maximum member index
-   *
-   * @param maxIndex - Maximum member index
-   * @returns this for method chaining
-   */
-  memberIndexTo(maxIndex: string): this {
-    return this.where({ memberIndex_lte: maxIndex });
-  }
-
-  /**
-   * Filter members who added after specific timestamp
-   *
-   * @param timestamp - Minimum addition timestamp
-   * @returns this for method chaining
-   */
-  addedAfter(timestamp: string): this {
-    return this.where({ addedAtTimestamp_gt: timestamp });
-  }
-
-  /**
-   * Filter members who added before specific timestamp
-   *
-   * @param timestamp - Maximum addition timestamp
-   * @returns this for method chaining
-   */
-  addedBefore(timestamp: string): this {
-    return this.where({ addedAtTimestamp_lt: timestamp });
-  }
-
-  /**
-   * Filter members added in a specific time range
-   *
-   * @param startTimestamp - Start of time range
-   * @param endTimestamp - End of time range
-   * @returns this for method chaining
-   */
-  addedBetween(startTimestamp: string, endTimestamp: string): this {
-    return this.where({
-      addedAtTimestamp_gte: startTimestamp,
-      addedAtTimestamp_lte: endTimestamp,
-    });
-  }
-
-  /**
-   * Filter members who added at or after specific block
-   *
-   * @param blockNumber - Minimum block number
-   * @returns this for method chaining
-   */
-  addedAtBlock(blockNumber: string): this {
-    return this.where({ addedAtBlock_gte: blockNumber });
-  }
-
-  /**
-   * Filter members with gas usage (GasLimited paymaster)
-   *
-   * @param minGasUsed - Minimum gas used
-   * @param maxGasUsed - Maximum gas used (optional)
-   * @returns this for method chaining
-   */
-  withGasUsage(minGasUsed: string, maxGasUsed?: string): this {
-    const conditions: Partial<PoolMemberWhereInput> = {
-      gasUsed_gte: minGasUsed,
-    };
-
-    if (maxGasUsed) {
-      conditions.gasUsed_lte = maxGasUsed;
-    }
-
-    return this.where(conditions);
-  }
-
-  /**
-   * Filter members with nullifier usage (OneTimeUse paymaster)
-   *
-   * @param used - Whether nullifier was used
-   * @returns this for method chaining
-   */
-  withNullifierUsed(used: boolean): this {
-    return this.where({ nullifierUsed: used });
-  }
-
-  /**
-   * Order members by specific field and direction
-   *
-   * @param field - Field to order by
-   * @param direction - Order direction ("asc" or "desc")
-   * @returns this for method chaining
-   */
-  orderBy(field: string, direction: "asc" | "desc" = "asc"): this {
-    this.config.orderBy = field;
-    this.config.orderDirection = direction;
+  byNetwork(network: NetworkName): this {
+    this.where({ network: network });
     return this;
   }
 
   /**
-   * Order members by addition date (newest first)
+   * Filter by pool ID
    *
-   * @returns this for method chaining
+   * @param poolId - Pool ID
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const poolMembers = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .byPool("123")
+   *   .execute();
+   * ```
    */
-  orderByNewestAdded(): this {
-    return this.orderBy("addedAtTimestamp", "desc");
+  byPool(poolId: string): this {
+    this.where({ pool_: { poolId: poolId } });
+    return this;
   }
 
   /**
-   * Order members by addition date (oldest first)
+   * Filter by member index
    *
-   * @returns this for method chaining
+   * @param memberIndex - Member index
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const member = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .byPool("123")
+   *   .byMemberIndex("0")
+   *   .first();
+   * ```
    */
-  orderByOldestAdded(): this {
-    return this.orderBy("addedAtTimestamp", "asc");
+  byId(
+    network: NetworkName,
+    poolId: string,
+    memberIndex: string | number,
+  ): this {
+    this.where({ id: `${network}-${poolId}-${memberIndex.toString()}` });
+    this.byNetwork(network); // Also set network for clarity and consistency
+    return this;
   }
 
   /**
-   * Order members by member index (lowest first)
+   * Filter by member index
    *
-   * @returns this for method chaining
+   * @param memberIndex - Member index
+   * @returns PoolMemberQueryBuilder for method chaining
    */
-  orderByMemberIndex(): this {
-    return this.orderBy("memberIndex", "asc");
+  byMemberIndex(memberIndex: string | number): this {
+    this.where({ memberIndex: memberIndex.toString() });
+    return this;
   }
 
   /**
-   * Order members by gas usage (highest first)
+   * Filter by identity commitment
    *
-   * @returns this for method chaining
+   * @param identityCommitment - Identity commitment
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const userMemberships = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .byIdentityCommitment("0x123...")
+   *   .execute();
+   * ```
    */
-  orderByGasUsage(): this {
-    return this.orderBy("gasUsed", "desc");
+  byIdentityCommitment(identityCommitment: string): this {
+    this.where({ identityCommitment: identityCommitment });
+    return this;
   }
 
   /**
-   * Build GraphQL query string for pool members
+   * Filter by paymaster address
    *
-   * @private
-   * @param fields - Fields to include in the query
-   * @returns GraphQL query string
+   * @param paymaster - Paymaster contract address
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const paymasterMembers = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .byPaymaster("0x3BEeC075aC5A77fFE0F9ee4bbb3DCBd07fA93fbf")
+   *   .execute();
+   * ```
    */
-  private buildMembersQuery(fields: PoolMemberFields[]): string {
-    const fieldsList = fields.map((field) => `      ${field}`).join("\n");
-    return `
-      query GetPoolMembers(
-        $first: Int!
-        $skip: Int!
-        $orderBy: PoolMember_orderBy
-        $orderDirection: OrderDirection
-        $where: PoolMember_filter
-      ) {
-        poolMembers(
-          first: $first
-          skip: $skip
-          orderBy: $orderBy
-          orderDirection: $orderDirection
-          where: $where
-        ) {
-${fieldsList}
-        }
-      }
-    `;
+  byPaymaster(paymaster: string): this {
+    this.where({ pool_: { paymaster_: { address: paymaster } } });
+    return this;
   }
 
   /**
-   * Build query variables from current configuration
+   * Filter by minimum gas used (GasLimited tracking)
    *
-   * @private
-   * @returns Query variables object
+   * @param minGasUsed - Minimum gas used in wei (as string)
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const heavyGasUsers = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .withMinGasUsed("1000000000000000000") // 1 ETH worth of gas
+   *   .execute();
+   * ```
    */
-  private buildQueryVariables(): Record<string, any> {
-    const config = this.getConfig();
-
-    const variables: Record<string, any> = {
-      first: config.first || 100,
-      skip: config.skip || 0,
-    };
-
-    if (config.orderBy) {
-      variables.orderBy = config.orderBy;
-    }
-
-    if (config.orderDirection) {
-      variables.orderDirection = config.orderDirection;
-    }
-
-    if (config.where && Object.keys(config.where).length > 0) {
-      variables.where = config.where;
-    }
-
-    return variables;
+  withMinGasUsed(minGasUsed: string): this {
+    this.where({ gasUsed_gte: minGasUsed });
+    return this;
   }
 
   /**
-   * Execute the query and return member results
+   * Filter by maximum gas used
    *
-   * @returns Promise resolving to array of PoolMember entities
+   * @param maxGasUsed - Maximum gas used in wei (as string)
+   * @returns PoolMemberQueryBuilder for method chaining
    */
-  async execute(): Promise<PoolMember[]> {
-    const fields = this.selectedFields || DEFAULT_MEMBER_FIELDS;
-    const query = this.buildMembersQuery(fields);
-    const variables = this.buildQueryVariables();
-
-    const response = await this.client.executeQuery<{
-      poolMembers: PoolMember[];
-    }>(query, variables);
-    return response.poolMembers;
+  withMaxGasUsed(maxGasUsed: string): this {
+    this.where({ gasUsed_lte: maxGasUsed });
+    return this;
   }
 
   /**
-   * Execute the query and return serialized member results
+   * Filter by nullifier usage status
    *
-   * @returns Promise resolving to array of SerializedPoolMember entities
+   * @param used - Whether nullifier has been used
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const activeMembers = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .withNullifierUsed(true)
+   *   .execute();
+   * ```
    */
-  async executeAndSerialize(): Promise<SerializedPoolMember[]> {
-    const members = await this.execute();
-    return members.map(serializePoolMember);
+  withNullifierUsed(used: boolean = true): this {
+    this.where({ nullifierUsed: used });
+    return this;
   }
 
   /**
-   * Get member with pool data included
+   * Filter by join date (after)
    *
-   * @returns MemberQueryWithPoolBuilder for extended functionality
+   * @param timestamp - Timestamp string or number
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const recentMembers = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .joinedAfter("1704067200") // 2024-01-01
+   *   .execute();
+   * ```
    */
-  withPool(): MemberQueryWithPoolBuilder {
-    return new MemberQueryWithPoolBuilder(
-      this.client,
-      this.getConfig(),
-      this.poolId,
-    );
+  joinedAfter(timestamp: string | number): this {
+    this.where({ addedAtTimestamp_gte: timestamp.toString() });
+    return this;
   }
 
   /**
-   * Find all pool memberships for a specific identity
+   * Filter by join date (before)
    *
-   * @param identityCommitment - The identity commitment to search for
-   * @param options - Pagination options
-   * @returns Promise resolving to array of member-pool pairs
+   * @param timestamp - Timestamp string or number
+   * @returns PoolMemberQueryBuilder for method chaining
    */
-  async findPoolsByIdentity(
+  joinedBefore(timestamp: string | number): this {
+    this.where({ addedAtTimestamp_lte: timestamp.toString() });
+    return this;
+  }
+
+  /**
+   * Filter by merkle root index when added
+   *
+   * @param rootIndex - Merkle root index
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const membersAtRoot = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .byPool("123")
+   *   .atMerkleRootIndex(5)
+   *   .execute();
+   * ```
+   */
+  atMerkleRootIndex(rootIndex: number): this {
+    this.where({ rootIndexWhenAdded: rootIndex });
+    return this;
+  }
+
+  /**
+   * ========================================
+   * ORDERING METHODS
+   * ========================================
+   */
+
+  /**
+   * Order by join date (newest first)
+   *
+   * @returns PoolMemberQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const recentMembers = await client.query().poolMembers()
+   *   .byNetwork("base-sepolia")
+   *   .orderByJoinDate()
+   *   .limit(10)
+   *   .execute();
+   * ```
+   */
+  orderByJoinDate(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("addedAtTimestamp", direction);
+    return this;
+  }
+
+  /**
+   * Order by member index
+   *
+   * @returns PoolMemberQueryBuilder for method chaining
+   */
+  orderByMemberIndex(direction: "asc" | "desc" = "asc"): this {
+    this.orderBy("memberIndex", direction);
+    return this;
+  }
+
+  /**
+   * Order by gas used (highest first)
+   *
+   * @returns PoolMemberQueryBuilder for method chaining
+   */
+  orderByGasUsed(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("gasUsed", direction);
+    return this;
+  }
+
+  /**
+   * Order by merkle root index
+   *
+   * @returns PoolMemberQueryBuilder for method chaining
+   */
+  orderByMerkleRootIndex(direction: "asc" | "desc" = "asc"): this {
+    this.orderBy("rootIndexWhenAdded", direction);
+    return this;
+  }
+
+  /**
+   * ========================================
+   * SPECIAL QUERIES
+   * ========================================
+   */
+
+  /**
+   * Get pools by identity commitment (user's memberships)
+   *
+   * @param identityCommitment - Identity commitment
+   * @param network - Network identifier
+   * @returns Promise resolving to array of pool memberships
+   */
+  async getPoolsByIdentity(
     identityCommitment: string,
-    options: { first?: number; skip?: number } = {},
-  ): Promise<Array<{ member: PoolMember; pool: Pool }>> {
-    const { first = 100, skip = 0 } = options;
+    network: NetworkName,
+  ): Promise<PoolMember[]> {
+    return this.clone()
+      .byIdentityCommitment(identityCommitment)
+      .byNetwork(network)
+      .execute();
+  }
 
-    const membersWithPools = await this.byIdentity(identityCommitment)
-      .orderByNewestAdded()
-      .limit(first)
-      .skip(skip)
-      .withPool()
+  /**
+   * Get member statistics for a pool
+   *
+   * @param poolId - Pool ID
+   * @param network - Network identifier
+   * @returns Promise resolving to member statistics
+   */
+  async getPoolMemberStats(
+    poolId: string,
+    network: NetworkName,
+  ): Promise<{
+    totalMembers: number;
+    activeMembers: number;
+    totalGasUsed: string;
+    averageGasUsed: string;
+    nullifierUsageRate: number;
+    oldestMember: string;
+    newestMember: string;
+  }> {
+    const members = await this.clone()
+      .byNetwork(network)
+      .byPool(poolId)
       .execute();
 
-    return membersWithPools.map((memberWithPool) => {
-      const { pool, ...memberData } = memberWithPool;
-      return {
-        member: memberData as PoolMember,
-        pool: pool,
-      };
-    });
-  }
-
-  /**
-   * Get member count for specific pool
-   *
-   * @param poolId - Pool ID to count members for
-   * @returns Promise resolving to member count
-   */
-  async getMemberCount(poolId: string): Promise<number> {
-    const members = await this.inPool(poolId).execute();
-    return members.length;
-  }
-
-  /**
-   * Clone the current query builder
-   *
-   * @returns New PoolMemberQueryBuilder instance with same configuration
-   */
-  clone(): PoolMemberQueryBuilder {
-    const cloned = new PoolMemberQueryBuilder(this.client);
-    cloned.config = { ...this.config };
-    cloned.selectedFields = this.selectedFields
-      ? [...this.selectedFields]
-      : undefined;
-    cloned.poolId = this.poolId;
-    return cloned;
-  }
-}
-
-/**
- * Extended query builder for members that includes pool data
- */
-export class MemberQueryWithPoolBuilder extends BaseQueryBuilder<
-  PoolMember & { pool: Pool },
-  PoolMemberFields,
-  PoolMemberWhereInput
-> {
-  constructor(
-    private client: SubgraphClient,
-    private baseConfig: any,
-    private poolId?: string,
-  ) {
-    super();
-    this.config = { ...baseConfig };
-  }
-
-  /**
-   * Build GraphQL query string for members with pool data
-   *
-   * @private
-   * @param fields - Member fields to include in the query
-   * @returns GraphQL query string
-   */
-  private buildMembersWithPoolQuery(fields: PoolMemberFields[]): string {
-    const memberFieldsList = fields.map((field) => `      ${field}`).join("\n");
-    return `
-      query GetPoolMembersWithPool(
-        $first: Int!
-        $skip: Int!
-        $orderBy: PoolMember_orderBy
-        $orderDirection: OrderDirection
-        $where: PoolMember_filter
-      ) {
-        poolMembers(
-          first: $first
-          skip: $skip
-          orderBy: $orderBy
-          orderDirection: $orderDirection
-          where: $where
-        ) {
-${memberFieldsList}
-          pool {
-            id
-            poolId
-            joiningFee
-            totalDeposits
-            memberCount
-            currentMerkleRoot
-            currentRootIndex
-            rootHistoryCount
-            createdAtBlock
-            createdAtTransaction
-            createdAtTimestamp
-            lastUpdatedBlock
-            lastUpdatedTimestamp
-            paymaster {
-              id
-              contractType
-              address
-            }
-          }
-        }
-      }
-    `;
-  }
-
-  /**
-   * Build query variables from current configuration
-   *
-   * @private
-   * @returns Query variables object
-   */
-  private buildQueryVariables(): Record<string, any> {
-    const config = this.getConfig();
-
-    const variables: Record<string, any> = {
-      first: config.first || 100,
-      skip: config.skip || 0,
-    };
-
-    if (config.orderBy) {
-      variables.orderBy = config.orderBy;
-    }
-
-    if (config.orderDirection) {
-      variables.orderDirection = config.orderDirection;
-    }
-
-    if (config.where && Object.keys(config.where).length > 0) {
-      variables.where = config.where;
-    }
-
-    return variables;
-  }
-
-  /**
-   * Execute query and return members with their pool data
-   *
-   * @returns Promise resolving to members with pool data included
-   */
-  async execute(): Promise<(PoolMember & { pool: Pool })[]> {
-    const memberFields = this.selectedFields || DEFAULT_MEMBER_FIELDS;
-    const query = this.buildMembersWithPoolQuery(memberFields);
-    const variables = this.buildQueryVariables();
-
-    const response = await this.client.executeQuery<{
-      poolMembers: (PoolMember & { pool: Pool })[];
-    }>(query, variables);
-
-    return response.poolMembers;
-  }
-
-  /**
-   * Execute query and return serialized members with pool data
-   *
-   * @returns Promise resolving to array of SerializedPoolMember entities with pool data
-   */
-  async executeAndSerialize(): Promise<
-    (SerializedPoolMember & { pool: SerializedPool })[]
-  > {
-    const membersWithPool = await this.execute();
-
-    return membersWithPool.map((memberWithPool) => ({
-      ...serializePoolMember(memberWithPool),
-      pool: serializePool(memberWithPool.pool),
-    }));
-  }
-
-  /**
-   * Clone the current query builder
-   *
-   * @returns New MemberQueryWithPoolBuilder instance with same configuration
-   */
-  clone(): MemberQueryWithPoolBuilder {
-    const cloned = new MemberQueryWithPoolBuilder(
-      this.client,
-      this.baseConfig,
-      this.poolId,
+    const totalMembers = members.length;
+    const activeMembers = members.filter(
+      (member) => member.nullifierUsed,
+    ).length;
+    const totalGasUsed = members.reduce(
+      (sum, member) => sum + (member.gasUsed ? BigInt(member.gasUsed) : 0n),
+      0n,
     );
-    cloned.config = { ...this.config };
-    cloned.selectedFields = this.selectedFields
-      ? [...this.selectedFields]
-      : undefined;
-    return cloned;
+    const averageGasUsed =
+      totalMembers > 0 ? totalGasUsed / BigInt(totalMembers) : 0n;
+    const nullifierUsageRate =
+      totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0;
+
+    const oldestMember = members.reduce(
+      (oldest, member) =>
+        BigInt(member.addedAtTimestamp) < BigInt(oldest?.addedAtTimestamp ?? 0)
+          ? member
+          : oldest,
+      members[0],
+    );
+
+    const newestMember = members.reduce(
+      (newest, member) =>
+        BigInt(member.addedAtTimestamp) > BigInt(newest?.addedAtTimestamp ?? 0)
+          ? member
+          : newest,
+      members[0],
+    );
+
+    return {
+      totalMembers,
+      activeMembers,
+      totalGasUsed: totalGasUsed.toString(),
+      averageGasUsed: averageGasUsed.toString(),
+      nullifierUsageRate: Math.round(nullifierUsageRate * 100) / 100,
+      oldestMember: oldestMember?.addedAtTimestamp.toString() || "N/A",
+      newestMember: newestMember?.addedAtTimestamp.toString() || "N/A",
+    };
+  }
+
+  /**
+   * Get member activity timeline for a pool
+   *
+   * @param poolId - Pool ID
+   * @param network - Network identifier
+   * @param days - Number of days to look back
+   * @returns Promise resolving to daily member activity
+   */
+  async getMemberActivityTimeline(
+    poolId: string,
+    network: NetworkName,
+    days: number = 30,
+  ): Promise<
+    Array<{
+      date: string;
+      newMembers: number;
+      activeMembers: number;
+      totalGasUsed: string;
+    }>
+  > {
+    const endTime = Math.floor(Date.now() / 1000);
+    const startTime = endTime - days * 24 * 60 * 60;
+
+    const members = await this.clone()
+      .byNetwork(network)
+      .byPool(poolId)
+      .joinedAfter(startTime)
+      .orderByJoinDate("asc")
+      .execute();
+
+    // Group by date
+    const timeline: Record<
+      string,
+      {
+        newMembers: number;
+        activeMembers: number;
+        totalGasUsed: bigint;
+      }
+    > = {};
+
+    for (const member of members) {
+      const date = new Date(Number(member.addedAtTimestamp) * 1000)
+        .toISOString()
+        .split("T")[0]!;
+
+      if (!timeline[date]) {
+        timeline[date] = {
+          newMembers: 0,
+          activeMembers: 0,
+          totalGasUsed: 0n,
+        };
+      }
+
+      timeline[date].newMembers += 1;
+      if (member.nullifierUsed) {
+        timeline[date].activeMembers += 1;
+      }
+      if (member.gasUsed) {
+        timeline[date].totalGasUsed += BigInt(member.gasUsed);
+      }
+    }
+
+    return Object.entries(timeline).map(([date, stats]) => ({
+      date,
+      newMembers: stats.newMembers,
+      activeMembers: stats.activeMembers,
+      totalGasUsed: stats.totalGasUsed.toString(),
+    }));
   }
 }

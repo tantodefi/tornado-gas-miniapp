@@ -1,690 +1,780 @@
-import { BaseQueryBuilder } from "./base-query-builder.js";
-import { UserOperationFields, UserOperationWhereInput } from "../types.js";
-import {
-  UserOperation,
-  PaymasterContract,
-  Pool,
-} from "../../types/subgraph.js";
-import type { SubgraphClient } from "../../client/subgraph-client.js";
-import {
-  serializeUserOperation,
-  SerializedUserOperation,
-} from "../../transformers/index.js";
-
 /**
- * Default fields to fetch when no specific fields are selected
+ * Query builder for UserOperation entities
+ * Updated for the new network-aware schema structure
  */
-const DEFAULT_USER_OPERATION_FIELDS: UserOperationFields[] = [
-  "id",
-  "userOpHash",
-  "sender",
-  "actualGasCost",
-  "nullifier",
-  "executedAtTimestamp",
-];
+
+import type { SubgraphClient } from "../../client/subgraph-client.js";
+import type {
+  UserOperation,
+  NetworkName,
+  PaymasterType,
+} from "../../types/subgraph.js";
+
+import { UserOperationFields, UserOperationWhereInput } from "../types.js";
+import { BaseQueryBuilder } from "./base-query-builder.js";
+
+// Define specific types for UserOperationQueryBuilder
+export type UserOperationOrderBy =
+  | "executedAtTimestamp"
+  | "actualGasCost"
+  | "gasPrice"
+  | "totalGasUsed"
+  | "executedAtBlock"
+  | "sender";
 
 /**
  * Query builder for UserOperation entities
  *
- * Provides methods to query and filter user operations with type safety
+ * Provides a fluent interface for building complex user operation queries
+ * with support for paymaster filtering, gas analysis, and transaction tracking.
  */
 export class UserOperationQueryBuilder extends BaseQueryBuilder<
   UserOperation,
   UserOperationFields,
-  UserOperationWhereInput
+  UserOperationWhereInput,
+  UserOperationOrderBy
 > {
-  constructor(private client: SubgraphClient) {
-    super();
+  constructor(private subgraphClient: SubgraphClient) {
+    super(subgraphClient, "userOperations", "executedAtTimestamp", "desc");
+  }
+  /**
+   * Override default fields for UserOperation entity.
+   */
+  protected getDefaultFields(): string {
+    return `
+      id
+      userOpHash
+      sender
+      nonce
+      initCode
+      callData
+      callGasLimit
+      verificationGasLimit
+      preVerificationGas
+      maxFeePerGas
+      maxPriorityFeePerGas
+      paymasterAndData
+      signature
+      actualGasCost
+      actualGasPrice
+      success
+      chainId
+      network
+      executedAtBlock
+      executedAtTransaction
+      executedAtTimestamp
+      totalGasUsed
+      gasPrice
+      aggregator
+      bundler
+      factory
+      nullifier
+      paymaster {
+        id
+        address
+        contractType
+      }
+      pool {
+        id
+        poolId
+      }
+    `;
+  }
+  /**
+   * ========================================
+   * FILTERING METHODS
+   * ========================================
+   */
+
+  /**
+   * Filter by network
+   *
+   * @param network - Network identifier
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const userOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .execute();
+   * ```
+   */
+  byNetwork(network: NetworkName): this {
+    this.where({ network: network });
+    return this;
   }
 
   /**
-   * Filter by specific user operation hash
+   * Filter by user operation hash
    *
-   * @param userOpHash - The user operation hash to filter by
-   * @returns this for method chaining
+   * @param userOpHash - User operation hash
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const userOp = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .byHash("0x123...")
+   *   .first();
+   * ```
    */
   byHash(userOpHash: string): this {
-    return this.where({ userOpHash });
+    this.where({ userOpHash: userOpHash });
+    return this;
   }
 
   /**
-   * Filter by multiple user operation hashes
+   * Filter by composite ID (network-userOpHash)
+   * This is for direct lookup of a single user operation.
    *
-   * @param userOpHashes - Array of user operation hashes to filter by
-   * @returns this for method chaining
+   * @param network - Network identifier
+   * @param userOpHash - User operation hash
+   * @returns UserOperationQueryBuilder for method chaining
    */
-  byHashes(userOpHashes: string[]): this {
-    return this.where({ userOpHash_in: userOpHashes });
+  byId(network: NetworkName, userOpHash: string): this {
+    this.where({ id: `${network}-${userOpHash}` });
+    this.byNetwork(network);
+    this.byHash(userOpHash);
+    return this;
   }
 
   /**
-   * Filter by user operation hash pattern
+   * Filter by paymaster address
    *
-   * @param pattern - Pattern to match in user operation hash
-   * @returns this for method chaining
+   * @param paymaster - Paymaster contract address
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const paymasterOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .byPaymaster("0x3BEeC075aC5A77fFE0F9ee4bbb3DCBd07fA93fbf")
+   *   .execute();
+   * ```
    */
-  hashContains(pattern: string): this {
-    return this.where({ userOpHash_contains: pattern });
+  byPaymaster(paymaster: string): this {
+    this.where({ paymaster_: { address: paymaster } });
+    return this;
   }
 
   /**
-   * Filter by paymaster contract address
+   * Filter by paymaster type
    *
-   * @param paymasterAddress - The paymaster contract address
-   * @returns this for method chaining
+   * @param type - Paymaster type
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const gasLimitedOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .byPaymasterType("GasLimited")
+   *   .execute();
+   * ```
    */
-  byPaymaster(paymasterAddress: string): this {
-    return this.where({ paymaster: paymasterAddress });
+  byPaymasterType(type: PaymasterType): this {
+    this.where({ paymaster_: { contractType: type } });
+    return this;
   }
 
   /**
-   * Filter by multiple paymaster contracts
+   * Filter by pool ID
    *
-   * @param paymasterAddresses - Array of paymaster contract addresses
-   * @returns this for method chaining
-   */
-  byPaymasters(paymasterAddresses: string[]): this {
-    return this.where({ paymaster_in: paymasterAddresses });
-  }
-
-  /**
-   * Filter by specific pool ID
+   * @param poolId - Pool ID
+   * @returns UserOperationQueryBuilder for method chaining
    *
-   * @param poolId - The pool ID to filter by
-   * @returns this for method chaining
+   * @example
+   * ```typescript
+   * const poolOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .byPool("123")
+   *   .execute();
+   * ```
    */
   byPool(poolId: string): this {
-    return this.where({ pool: poolId });
-  }
-
-  /**
-   * Filter by multiple pool IDs
-   *
-   * @param poolIds - Array of pool IDs to filter by
-   * @returns this for method chaining
-   */
-  byPools(poolIds: string[]): this {
-    return this.where({ pool_in: poolIds });
+    this.where({ pool_: { poolId: poolId } });
+    return this;
   }
 
   /**
    * Filter by sender address
    *
-   * @param sender - The sender address to filter by
-   * @returns this for method chaining
+   * @param sender - Sender address
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const userOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .bySender("0x456...")
+   *   .execute();
+   * ```
    */
   bySender(sender: string): this {
-    return this.where({ sender });
+    this.where({ sender: sender });
+    return this;
   }
 
   /**
-   * Filter by multiple sender addresses
+   * Filter by nullifier
    *
-   * @param senders - Array of sender addresses to filter by
-   * @returns this for method chaining
-   */
-  bySenders(senders: string[]): this {
-    return this.where({ sender_in: senders });
-  }
-
-  /**
-   * Filter by sender address pattern
+   * @param nullifier - Nullifier value
+   * @returns UserOperationQueryBuilder for method chaining
    *
-   * @param pattern - Pattern to match in sender address
-   * @returns this for method chaining
-   */
-  senderContains(pattern: string): this {
-    return this.where({ sender_contains: pattern });
-  }
-
-  /**
-   * Filter by specific nullifier
-   *
-   * @param nullifier - The nullifier value to filter by
-   * @returns this for method chaining
+   * @example
+   * ```typescript
+   * const nullifierOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .byNullifier("0x789...")
+   *   .execute();
+   * ```
    */
   byNullifier(nullifier: string): this {
-    return this.where({ nullifier });
-  }
-
-  /**
-   * Filter by actual gas cost range
-   *
-   * @param minGasCost - Minimum gas cost (in wei as string)
-   * @param maxGasCost - Maximum gas cost (in wei as string)
-   * @returns this for method chaining
-   */
-  gasCostBetween(minGasCost: string, maxGasCost: string): this {
-    return this.where({
-      actualGasCost_gte: minGasCost,
-      actualGasCost_lte: maxGasCost,
-    });
+    this.where({ nullifier: nullifier });
+    return this;
   }
 
   /**
    * Filter by minimum gas cost
    *
-   * @param minGasCost - Minimum gas cost (in wei as string)
-   * @returns this for method chaining
+   * @param minGasCost - Minimum gas cost in wei (as string)
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const expensiveOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .withMinGasCost("1000000000000000000") // 1 ETH
+   *   .execute();
+   * ```
    */
   withMinGasCost(minGasCost: string): this {
-    return this.where({ actualGasCost_gte: minGasCost });
+    this.where({ actualGasCost_gte: minGasCost });
+    return this;
   }
 
   /**
    * Filter by maximum gas cost
    *
-   * @param maxGasCost - Maximum gas cost (in wei as string)
-   * @returns this for method chaining
+   * @param maxGasCost - Maximum gas cost in wei (as string)
+   * @returns UserOperationQueryBuilder for method chaining
    */
   withMaxGasCost(maxGasCost: string): this {
-    return this.where({ actualGasCost_lte: maxGasCost });
-  }
-
-  /**
-   * Filter by gas price range
-   *
-   * @param minGasPrice - Minimum gas price (in wei as string)
-   * @param maxGasPrice - Maximum gas price (in wei as string)
-   * @returns this for method chaining
-   */
-  gasPriceBetween(minGasPrice: string, maxGasPrice: string): this {
-    return this.where({
-      gasPrice_gte: minGasPrice,
-      gasPrice_lte: maxGasPrice,
-    });
-  }
-
-  /**
-   * Filter by total gas used range
-   *
-   * @param minGasUsed - Minimum total gas used
-   * @param maxGasUsed - Maximum total gas used
-   * @returns this for method chaining
-   */
-  totalGasUsedBetween(minGasUsed: string, maxGasUsed: string): this {
-    return this.where({
-      totalGasUsed_gte: minGasUsed,
-      totalGasUsed_lte: maxGasUsed,
-    });
-  }
-
-  /**
-   * Filter operations executed after specific timestamp
-   *
-   * @param timestamp - Minimum execution timestamp
-   * @returns this for method chaining
-   */
-  executedAfter(timestamp: string): this {
-    return this.where({ executedAtTimestamp_gt: timestamp });
-  }
-
-  /**
-   * Filter operations executed before specific timestamp
-   *
-   * @param timestamp - Maximum execution timestamp
-   * @returns this for method chaining
-   */
-  executedBefore(timestamp: string): this {
-    return this.where({ executedAtTimestamp_lt: timestamp });
-  }
-
-  /**
-   * Filter operations executed in a specific time range
-   *
-   * @param startTimestamp - Start of time range
-   * @param endTimestamp - End of time range
-   * @returns this for method chaining
-   */
-  executedBetween(startTimestamp: string, endTimestamp: string): this {
-    return this.where({
-      executedAtTimestamp_gte: startTimestamp,
-      executedAtTimestamp_lte: endTimestamp,
-    });
-  }
-
-  /**
-   * Filter operations executed at or after specific block
-   *
-   * @param blockNumber - Minimum block number
-   * @returns this for method chaining
-   */
-  executedAtBlock(blockNumber: string): this {
-    return this.where({ executedAtBlock_gte: blockNumber });
-  }
-
-  /**
-   * Filter operations executed in a specific block range
-   *
-   * @param startBlock - Start block number
-   * @param endBlock - End block number
-   * @returns this for method chaining
-   */
-  executedInBlockRange(startBlock: string, endBlock: string): this {
-    return this.where({
-      executedAtBlock_gte: startBlock,
-      executedAtBlock_lte: endBlock,
-    });
-  }
-
-  /**
-   * Order operations by specific field and direction
-   *
-   * @param field - Field to order by
-   * @param direction - Order direction ("asc" or "desc")
-   * @returns this for method chaining
-   */
-  orderBy(field: string, direction: "asc" | "desc" = "asc"): this {
-    this.config.orderBy = field;
-    this.config.orderDirection = direction;
+    this.where({ actualGasCost_lte: maxGasCost });
     return this;
   }
 
   /**
-   * Order operations by execution time (newest first)
+   * Filter by minimum gas price
    *
-   * @returns this for method chaining
+   * @param minGasPrice - Minimum gas price in wei (as string)
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const highGasPriceOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .withMinGasPrice("20000000000") // 20 gwei
+   *   .execute();
+   * ```
    */
-  orderByNewestExecuted(): this {
-    return this.orderBy("executedAtTimestamp", "desc");
+  withMinGasPrice(minGasPrice: string): this {
+    this.where({ gasPrice_gte: minGasPrice });
+    return this;
   }
 
   /**
-   * Order operations by execution time (oldest first)
+   * Filter by maximum gas price
    *
-   * @returns this for method chaining
+   * @param maxGasPrice - Maximum gas price in wei (as string)
+   * @returns UserOperationQueryBuilder for method chaining
    */
-  orderByOldestExecuted(): this {
-    return this.orderBy("executedAtTimestamp", "asc");
+  withMaxGasPrice(maxGasPrice: string): this {
+    this.where({ gasPrice_lte: maxGasPrice });
+    return this;
   }
 
   /**
-   * Order operations by gas cost (highest first)
+   * Filter by execution date (after)
    *
-   * @returns this for method chaining
+   * @param timestamp - Timestamp string or number
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const recentOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .executedAfter("1704067200") // 2024-01-01
+   *   .execute();
+   * ```
    */
-  orderByGasCost(): this {
-    return this.orderBy("actualGasCost", "desc");
+  executedAfter(timestamp: string | number): this {
+    this.where({ executedAtTimestamp_gte: timestamp.toString() });
+    return this;
   }
 
   /**
-   * Order operations by gas price (highest first)
+   * Filter by execution date (before)
    *
-   * @returns this for method chaining
+   * @param timestamp - Timestamp string or number
+   * @returns UserOperationQueryBuilder for method chaining
    */
-  orderByGasPrice(): this {
-    return this.orderBy("gasPrice", "desc");
+  executedBefore(timestamp: string | number): this {
+    this.where({ executedAtTimestamp_lte: timestamp.toString() });
+    return this;
   }
 
   /**
-   * Order operations by total gas used (highest first)
+   * Filter by block number
    *
-   * @returns this for method chaining
+   * @param blockNumber - Block number
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const blockOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .atBlock("12345678")
+   *   .execute();
+   * ```
    */
-  orderByTotalGasUsed(): this {
-    return this.orderBy("totalGasUsed", "desc");
+  atBlock(blockNumber: string | number): this {
+    this.where({ executedAtBlock: blockNumber.toString() });
+    return this;
   }
 
   /**
-   * Build GraphQL query string for user operations
+   * Filter by transaction hash
    *
-   * @private
-   * @param fields - Fields to include in the query
-   * @returns GraphQL query string
+   * @param transaction - Transaction hash
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const txOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .inTransaction("0xabc...")
+   *   .execute();
+   * ```
    */
-  private buildUserOperationQuery(fields: UserOperationFields[]): string {
-    const fieldsList = fields.map((field) => `      ${field}`).join("\n");
-    return `
-      query GetUserOperations(
-        $first: Int!
-        $skip: Int!
-        $orderBy: UserOperation_orderBy
-        $orderDirection: OrderDirection
-        $where: UserOperation_filter
-      ) {
-        userOperations(
-          first: $first
-          skip: $skip
-          orderBy: $orderBy
-          orderDirection: $orderDirection
-          where: $where
-        ) {
-${fieldsList}
-        }
-      }
-    `;
+  inTransaction(transaction: string): this {
+    this.where({ transactionHash: transaction });
+    return this;
   }
 
   /**
-   * Build query variables from current configuration
-   *
-   * @private
-   * @returns Query variables object
+   * ========================================
+   * ORDERING METHODS
+   * ========================================
    */
-  private buildQueryVariables(): Record<string, any> {
-    const config = this.getConfig();
 
-    const variables: Record<string, any> = {
-      first: config.first || 100,
-      skip: config.skip || 0,
-    };
-
-    if (config.orderBy) {
-      variables.orderBy = config.orderBy;
-    }
-
-    if (config.orderDirection) {
-      variables.orderDirection = config.orderDirection;
-    }
-
-    if (config.where && Object.keys(config.where).length > 0) {
-      variables.where = config.where;
-    }
-
-    return variables;
+  /**
+   * Order by execution timestamp (newest first)
+   *
+   * @returns UserOperationQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const recentOps = await client.query().userOperations()
+   *   .byNetwork("base-sepolia")
+   *   .orderByTimestamp()
+   *   .limit(10)
+   *   .execute();
+   * ```
+   */
+  orderByTimestamp(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("executedAtTimestamp", direction);
+    return this;
   }
 
   /**
-   * Execute the query and return user operation results
+   * Order by gas cost (highest first)
    *
-   * @returns Promise resolving to array of UserOperation entities
+   * @returns UserOperationQueryBuilder for method chaining
    */
-  async execute(): Promise<UserOperation[]> {
-    const fields = this.selectedFields || DEFAULT_USER_OPERATION_FIELDS;
-    const query = this.buildUserOperationQuery(fields);
-    const variables = this.buildQueryVariables();
-
-    const response = await this.client.executeQuery<{
-      userOperations: UserOperation[];
-    }>(query, variables);
-    return response.userOperations;
+  orderByGasCost(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("actualGasCost", direction);
+    return this;
   }
 
   /**
-   * Execute the query and return serialized user operation results
+   * Order by gas price (highest first)
    *
-   * @returns Promise resolving to array of SerializedUserOperation entities
+   * @returns UserOperationQueryBuilder for method chaining
    */
-  async executeAndSerialize(): Promise<SerializedUserOperation[]> {
-    const userOperations = await this.execute();
-    return userOperations.map(serializeUserOperation);
+  orderByGasPrice(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("gasPrice", direction);
+    return this;
   }
 
   /**
-   * Get user operation with paymaster and pool data included
+   * Order by total gas used
    *
-   * @returns UserOperationQueryWithRelatedBuilder for extended functionality
+   * @returns UserOperationQueryBuilder for method chaining
    */
-  withRelated(): UserOperationQueryWithRelatedBuilder {
-    return new UserOperationQueryWithRelatedBuilder(
-      this.client,
-      this.getConfig(),
-    );
+  orderByGasUsed(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("totalGasUsed", direction);
+    return this;
   }
+
+  /**
+   * Order by block number
+   *
+   * @returns UserOperationQueryBuilder for method chaining
+   */
+  orderByBlock(direction: "asc" | "desc" = "desc"): this {
+    this.orderBy("executedAtBlock", direction);
+    return this;
+  }
+
+  /**
+   * Order by sender address
+   *
+   * @returns UserOperationQueryBuilder for method chaining
+   */
+  orderBySender(direction: "asc" | "desc" = "asc"): this {
+    this.orderBy("sender", direction);
+    return this;
+  }
+
+  /**
+   * ========================================
+   * SPECIAL QUERIES
+   * ========================================
+   */
 
   /**
    * Get user operation by hash
    *
    * @param userOpHash - User operation hash
-   * @returns Promise resolving to user operation or null if not found
+   * @param network - Network identifier
+   * @returns Promise resolving to user operation or null
    */
   async getUserOperationByHash(
     userOpHash: string,
+    network: NetworkName,
   ): Promise<UserOperation | null> {
-    return await this.byHash(userOpHash).first();
+    return this.clone().byId(network, userOpHash).first();
   }
 
   /**
-   * Get user operations for a specific sender
+   * Get gas statistics for user operations
    *
-   * @param sender - Sender address
-   * @param options - Pagination options
-   * @returns Promise resolving to array of user operations
+   * @returns Promise resolving to gas statistics
    */
-  async getUserOperationsBySender(
-    sender: string,
-    options: { first?: number; skip?: number } = {},
-  ): Promise<UserOperation[]> {
-    const { first = 100, skip = 0 } = options;
-    return await this.bySender(sender)
-      .orderByNewestExecuted()
-      .limit(first)
-      .skip(skip)
+  async getGasStatistics(): Promise<{
+    totalOperations: number;
+    totalGasCost: string;
+    totalGasUsed: string;
+    averageGasCost: string;
+    averageGasUsed: string;
+    averageGasPrice: string;
+    minGasCost: string;
+    maxGasCost: string;
+    medianGasCost: string;
+  }> {
+    const operations = await this.execute();
+
+    const totalOperations = operations.length;
+    const totalGasCost = operations.reduce(
+      (sum, op) => sum + BigInt(op.actualGasCost),
+      0n,
+    );
+    const totalGasUsed = operations.reduce(
+      (sum, op) => sum + (op.totalGasUsed ? BigInt(op.totalGasUsed) : 0n),
+      0n,
+    );
+
+    const averageGasCost =
+      totalOperations > 0 ? totalGasCost / BigInt(totalOperations) : 0n;
+    const averageGasUsed =
+      totalOperations > 0 ? totalGasUsed / BigInt(totalOperations) : 0n;
+
+    // Calculate average gas price
+    const totalGasPrice = operations.reduce(
+      (sum, op) => sum + (op.gasPrice ? BigInt(op.gasPrice) : 0n),
+      0n,
+    );
+    const averageGasPrice =
+      totalOperations > 0 ? totalGasPrice / BigInt(totalOperations) : 0n;
+
+    // Find min and max gas costs
+    const gasCosts = operations.map((op) => BigInt(op.actualGasCost));
+    const minGasCost =
+      gasCosts.length > 0
+        ? gasCosts.reduce((min, cost) => (cost < min ? cost : min))
+        : 0n;
+    const maxGasCost =
+      gasCosts.length > 0
+        ? gasCosts.reduce((max, cost) => (cost > max ? cost : max))
+        : 0n;
+
+    // Calculate median gas cost
+    const sortedGasCosts = gasCosts.sort((a, b) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
+    const medianGasCost =
+      sortedGasCosts.length > 0
+        ? sortedGasCosts[Math.floor(sortedGasCosts.length / 2)]
+        : 0n;
+
+    return {
+      totalOperations,
+      totalGasCost: totalGasCost.toString(),
+      totalGasUsed: totalGasUsed.toString(),
+      averageGasCost: averageGasCost.toString(),
+      averageGasUsed: averageGasUsed.toString(),
+      averageGasPrice: averageGasPrice.toString(),
+      minGasCost: minGasCost.toString(),
+      maxGasCost: maxGasCost.toString(),
+      medianGasCost: medianGasCost?.toString() ?? "0",
+    };
+  }
+
+  /**
+   * Get user operation timeline
+   *
+   * @param days - Number of days to look back
+   * @returns Promise resolving to daily operation counts
+   */
+  async getOperationTimeline(days: number = 30): Promise<
+    Array<{
+      date: string;
+      operations: number;
+      totalGasCost: string;
+      averageGasCost: string;
+      uniqueSenders: number;
+    }>
+  > {
+    const endTime = Math.floor(Date.now() / 1000);
+    const startTime = endTime - days * 24 * 60 * 60;
+
+    const operations = await this.executedAfter(startTime)
+      .orderByTimestamp("asc")
       .execute();
+
+    // Group by date
+    const timeline: Record<
+      string,
+      {
+        operations: number;
+        totalGasCost: bigint;
+        senders: Set<string>;
+      }
+    > = {};
+
+    for (const op of operations) {
+      const date = new Date(Number(op.executedAtTimestamp) * 1000)
+        .toISOString()
+        .split("T")[0]!;
+
+      if (!timeline[date]) {
+        timeline[date] = {
+          operations: 0,
+          totalGasCost: 0n,
+          senders: new Set(),
+        };
+      }
+
+      timeline[date].operations += 1;
+      timeline[date].totalGasCost += BigInt(op.actualGasCost);
+      timeline[date].senders.add(op.sender);
+    }
+
+    return Object.entries(timeline).map(([date, stats]) => ({
+      date,
+      operations: stats.operations,
+      totalGasCost: stats.totalGasCost.toString(),
+      averageGasCost:
+        stats.operations > 0
+          ? (stats.totalGasCost / BigInt(stats.operations)).toString()
+          : "0",
+      uniqueSenders: stats.senders.size,
+    }));
   }
 
   /**
-   * Get user operations for a specific paymaster
+   * Get sender analysis
    *
-   * @param paymasterAddress - Paymaster contract address
-   * @param options - Pagination options
-   * @returns Promise resolving to array of user operations
+   * @returns Promise resolving to sender statistics
    */
-  async getUserOperationsByPaymaster(
-    paymasterAddress: string,
-    options: { first?: number; skip?: number } = {},
-  ): Promise<UserOperation[]> {
-    const { first = 100, skip = 0 } = options;
-    return await this.byPaymaster(paymasterAddress)
-      .orderByNewestExecuted()
-      .limit(first)
-      .skip(skip)
-      .execute();
-  }
+  async getSenderAnalysis(): Promise<
+    Array<{
+      sender: string;
+      operationCount: number;
+      totalGasCost: string;
+      averageGasCost: string;
+      firstOperation: string;
+      lastOperation: string;
+    }>
+  > {
+    const operations = await this.execute();
 
-  /**
-   * Get user operations for a specific pool
-   *
-   * @param poolId - Pool ID
-   * @param options - Pagination options
-   * @returns Promise resolving to array of user operations
-   */
-  async getUserOperationsByPool(
-    poolId: string,
-    options: { first?: number; skip?: number } = {},
-  ): Promise<UserOperation[]> {
-    const { first = 100, skip = 0 } = options;
-    return await this.byPool(poolId)
-      .orderByNewestExecuted()
-      .limit(first)
-      .skip(skip)
-      .execute();
-  }
+    // Group by sender
+    const senderStats: Record<
+      string,
+      {
+        operationCount: number;
+        totalGasCost: bigint;
+        timestamps: number[];
+      }
+    > = {};
 
-  /**
-   * Get total gas spent by a sender
-   *
-   * @param sender - Sender address
-   * @returns Promise resolving to total gas cost as string
-   */
-  async getTotalGasSpentBySender(sender: string): Promise<string> {
-    const userOps = await this.bySender(sender).execute();
-    return userOps.reduce((total, op) => {
-      return (BigInt(total) + op.actualGasCost).toString();
-    }, "0");
-  }
+    for (const op of operations) {
+      // Ensure the sender entry exists, initializing if not
+      const currentSenderStats = senderStats[op.sender] || {
+        operationCount: 0,
+        totalGasCost: 0n,
+        timestamps: [],
+      };
 
-  /**
-   * Get total gas spent in a pool
-   *
-   * @param poolId - Pool ID
-   * @returns Promise resolving to total gas cost as string
-   */
-  async getTotalGasSpentInPool(poolId: string): Promise<string> {
-    const userOps = await this.byPool(poolId).execute();
-    return userOps.reduce((total, op) => {
-      return (BigInt(total) + op.actualGasCost).toString();
-    }, "0");
-  }
+      currentSenderStats.operationCount += 1;
+      currentSenderStats.totalGasCost += BigInt(op.actualGasCost);
+      // Ensure the timestamp is valid before pushing
+      const timestamp = Number(op.executedAtTimestamp);
+      if (!isNaN(timestamp)) {
+        // Only add if it's a valid number
+        currentSenderStats.timestamps.push(timestamp);
+      }
 
-  /**
-   * Check if a user operation exists by hash
-   *
-   * @param userOpHash - User operation hash to check
-   * @returns Promise resolving to true if operation exists, false otherwise
-   */
-  async userOperationExists(userOpHash: string): Promise<boolean> {
-    return await this.byHash(userOpHash).exists();
-  }
+      // Assign back the potentially updated object (important if it was newly initialized)
+      senderStats[op.sender] = currentSenderStats;
+    }
 
-  /**
-   * Clone the current query builder
-   *
-   * @returns New UserOperationQueryBuilder instance with same configuration
-   */
-  clone(): UserOperationQueryBuilder {
-    const cloned = new UserOperationQueryBuilder(this.client);
-    cloned.config = { ...this.config };
-    cloned.selectedFields = this.selectedFields
-      ? [...this.selectedFields]
-      : undefined;
-    return cloned;
+    return Object.entries(senderStats)
+      .map(([sender, stats]) => {
+        // Fix for "Object is possibly 'undefined'" error on sortedTimestamps,
+        // adding a nullish coalescing operator just in case stats.timestamps
+        // somehow became null/undefined, though logic suggests it should not.
+        const sortedTimestamps = (stats.timestamps ?? []).sort((a, b) => a - b);
+        const averageGasCost =
+          stats.operationCount > 0
+            ? stats.totalGasCost / BigInt(stats.operationCount)
+            : 0n;
+
+        return {
+          sender,
+          operationCount: stats.operationCount,
+          totalGasCost: stats.totalGasCost.toString(),
+          averageGasCost: averageGasCost.toString(),
+          firstOperation:
+            sortedTimestamps.length > 0
+              ? (sortedTimestamps[0]?.toString() ?? "0")
+              : "0",
+          lastOperation:
+            sortedTimestamps.length > 0
+              ? (sortedTimestamps[sortedTimestamps.length - 1]?.toString() ??
+                "0")
+              : "0",
+        };
+      })
+      .sort((a, b) => b.operationCount - a.operationCount);
   }
 }
 
 /**
- * Extended query builder for user operations that includes related data
+ * ========================================
+ * CONVENIENCE FUNCTIONS (updated to use new UserOperationQueryBuilder)
+ * ========================================
  */
-export class UserOperationQueryWithRelatedBuilder extends BaseQueryBuilder<
-  UserOperation & {
-    paymaster: PaymasterContract;
-    pool: Pool;
-  },
-  UserOperationFields,
-  UserOperationWhereInput
-> {
-  constructor(
-    private client: SubgraphClient,
-    private baseConfig: any,
-  ) {
-    super();
-    this.config = { ...baseConfig };
-  }
 
-  /**
-   * Build GraphQL query string for user operations with related data
-   *
-   * @private
-   * @param fields - User operation fields to include in the query
-   * @returns GraphQL query string
-   */
-  private buildUserOperationWithRelatedQuery(
-    fields: UserOperationFields[],
-  ): string {
-    const fieldsList = fields.map((field) => `      ${field}`).join("\n");
-    return `
-      query GetUserOperationsWithRelated(
-        $first: Int!
-        $skip: Int!
-        $orderBy: UserOperation_orderBy
-        $orderDirection: OrderDirection
-        $where: UserOperation_filter
-      ) {
-        userOperations(
-          first: $first
-          skip: $skip
-          orderBy: $orderBy
-          orderDirection: $orderDirection
-          where: $where
-        ) {
-${fieldsList}
-          paymaster {
-            id
-            contractType
-            address
-            totalUsersDeposit
-            currentDeposit
-            revenue
-          }
-          pool {
-            id
-            poolId
-            joiningFee
-            totalDeposits
-            memberCount
-            currentMerkleRoot
-            createdAtTimestamp
-          }
-        }
-      }
-    `;
-  }
+/**
+ * Get user operation by hash
+ *
+ * @param client - SubgraphClient instance
+ * @param userOpHash - User operation hash
+ * @param network - Network identifier
+ * @returns Promise resolving to user operation or null
+ */
+export async function getUserOperationByHash(
+  client: SubgraphClient,
+  userOpHash: string,
+  network: NetworkName,
+): Promise<UserOperation | null> {
+  return new UserOperationQueryBuilder(client).getUserOperationByHash(
+    userOpHash,
+    network,
+  );
+}
 
-  /**
-   * Build query variables from current configuration
-   *
-   * @private
-   * @returns Query variables object
-   */
-  private buildQueryVariables(): Record<string, any> {
-    const config = this.getConfig();
+/**
+ * Get recent user operations
+ *
+ * @param client - SubgraphClient instance
+ * @param network - Network identifier
+ * @param limit - Maximum number of results
+ * @returns Promise resolving to array of recent user operations
+ */
+export async function getRecentUserOperations(
+  client: SubgraphClient,
+  network: NetworkName,
+  limit: number = 10,
+): Promise<UserOperation[]> {
+  return new UserOperationQueryBuilder(client)
+    .byNetwork(network)
+    .orderByTimestamp()
+    .limit(limit)
+    .execute();
+}
 
-    const variables: Record<string, any> = {
-      first: config.first || 100,
-      skip: config.skip || 0,
-    };
+/**
+ * Get user operations by sender
+ *
+ * @param client - SubgraphClient instance
+ * @param sender - Sender address
+ * @param network - Network identifier
+ * @returns Promise resolving to array of user operations
+ */
+export async function getUserOperationsBySender(
+  client: SubgraphClient,
+  sender: string,
+  network: NetworkName,
+): Promise<UserOperation[]> {
+  return new UserOperationQueryBuilder(client)
+    .byNetwork(network)
+    .bySender(sender)
+    .orderByTimestamp()
+    .execute();
+}
 
-    if (config.orderBy) {
-      variables.orderBy = config.orderBy;
-    }
+/**
+ * Get user operations by paymaster
+ *
+ * @param client - SubgraphClient instance
+ * @param paymaster - Paymaster contract address
+ * @param network - Network identifier
+ * @returns Promise resolving to array of user operations
+ */
+export async function getUserOperationsByPaymaster(
+  client: SubgraphClient,
+  paymaster: string,
+  network: NetworkName,
+): Promise<UserOperation[]> {
+  return new UserOperationQueryBuilder(client)
+    .byNetwork(network)
+    .byPaymaster(paymaster)
+    .orderByTimestamp()
+    .execute();
+}
 
-    if (config.orderDirection) {
-      variables.orderDirection = config.orderDirection;
-    }
-
-    if (config.where && Object.keys(config.where).length > 0) {
-      variables.where = config.where;
-    }
-
-    return variables;
-  }
-
-  /**
-   * Execute query and return user operations with related data
-   *
-   * @returns Promise resolving to user operations with paymaster and pool data included
-   */
-  async execute(): Promise<
-    (UserOperation & { paymaster: PaymasterContract; pool: Pool })[]
-  > {
-    const fields = this.selectedFields || DEFAULT_USER_OPERATION_FIELDS;
-    const query = this.buildUserOperationWithRelatedQuery(fields);
-    const variables = this.buildQueryVariables();
-
-    const response = await this.client.executeQuery<{
-      userOperations: (UserOperation & {
-        paymaster: PaymasterContract;
-        pool: Pool;
-      })[];
-    }>(query, variables);
-
-    return response.userOperations;
-  }
-
-  /**
-   * Execute query and return serialized user operations with related data
-   *
-   * @returns Promise resolving to array of SerializedUserOperation entities with related data
-   */
-  async executeAndSerialize(): Promise<SerializedUserOperation[]> {
-    const userOperationsWithRelated = await this.execute();
-    return userOperationsWithRelated.map(serializeUserOperation);
-  }
-
-  /**
-   * Clone the current query builder
-   *
-   * @returns New UserOperationQueryWithRelatedBuilder instance with same configuration
-   */
-  clone(): UserOperationQueryWithRelatedBuilder {
-    const cloned = new UserOperationQueryWithRelatedBuilder(
-      this.client,
-      this.baseConfig,
-    );
-    cloned.config = { ...this.config };
-    cloned.selectedFields = this.selectedFields
-      ? [...this.selectedFields]
-      : undefined;
-    return cloned;
-  }
+/**
+ * Get expensive user operations (high gas cost)
+ *
+ * @param client - SubgraphClient instance
+ * @param network - Network identifier
+ * @param minGasCost - Minimum gas cost threshold
+ * @param limit - Maximum number of results
+ * @returns Promise resolving to array of expensive user operations
+ */
+export async function getExpensiveUserOperations(
+  client: SubgraphClient,
+  network: NetworkName,
+  minGasCost: string,
+  limit: number = 10,
+): Promise<UserOperation[]> {
+  return new UserOperationQueryBuilder(client)
+    .byNetwork(network)
+    .withMinGasCost(minGasCost)
+    .orderByGasCost()
+    .limit(limit)
+    .execute();
 }

@@ -1,7 +1,9 @@
 /**
  * GraphQL queries for the prepaid gas paymaster subgraph
- * These queries match the new subgraph schema and return raw subgraph data
- * Updated for new PaymasterContract-based structure
+ * Updated for the new network-aware schema structure
+ *
+ * These queries match the new subgraph schema and return network-aware data
+ * with proper field selections for all entities.
  */
 
 /**
@@ -11,7 +13,7 @@
  */
 
 /**
- * Get all paymaster contracts
+ * Get all paymaster contracts across all networks
  */
 export const GET_ALL_PAYMASTERS = `
   query GetAllPaymasters($first: Int!, $skip: Int!) {
@@ -19,6 +21,8 @@ export const GET_ALL_PAYMASTERS = `
       id
       contractType
       address
+      network
+      chainId
       totalUsersDeposit
       currentDeposit
       revenue
@@ -32,14 +36,45 @@ export const GET_ALL_PAYMASTERS = `
 `;
 
 /**
- * Get paymaster contract by address
+ * Get paymaster contract by ID (network-prefixed)
  */
-export const GET_PAYMASTER_BY_ADDRESS = `
-  query GetPaymasterByAddress($address: String!) {
-    paymasterContract(id: $address) {
+export const GET_PAYMASTER_BY_ID = `
+  query GetPaymasterById($id: ID!) {
+    paymasterContract(id: $id) {
       id
       contractType
       address
+      network
+      chainId
+      totalUsersDeposit
+      currentDeposit
+      revenue
+      deployedAtBlock
+      deployedAtTransaction
+      deployedAtTimestamp
+      lastUpdatedBlock
+      lastUpdatedTimestamp
+    }
+  }
+`;
+
+/**
+ * Get paymaster contracts by network
+ */
+export const GET_PAYMASTERS_BY_NETWORK = `
+  query GetPaymastersByNetwork($network: String!, $first: Int!, $skip: Int!) {
+    paymasterContracts(
+      where: { network: $network }
+      first: $first
+      skip: $skip
+      orderBy: deployedAtTimestamp
+      orderDirection: desc
+    ) {
+      id
+      contractType
+      address
+      network
+      chainId
       totalUsersDeposit
       currentDeposit
       revenue
@@ -67,6 +102,8 @@ export const GET_PAYMASTERS_BY_TYPE = `
       id
       contractType
       address
+      network
+      chainId
       totalUsersDeposit
       currentDeposit
       revenue
@@ -80,22 +117,105 @@ export const GET_PAYMASTERS_BY_TYPE = `
 `;
 
 /**
+ * Get paymaster contracts by type and network
+ */
+export const GET_PAYMASTERS_BY_TYPE_AND_NETWORK = `
+  query GetPaymastersByTypeAndNetwork($contractType: String!, $network: String!, $first: Int!, $skip: Int!) {
+    paymasterContracts(
+      where: { contractType: $contractType, network: $network }
+      first: $first
+      skip: $skip
+      orderBy: deployedAtTimestamp
+      orderDirection: desc
+    ) {
+      id
+      contractType
+      address
+      network
+      chainId
+      totalUsersDeposit
+      currentDeposit
+      revenue
+      deployedAtBlock
+      deployedAtTransaction
+      deployedAtTimestamp
+      lastUpdatedBlock
+      lastUpdatedTimestamp
+    }
+  }
+`;
+
+/**
+ * Get paymaster with related data (pools, user operations, withdrawals)
+ */
+export const GET_PAYMASTER_WITH_RELATED = `
+  query GetPaymasterWithRelated($id: ID!, $poolsFirst: Int!, $userOpsFirst: Int!, $withdrawalsFirst: Int!) {
+    paymasterContract(id: $id) {
+      id
+      contractType
+      address
+      network
+      chainId
+      totalUsersDeposit
+      currentDeposit
+      revenue
+      deployedAtBlock
+      deployedAtTransaction
+      deployedAtTimestamp
+      lastUpdatedBlock
+      lastUpdatedTimestamp
+      pools(first: $poolsFirst, orderBy: createdAtTimestamp, orderDirection: desc) {
+        id
+        poolId
+        joiningFee
+        memberCount
+        totalDeposits
+        createdAtTimestamp
+      }
+      userOperations(first: $userOpsFirst, orderBy: executedAtTimestamp, orderDirection: desc) {
+        id
+        userOpHash
+        sender
+        actualGasCost
+        executedAtTimestamp
+      }
+      revenueWithdrawals(first: $withdrawalsFirst, orderBy: withdrawnAtTimestamp, orderDirection: desc) {
+        id
+        recipient
+        amount
+        withdrawnAtTimestamp
+      }
+    }
+  }
+`;
+
+/**
  * ========================================
  * POOL QUERIES
  * ========================================
  */
 
 /**
- * Get all pools with basic fields (for listing)
+ * Get all pools across all networks
  */
 export const GET_ALL_POOLS = `
   query GetAllPools($first: Int!, $skip: Int!) {
     pools(first: $first, skip: $skip, orderBy: createdAtTimestamp, orderDirection: desc) {
       id
       poolId
+      network
+      chainId
       joiningFee
+      totalDeposits
       memberCount
+      currentMerkleRoot
+      currentRootIndex
+      rootHistoryCount
+      createdAtBlock
+      createdAtTransaction
       createdAtTimestamp
+      lastUpdatedBlock
+      lastUpdatedTimestamp
       paymaster {
         id
         contractType
@@ -106,12 +226,12 @@ export const GET_ALL_POOLS = `
 `;
 
 /**
- * Get pools by paymaster address
+ * Get pools by network
  */
-export const GET_POOLS_BY_PAYMASTER = `
-  query GetPoolsByPaymaster($paymasterAddress: String!, $first: Int!, $skip: Int!) {
+export const GET_POOLS_BY_NETWORK = `
+  query GetPoolsByNetwork($network: String!, $first: Int!, $skip: Int!) {
     pools(
-      where: { paymaster: $paymasterAddress }
+      where: { network: $network }
       first: $first
       skip: $skip
       orderBy: createdAtTimestamp
@@ -119,6 +239,8 @@ export const GET_POOLS_BY_PAYMASTER = `
     ) {
       id
       poolId
+      network
+      chainId
       joiningFee
       totalDeposits
       memberCount
@@ -140,13 +262,21 @@ export const GET_POOLS_BY_PAYMASTER = `
 `;
 
 /**
- * Get detailed pool information with optional members
+ * Get pools by paymaster
  */
-export const GET_POOL_DETAILS = `
-  query GetPoolDetails($poolId: String!, $includeMembers: Boolean = false, $memberLimit: Int = 100) {
-    pool(id: $poolId) {
+export const GET_POOLS_BY_PAYMASTER = `
+  query GetPoolsByPaymaster($paymasterAddress: String!, $network: String!, $first: Int!, $skip: Int!) {
+    pools(
+      where: { paymaster_: { address: $paymasterAddress }, network: $network }
+      first: $first
+      skip: $skip
+      orderBy: createdAtTimestamp
+      orderDirection: desc
+    ) {
       id
       poolId
+      network
+      chainId
       joiningFee
       totalDeposits
       memberCount
@@ -163,28 +293,85 @@ export const GET_POOL_DETAILS = `
         contractType
         address
       }
-      
-      members(first: $memberLimit, orderBy: addedAtTimestamp, orderDirection: desc) @include(if: $includeMembers) {
+    }
+  }
+`;
+
+/**
+ * Get pool details with members and merkle roots
+ */
+export const GET_POOL_DETAILS = `
+  query GetPoolDetails($id: ID!, $membersFirst: Int!, $rootsFirst: Int!) {
+    pool(id: $id) {
+      id
+      poolId
+      network
+      chainId
+      joiningFee
+      totalDeposits
+      memberCount
+      currentMerkleRoot
+      currentRootIndex
+      rootHistoryCount
+      createdAtBlock
+      createdAtTransaction
+      createdAtTimestamp
+      lastUpdatedBlock
+      lastUpdatedTimestamp
+      paymaster {
+        id
+        contractType
+        address
+        network
+      }
+      members(first: $membersFirst, orderBy: addedAtTimestamp, orderDirection: desc) {
         id
         memberIndex
         identityCommitment
         merkleRootWhenAdded
         rootIndexWhenAdded
-        addedAtBlock
-        addedAtTransaction
         addedAtTimestamp
         gasUsed
         nullifierUsed
         nullifier
       }
-      
-      merkleRoots(orderBy: rootIndex, orderDirection: asc) {
+      merkleRoots(first: $rootsFirst, orderBy: createdAtTimestamp, orderDirection: desc) {
         id
         root
         rootIndex
-        createdAtBlock
-        createdAtTransaction
         createdAtTimestamp
+      }
+    }
+  }
+`;
+
+/**
+ * Get pools with minimum member count
+ */
+export const GET_POOLS_WITH_MIN_MEMBERS = `
+  query GetPoolsWithMinMembers($minMembers: BigInt!, $network: String!, $first: Int!, $skip: Int!) {
+    pools(
+      where: { memberCount_gte: $minMembers, network: $network }
+      first: $first
+      skip: $skip
+      orderBy: memberCount
+      orderDirection: desc
+    ) {
+      id
+      poolId
+      network
+      chainId
+      joiningFee
+      totalDeposits
+      memberCount
+      currentMerkleRoot
+      currentRootIndex
+      rootHistoryCount
+      createdAtTimestamp
+      paymaster {
+        id
+        contractType
+        address
       }
     }
   }
@@ -197,39 +384,12 @@ export const GET_POOL_DETAILS = `
  */
 
 /**
- * Get all members of a specific pool
+ * Get pool members by pool ID
  */
 export const GET_POOL_MEMBERS = `
-  query GetPoolMembers($poolId: String!, $first: Int!, $skip: Int!) {
+  query GetPoolMembers($poolId: String!, $network: String!, $first: Int!, $skip: Int!) {
     poolMembers(
-      where: { pool: $poolId }
-      first: $first
-      skip: $skip
-      orderBy: addedAtTimestamp
-      orderDirection: asc
-    ) {
-      id
-      memberIndex
-      identityCommitment
-      merkleRootWhenAdded
-      rootIndexWhenAdded
-      addedAtBlock
-      addedAtTransaction
-      addedAtTimestamp
-      gasUsed
-      nullifierUsed
-      nullifier
-    }
-  }
-`;
-
-/**
- * Get all pools where an identity is a member
- */
-export const GET_POOLS_BY_IDENTITY = `
-  query GetPoolsByIdentity($identityCommitment: String!, $first: Int!, $skip: Int!) {
-    poolMembers(
-      where: { identityCommitment: $identityCommitment }
+      where: { pool_: { poolId: $poolId }, network: $network }
       first: $first
       skip: $skip
       orderBy: addedAtTimestamp
@@ -246,18 +406,79 @@ export const GET_POOLS_BY_IDENTITY = `
       gasUsed
       nullifierUsed
       nullifier
+      network
+      chainId
       pool {
         id
         poolId
         joiningFee
-        totalDeposits
+        paymaster {
+          id
+          contractType
+          address
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Get pool member by ID
+ */
+export const GET_POOL_MEMBER_BY_ID = `
+  query GetPoolMemberById($id: ID!) {
+    poolMember(id: $id) {
+      id
+      memberIndex
+      identityCommitment
+      merkleRootWhenAdded
+      rootIndexWhenAdded
+      addedAtBlock
+      addedAtTransaction
+      addedAtTimestamp
+      gasUsed
+      nullifierUsed
+      nullifier
+      network
+      chainId
+      pool {
+        id
+        poolId
+        joiningFee
         memberCount
-        currentMerkleRoot
-        currentRootIndex
-        rootHistoryCount
-        createdAtBlock
-        createdAtTransaction
-        createdAtTimestamp
+        paymaster {
+          id
+          contractType
+          address
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Get pools by identity commitment (find all pools a user belongs to)
+ */
+export const GET_POOLS_BY_IDENTITY = `
+  query GetPoolsByIdentity($identityCommitment: BigInt!, $network: String!, $first: Int!, $skip: Int!) {
+    poolMembers(
+      where: { identityCommitment: $identityCommitment, network: $network }
+      first: $first
+      skip: $skip
+      orderBy: addedAtTimestamp
+      orderDirection: desc
+    ) {
+      id
+      memberIndex
+      addedAtTimestamp
+      gasUsed
+      nullifierUsed
+      pool {
+        id
+        poolId
+        joiningFee
+        memberCount
+        totalDeposits
         paymaster {
           id
           contractType
@@ -275,15 +496,15 @@ export const GET_POOLS_BY_IDENTITY = `
  */
 
 /**
- * Get merkle root history for a pool
+ * Get pool root history
  */
 export const GET_POOL_ROOT_HISTORY = `
-  query GetPoolRootHistory($poolId: String!, $first: Int!, $skip: Int!) {
+  query GetPoolRootHistory($poolId: String!, $network: String!, $first: Int!, $skip: Int!) {
     merkleRoots(
-      where: { pool: $poolId }
+      where: { pool_: { poolId: $poolId }, network: $network }
       first: $first
       skip: $skip
-      orderBy: createdAtTimestamp
+      orderBy: rootIndex
       orderDirection: desc
     ) {
       id
@@ -292,43 +513,51 @@ export const GET_POOL_ROOT_HISTORY = `
       createdAtBlock
       createdAtTransaction
       createdAtTimestamp
+      network
+      chainId
+      pool {
+        id
+        poolId
+        paymaster {
+          id
+          contractType
+          address
+        }
+      }
     }
   }
 `;
 
 /**
- * Find the index for a specific merkle root
+ * Get valid root indices for a pool
  */
-export const FIND_ROOT_INDEX = `
-  query FindRootIndex($poolId: String!, $merkleRoot: BigInt!) {
-    merkleRoots(where: { 
-      pool: $poolId, 
-      root: $merkleRoot
-    }) {
-      id
-      root
+export const GET_VALID_ROOT_INDICES = `
+  query GetValidRootIndices($poolId: String!, $network: String!, $first: Int!) {
+    merkleRoots(
+      where: { pool_: { poolId: $poolId }, network: $network }
+      first: $first
+      orderBy: rootIndex
+      orderDirection: desc
+    ) {
       rootIndex
+      root
       createdAtTimestamp
     }
   }
 `;
 
 /**
- * Get valid root indices for a pool (helper query)
+ * Find root index for a specific root
  */
-export const GET_VALID_ROOT_INDICES = `
-  query GetValidRootIndices($poolId: String!) {
-    pool(id: $poolId) {
-      id
-      currentRootIndex
-      rootHistoryCount
-      merkleRoots(orderBy: rootIndex, orderDirection: asc) {
-        id
-        root
-        rootIndex
-        createdAtTimestamp
-        createdAtBlock
-      }
+export const FIND_ROOT_INDEX = `
+  query FindRootIndex($poolId: String!, $network: String!, $root: BigInt!) {
+    merkleRoots(
+      where: { pool_: { poolId: $poolId }, network: $network, root: $root }
+      first: 1
+    ) {
+      rootIndex
+      root
+      createdAtTimestamp
     }
   }
 `;
@@ -343,9 +572,9 @@ export const GET_VALID_ROOT_INDICES = `
  * Get user operations by paymaster
  */
 export const GET_USER_OPERATIONS_BY_PAYMASTER = `
-  query GetUserOperationsByPaymaster($paymasterAddress: String!, $first: Int!, $skip: Int!) {
+  query GetUserOperationsByPaymaster($paymasterAddress: String!, $network: String!, $first: Int!, $skip: Int!) {
     userOperations(
-      where: { paymaster: $paymasterAddress }
+      where: { paymaster_: { address: $paymasterAddress }, network: $network }
       first: $first
       skip: $skip
       orderBy: executedAtTimestamp
@@ -361,14 +590,17 @@ export const GET_USER_OPERATIONS_BY_PAYMASTER = `
       executedAtTimestamp
       gasPrice
       totalGasUsed
-      pool {
-        id
-        poolId
-      }
+      network
+      chainId
       paymaster {
         id
         contractType
         address
+      }
+      pool {
+        id
+        poolId
+        joiningFee
       }
     }
   }
@@ -378,9 +610,9 @@ export const GET_USER_OPERATIONS_BY_PAYMASTER = `
  * Get user operations by pool
  */
 export const GET_USER_OPERATIONS_BY_POOL = `
-  query GetUserOperationsByPool($poolId: String!, $first: Int!, $skip: Int!) {
+  query GetUserOperationsByPool($poolId: String!, $network: String!, $first: Int!, $skip: Int!) {
     userOperations(
-      where: { pool: $poolId }
+      where: { pool_: { poolId: $poolId }, network: $network }
       first: $first
       skip: $skip
       orderBy: executedAtTimestamp
@@ -396,10 +628,17 @@ export const GET_USER_OPERATIONS_BY_POOL = `
       executedAtTimestamp
       gasPrice
       totalGasUsed
+      network
+      chainId
       paymaster {
         id
         contractType
         address
+      }
+      pool {
+        id
+        poolId
+        joiningFee
       }
     }
   }
@@ -409,9 +648,9 @@ export const GET_USER_OPERATIONS_BY_POOL = `
  * Get user operations by sender
  */
 export const GET_USER_OPERATIONS_BY_SENDER = `
-  query GetUserOperationsBySender($sender: String!, $first: Int!, $skip: Int!) {
+  query GetUserOperationsBySender($sender: String!, $network: String!, $first: Int!, $skip: Int!) {
     userOperations(
-      where: { sender: $sender }
+      where: { sender: $sender, network: $network }
       first: $first
       skip: $skip
       orderBy: executedAtTimestamp
@@ -427,14 +666,53 @@ export const GET_USER_OPERATIONS_BY_SENDER = `
       executedAtTimestamp
       gasPrice
       totalGasUsed
-      pool {
-        id
-        poolId
-      }
+      network
+      chainId
       paymaster {
         id
         contractType
         address
+      }
+      pool {
+        id
+        poolId
+        joiningFee
+      }
+    }
+  }
+`;
+
+/**
+ * Get user operation by hash
+ */
+export const GET_USER_OPERATION_BY_HASH = `
+  query GetUserOperationByHash($userOpHash: String!, $network: String!) {
+    userOperations(
+      where: { userOpHash: $userOpHash, network: $network }
+      first: 1
+    ) {
+      id
+      userOpHash
+      sender
+      actualGasCost
+      nullifier
+      executedAtBlock
+      executedAtTransaction
+      executedAtTimestamp
+      gasPrice
+      totalGasUsed
+      network
+      chainId
+      paymaster {
+        id
+        contractType
+        address
+      }
+      pool {
+        id
+        poolId
+        joiningFee
+        memberCount
       }
     }
   }
@@ -450,9 +728,9 @@ export const GET_USER_OPERATIONS_BY_SENDER = `
  * Get revenue withdrawals by paymaster
  */
 export const GET_REVENUE_WITHDRAWALS_BY_PAYMASTER = `
-  query GetRevenueWithdrawalsByPaymaster($paymasterAddress: String!, $first: Int!, $skip: Int!) {
+  query GetRevenueWithdrawalsByPaymaster($paymasterAddress: String!, $network: String!, $first: Int!, $skip: Int!) {
     revenueWithdrawals(
-      where: { paymaster: $paymasterAddress }
+      where: { paymaster_: { address: $paymasterAddress }, network: $network }
       first: $first
       skip: $skip
       orderBy: withdrawnAtTimestamp
@@ -464,6 +742,8 @@ export const GET_REVENUE_WITHDRAWALS_BY_PAYMASTER = `
       withdrawnAtBlock
       withdrawnAtTransaction
       withdrawnAtTimestamp
+      network
+      chainId
       paymaster {
         id
         contractType
@@ -477,9 +757,9 @@ export const GET_REVENUE_WITHDRAWALS_BY_PAYMASTER = `
  * Get revenue withdrawals by recipient
  */
 export const GET_REVENUE_WITHDRAWALS_BY_RECIPIENT = `
-  query GetRevenueWithdrawalsByRecipient($recipient: String!, $first: Int!, $skip: Int!) {
+  query GetRevenueWithdrawalsByRecipient($recipient: String!, $network: String!, $first: Int!, $skip: Int!) {
     revenueWithdrawals(
-      where: { recipient: $recipient }
+      where: { recipient: $recipient, network: $network }
       first: $first
       skip: $skip
       orderBy: withdrawnAtTimestamp
@@ -491,6 +771,8 @@ export const GET_REVENUE_WITHDRAWALS_BY_RECIPIENT = `
       withdrawnAtBlock
       withdrawnAtTransaction
       withdrawnAtTimestamp
+      network
+      chainId
       paymaster {
         id
         contractType
@@ -502,7 +784,7 @@ export const GET_REVENUE_WITHDRAWALS_BY_RECIPIENT = `
 
 /**
  * ========================================
- * NULLIFIER USAGE QUERIES
+ * ENHANCED NULLIFIER USAGE QUERIES
  * ========================================
  */
 
@@ -510,9 +792,9 @@ export const GET_REVENUE_WITHDRAWALS_BY_RECIPIENT = `
  * Get nullifier usage by paymaster
  */
 export const GET_NULLIFIER_USAGE_BY_PAYMASTER = `
-  query GetNullifierUsageByPaymaster($paymasterAddress: String!, $first: Int!, $skip: Int!) {
+  query GetNullifierUsageByPaymaster($paymasterAddress: String!, $network: String!, $first: Int!, $skip: Int!) {
     nullifierUsages(
-      where: { paymaster: $paymasterAddress }
+      where: { paymaster_: { address: $paymasterAddress }, network: $network }
       first: $first
       skip: $skip
       orderBy: lastUpdatedTimestamp
@@ -527,20 +809,24 @@ export const GET_NULLIFIER_USAGE_BY_PAYMASTER = `
       firstUsedAtTimestamp
       lastUpdatedBlock
       lastUpdatedTimestamp
-      pool {
-        id
-        poolId
-      }
+      network
+      chainId
       paymaster {
         id
         contractType
         address
+      }
+      pool {
+        id
+        poolId
+        joiningFee
       }
       userOperation {
         id
         userOpHash
         sender
         actualGasCost
+        executedAtTimestamp
       }
     }
   }
@@ -550,9 +836,9 @@ export const GET_NULLIFIER_USAGE_BY_PAYMASTER = `
  * Get nullifier usage by pool
  */
 export const GET_NULLIFIER_USAGE_BY_POOL = `
-  query GetNullifierUsageByPool($poolId: String!, $first: Int!, $skip: Int!) {
+  query GetNullifierUsageByPool($poolId: String!, $network: String!, $first: Int!, $skip: Int!) {
     nullifierUsages(
-      where: { pool: $poolId }
+      where: { pool_: { poolId: $poolId }, network: $network }
       first: $first
       skip: $skip
       orderBy: lastUpdatedTimestamp
@@ -567,16 +853,101 @@ export const GET_NULLIFIER_USAGE_BY_POOL = `
       firstUsedAtTimestamp
       lastUpdatedBlock
       lastUpdatedTimestamp
+      network
+      chainId
       paymaster {
         id
         contractType
         address
+      }
+      pool {
+        id
+        poolId
+        joiningFee
       }
       userOperation {
         id
         userOpHash
         sender
         actualGasCost
+        executedAtTimestamp
+      }
+    }
+  }
+`;
+
+/**
+ * Get nullifier usage by nullifier value
+ */
+export const GET_NULLIFIER_USAGE_BY_NULLIFIER = `
+  query GetNullifierUsageByNullifier($nullifier: BigInt!, $network: String!) {
+    nullifierUsages(
+      where: { nullifier: $nullifier, network: $network }
+      first: 1
+    ) {
+      id
+      nullifier
+      isUsed
+      gasUsed
+      firstUsedAtBlock
+      firstUsedAtTransaction
+      firstUsedAtTimestamp
+      lastUpdatedBlock
+      lastUpdatedTimestamp
+      network
+      chainId
+      paymaster {
+        id
+        contractType
+        address
+      }
+      pool {
+        id
+        poolId
+        joiningFee
+      }
+      userOperation {
+        id
+        userOpHash
+        sender
+        actualGasCost
+        executedAtTimestamp
+      }
+    }
+  }
+`;
+
+/**
+ * Get used nullifiers (OneTimeUse tracking)
+ */
+export const GET_USED_NULLIFIERS = `
+  query GetUsedNullifiers($network: String!, $first: Int!, $skip: Int!) {
+    nullifierUsages(
+      where: { isUsed: true, network: $network }
+      first: $first
+      skip: $skip
+      orderBy: firstUsedAtTimestamp
+      orderDirection: desc
+    ) {
+      id
+      nullifier
+      gasUsed
+      firstUsedAtTimestamp
+      network
+      chainId
+      paymaster {
+        id
+        contractType
+        address
+      }
+      pool {
+        id
+        poolId
+      }
+      userOperation {
+        id
+        userOpHash
+        sender
       }
     }
   }
@@ -584,17 +955,17 @@ export const GET_NULLIFIER_USAGE_BY_POOL = `
 
 /**
  * ========================================
- * DAILY STATISTICS QUERIES
+ * ANALYTICS QUERIES
  * ========================================
  */
 
 /**
- * Get daily pool statistics
+ * Get daily pool stats
  */
 export const GET_DAILY_POOL_STATS = `
-  query GetDailyPoolStats($poolId: String!, $first: Int!, $skip: Int!) {
+  query GetDailyPoolStats($poolId: String!, $network: String!, $first: Int!, $skip: Int!) {
     dailyPoolStats(
-      where: { pool: $poolId }
+      where: { pool_: { poolId: $poolId }, network: $network }
       first: $first
       skip: $skip
       orderBy: date
@@ -608,27 +979,35 @@ export const GET_DAILY_POOL_STATS = `
       revenueGenerated
       totalMembers
       totalDeposits
+      network
+      chainId
       pool {
         id
         poolId
+        joiningFee
+        paymaster {
+          id
+          contractType
+          address
+        }
       }
     }
   }
 `;
 
 /**
- * Get daily pool statistics by date range
+ * Get daily pool stats by date range
  */
 export const GET_DAILY_POOL_STATS_BY_DATE_RANGE = `
-  query GetDailyPoolStatsByDateRange($poolId: String!, $startDate: String!, $endDate: String!, $first: Int!, $skip: Int!) {
+  query GetDailyPoolStatsByDateRange($poolId: String!, $network: String!, $startDate: String!, $endDate: String!, $first: Int!) {
     dailyPoolStats(
       where: { 
-        pool: $poolId,
+        pool_: { poolId: $poolId },
+        network: $network,
         date_gte: $startDate,
         date_lte: $endDate
       }
       first: $first
-      skip: $skip
       orderBy: date
       orderDirection: asc
     ) {
@@ -640,6 +1019,8 @@ export const GET_DAILY_POOL_STATS_BY_DATE_RANGE = `
       revenueGenerated
       totalMembers
       totalDeposits
+      network
+      chainId
       pool {
         id
         poolId
@@ -649,11 +1030,12 @@ export const GET_DAILY_POOL_STATS_BY_DATE_RANGE = `
 `;
 
 /**
- * Get daily global statistics
+ * Get daily global stats
  */
 export const GET_DAILY_GLOBAL_STATS = `
-  query GetDailyGlobalStats($first: Int!, $skip: Int!) {
+  query GetDailyGlobalStats($network: String!, $first: Int!, $skip: Int!) {
     dailyGlobalStats(
+      where: { network: $network }
       first: $first
       skip: $skip
       orderBy: date
@@ -668,22 +1050,24 @@ export const GET_DAILY_GLOBAL_STATS = `
       totalRevenueGenerated
       totalActivePools
       totalMembers
+      network
+      chainId
     }
   }
 `;
 
 /**
- * Get daily global statistics by date range
+ * Get daily global stats by date range
  */
 export const GET_DAILY_GLOBAL_STATS_BY_DATE_RANGE = `
-  query GetDailyGlobalStatsByDateRange($startDate: String!, $endDate: String!, $first: Int!, $skip: Int!) {
+  query GetDailyGlobalStatsByDateRange($network: String!, $startDate: String!, $endDate: String!, $first: Int!) {
     dailyGlobalStats(
       where: { 
+        network: $network,
         date_gte: $startDate,
         date_lte: $endDate
       }
       first: $first
-      skip: $skip
       orderBy: date
       orderDirection: asc
     ) {
@@ -696,54 +1080,165 @@ export const GET_DAILY_GLOBAL_STATS_BY_DATE_RANGE = `
       totalRevenueGenerated
       totalActivePools
       totalMembers
+      network
+      chainId
     }
   }
 `;
 
 /**
  * ========================================
- * UTILITY FUNCTIONS
+ * NETWORK INFO QUERIES
  * ========================================
  */
 
 /**
- * Get pools with custom field selection (dynamic query building)
+ * Get network information
  */
-export const buildPoolsQuery = (fields: string[]): string => {
-  const fieldsList = fields.join("\n            ");
-  return `
-    query GetPoolsWithFields($first: Int!, $skip: Int!) {
-      pools(first: $first, skip: $skip, orderBy: createdAtTimestamp, orderDirection: desc) {
-        ${fieldsList}
-      }
+export const GET_NETWORK_INFO = `
+  query GetNetworkInfo($network: String!) {
+    networkInfo(id: $network) {
+      id
+      name
+      chainId
+      totalPaymasters
+      totalPools
+      totalMembers
+      totalUserOperations
+      totalGasSpent
+      totalRevenue
+      firstDeploymentBlock
+      firstDeploymentTimestamp
+      lastActivityBlock
+      lastActivityTimestamp
     }
-  `;
-};
+  }
+`;
 
 /**
- * Get paymaster contracts with custom field selection
+ * Get all network information
  */
-export const buildPaymasterQuery = (fields: string[]): string => {
-  const fieldsList = fields.join("\n            ");
-  return `
-    query GetPaymastersWithFields($first: Int!, $skip: Int!) {
-      paymasterContracts(first: $first, skip: $skip, orderBy: deployedAtTimestamp, orderDirection: desc) {
-        ${fieldsList}
-      }
+export const GET_ALL_NETWORK_INFO = `
+  query GetAllNetworkInfo($first: Int!) {
+    networkInfos(first: $first, orderBy: chainId) {
+      id
+      name
+      chainId
+      totalPaymasters
+      totalPools
+      totalMembers
+      totalUserOperations
+      totalGasSpent
+      totalRevenue
+      firstDeploymentBlock
+      firstDeploymentTimestamp
+      lastActivityBlock
+      lastActivityTimestamp
     }
-  `;
-};
+  }
+`;
 
 /**
- * Get user operations with custom field selection
+ * ========================================
+ * QUERY BUILDERS (for dynamic queries)
+ * ========================================
  */
-export const buildUserOperationsQuery = (fields: string[]): string => {
-  const fieldsList = fields.join("\n            ");
+
+/**
+ * Build dynamic pools query with custom fields and filters
+ */
+export function buildPoolsQuery(
+  fields: string[],
+  where: Record<string, any> = {},
+  orderBy: string = "createdAtTimestamp",
+  orderDirection: "asc" | "desc" = "desc",
+  first: number = 100,
+  skip: number = 0,
+): string {
+  const whereClause =
+    Object.keys(where).length > 0
+      ? `where: { ${Object.entries(where)
+          .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+          .join(", ")} }`
+      : "";
+
   return `
-    query GetUserOperationsWithFields($first: Int!, $skip: Int!) {
-      userOperations(first: $first, skip: $skip, orderBy: executedAtTimestamp, orderDirection: desc) {
-        ${fieldsList}
+    query GetPools($first: Int!, $skip: Int!) {
+      pools(
+        ${whereClause}
+        first: $first
+        skip: $skip
+        orderBy: ${orderBy}
+        orderDirection: ${orderDirection}
+      ) {
+        ${fields.join("\n        ")}
       }
     }
   `;
-};
+}
+
+/**
+ * Build dynamic paymaster query with custom fields and filters
+ */
+export function buildPaymasterQuery(
+  fields: string[],
+  where: Record<string, any> = {},
+  orderBy: string = "deployedAtTimestamp",
+  orderDirection: "asc" | "desc" = "desc",
+  first: number = 100,
+  skip: number = 0,
+): string {
+  const whereClause =
+    Object.keys(where).length > 0
+      ? `where: { ${Object.entries(where)
+          .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+          .join(", ")} }`
+      : "";
+
+  return `
+    query GetPaymasterContracts($first: Int!, $skip: Int!) {
+      paymasterContracts(
+        ${whereClause}
+        first: $first
+        skip: $skip
+        orderBy: ${orderBy}
+        orderDirection: ${orderDirection}
+      ) {
+        ${fields.join("\n        ")}
+      }
+    }
+  `;
+}
+
+/**
+ * Build dynamic user operations query with custom fields and filters
+ */
+export function buildUserOperationsQuery(
+  fields: string[],
+  where: Record<string, any> = {},
+  orderBy: string = "executedAtTimestamp",
+  orderDirection: "asc" | "desc" = "desc",
+  first: number = 100,
+  skip: number = 0,
+): string {
+  const whereClause =
+    Object.keys(where).length > 0
+      ? `where: { ${Object.entries(where)
+          .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+          .join(", ")} }`
+      : "";
+
+  return `
+    query GetUserOperations($first: Int!, $skip: Int!) {
+      userOperations(
+        ${whereClause}
+        first: $first
+        skip: $skip
+        orderBy: ${orderBy}
+        orderDirection: ${orderDirection}
+      ) {
+        ${fields.join("\n        ")}
+      }
+    }
+  `;
+}
