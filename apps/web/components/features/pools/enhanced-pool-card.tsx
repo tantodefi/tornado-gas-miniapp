@@ -20,23 +20,6 @@ interface EnhancedPoolCardProps {
 }
 
 /**
- * Format wei amount to ETH display
- */
-const formatEthAmount = (weiString: string): string => {
-  try {
-    const wei = BigInt(weiString);
-    const eth = Number(wei) / 1e18;
-
-    if (eth === 0) return "0.00";
-    if (eth < 0.0001) return "< 0.0001";
-    if (eth < 1) return eth.toFixed(6).replace(/\.?0+$/, "");
-    return eth.toFixed(4).replace(/\.?0+$/, "");
-  } catch {
-    return "0.00";
-  }
-};
-
-/**
  * Enhanced Pool Card Component
  *
  * Single Responsibility: Display pool card with join functionality and state management
@@ -53,8 +36,6 @@ const EnhancedPoolCard: React.FC<EnhancedPoolCardProps> = ({
   isJoining,
   showPayment,
 }) => {
-  const joiningFeeEth = formatEthAmount(pool.joiningFee);
-
   // Determine button state and text
   const getButtonState = () => {
     if (showPayment) {

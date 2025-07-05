@@ -76,19 +76,16 @@ const PoolMembersList: React.FC<PoolMembersListProps> = ({
         <div className="text-4xl mb-4">👥</div>
         <h3 className="text-lg font-bold text-white mb-2">No Members Found</h3>
         <p className="text-slate-400">
-          This pool doesn&apos;t have any active members yet.
+          This pool doesn&apos;t have any members yet.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="card-prepaid-glass card-content-md">
+    <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-white">
-          Pool Members ({members.length})
-        </h3>
         {members.length > 5 && (
           <input
             type="text"
@@ -112,25 +109,27 @@ const PoolMembersList: React.FC<PoolMembersListProps> = ({
           >
             {/* Member Info */}
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
-                  #{member.memberIndex}
-                </span>
-                <button
-                  onClick={() =>
-                    copyToClipboard(member.identityCommitment, member.id)
-                  }
-                  className="font-mono text-sm text-white hover:text-purple-400 transition-colors cursor-pointer"
-                  title="Click to copy full commitment"
-                >
-                  {formatCommitment(member.identityCommitment)}
-                  {copiedCommitment === member.id && (
-                    <span className="text-green-400 ml-2">✓ Copied</span>
-                  )}
-                </button>
-              </div>
-              <div className="text-xs text-slate-400">
-                Joined: {formatDate(member.addedAtTimestamp)}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
+                    #{member.memberIndex}
+                  </span>
+                  <button
+                    onClick={() =>
+                      copyToClipboard(member.identityCommitment, member.id)
+                    }
+                    className="font-mono text-sm text-white hover:text-purple-400 transition-colors cursor-pointer"
+                    title="Click to copy full commitment"
+                  >
+                    {formatCommitment(member.identityCommitment)}
+                    {copiedCommitment === member.id && (
+                      <span className="text-green-400 ml-2">✓ Copied</span>
+                    )}
+                  </button>
+                </div>
+                <div className="text-xs text-slate-400">
+                  Joined: {formatDate(member.addedAtTimestamp)}
+                </div>
               </div>
             </div>
           </motion.div>
