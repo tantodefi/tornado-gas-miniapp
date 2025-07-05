@@ -54,7 +54,6 @@ export async function GET(
     // If members are requested, include them in the query
     if (includeMembers) {
       const poolWithMembersQuery = poolQuery.withMembers().limit(memberLimit);
-      console.log({ poolWithMembersQuery });
       // Execute query and get serialized results
       const serializedPools = await poolWithMembersQuery.executeAndSerialize();
 
