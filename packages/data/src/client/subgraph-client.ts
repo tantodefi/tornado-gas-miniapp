@@ -97,6 +97,8 @@ export interface AnalyticsQueryOptions extends PaginationOptions {
 export class SubgraphClient {
   private client: GraphQLClient;
   private networkMetadata: NetworkMetadata;
+  private requestMap: Map<string, Promise<any>> = new Map();
+  private readonly maxPendingRequests = 100;
 
   constructor(config: SubgraphClientConfig) {
     this.client = new GraphQLClient(config.subgraphUrl);
@@ -108,6 +110,55 @@ export class SubgraphClient {
       networkName: config.network.networkName,
       contracts: config.network.contracts,
     };
+  }
+
+  /**
+   * Generate a unique key for a query/variables combination
+   *
+   * @param query - GraphQL query string
+   * @param variables - Query variables
+   * @returns Unique key for the request
+   */
+  private generateRequestKey(
+    query: string,
+    variables: Record<string, any>,
+  ): string {
+    // Create a consistent key from query and variables
+    const normalizedQuery = query.replace(/\s+/g, " ").trim();
+    const sortedVariables = Object.keys(variables)
+      .sort()
+      .reduce(
+        (sorted, key) => {
+          sorted[key] = variables[key];
+          return sorted;
+        },
+        {} as Record<string, any>,
+      );
+
+    return `${normalizedQuery}|${JSON.stringify(sortedVariables)}`;
+  }
+
+  /**
+   * Clean up completed request from the map
+   *
+   * @param requestKey - Key of the request to clean up
+   */
+  private cleanupRequest(requestKey: string): void {
+    this.requestMap.delete(requestKey);
+  }
+
+  /**
+   * Clean up old requests if map gets too large
+   */
+  private cleanupOldRequests(): void {
+    if (this.requestMap.size > this.maxPendingRequests) {
+      // Clear half of the oldest requests
+      const keysToDelete = Array.from(this.requestMap.keys()).slice(
+        0,
+        this.maxPendingRequests / 2,
+      );
+      keysToDelete.forEach((key) => this.requestMap.delete(key));
+    }
   }
 
   /**
@@ -373,11 +424,10 @@ export class SubgraphClient {
   }
 
   /**
-   * Execute a raw GraphQL query
+   * Execute a raw GraphQL query with request deduplication
    *
    * This method provides a generic interface for executing any GraphQL query,
-   * allowing query builders to construct their own queries while still
-   * benefiting from the client's network and error handling.
+   * with built-in deduplication to prevent duplicate requests for identical queries.
    *
    * @template T - The expected response type
    * @param query - GraphQL query string
@@ -397,23 +447,49 @@ export class SubgraphClient {
     query: string,
     variables: Record<string, any> = {},
   ): Promise<T> {
-    try {
-      const response = await this.client.request<T>(query, variables);
-      return response;
-    } catch (error) {
-      // Enhanced error handling with context
-      console.error("GraphQL query failed:", {
-        error,
-        query: query.substring(0, 200) + "...", // Log first 200 chars
-        variables,
-        network: this.networkMetadata.chainName,
-      });
-      throw error;
+    // Generate unique key for this request
+    const requestKey = this.generateRequestKey(query, variables);
+
+    // Check if identical request is already in progress
+    const existingRequest = this.requestMap.get(requestKey);
+    if (existingRequest) {
+      return existingRequest;
     }
+
+    // Clean up old requests if needed
+    this.cleanupOldRequests();
+
+    // Create new request promise
+    const requestPromise = this.client
+      .request<T>(query, variables)
+      .then((response) => {
+        // Clean up this request from the map
+        this.cleanupRequest(requestKey);
+        return response;
+      })
+      .catch((error) => {
+        // Clean up this request from the map even on error
+        this.cleanupRequest(requestKey);
+
+        // Enhanced error handling with context
+        console.error("GraphQL query failed:", {
+          error,
+          query: query.substring(0, 200) + "...", // Log first 200 chars
+          variables,
+          network: this.networkMetadata.chainName,
+        });
+
+        throw error;
+      });
+
+    // Store the promise in the map
+    this.requestMap.set(requestKey, requestPromise);
+
+    return requestPromise;
   }
 
   /**
-   * Execute multiple queries in parallel
+   * Execute multiple queries in parallel with deduplication
    *
    * @param queries - Array of query objects with query string and variables
    * @returns Promise resolving to array of query responses
