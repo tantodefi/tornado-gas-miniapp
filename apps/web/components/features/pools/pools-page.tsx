@@ -33,16 +33,12 @@ const CardSkeleton: React.FC = () => (
   </div>
 );
 
-interface PrepaidPoolsPageProps {
-  // No props needed anymore
-}
-
 /**
  * Prepaid Pools Page Component - UPDATED with navigation links
  * Single responsibility: Present pools data with filtering UI
  * Uses Next.js useRouter for navigation
  */
-const PrepaidPoolsPage: React.FC<PrepaidPoolsPageProps> = () => {
+const PrepaidPoolsPage = () => {
   const router = useRouter();
 
   // Data fetching (pure data concern)

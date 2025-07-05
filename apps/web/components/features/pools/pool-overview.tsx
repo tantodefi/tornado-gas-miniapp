@@ -1,15 +1,15 @@
 //file:prepaid-gas-website/apps/web/components/features/pools/pool-overview.tsx
 "use client";
 
+import { Pool } from "@/types";
 import React from "react";
-import type { PoolOverviewData } from "@/types";
 
 /**
  * Props for PoolOverview component
  */
 interface PoolOverviewProps {
   /** Pool data to display in overview */
-  pool: PoolOverviewData;
+  pool: Pool;
 }
 
 /**
@@ -44,6 +44,13 @@ const formatNumber = (num: string | number): string => {
 };
 
 /**
+ * Format address for display
+ */
+const formatAddress = (address: string): string => {
+  if (!address) return "N/A";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+/**
  * PoolOverview Component
  *
  * Single Responsibility: Display key pool metrics and overview information
@@ -61,9 +68,14 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
 
   return (
     <div className="card-prepaid-glass card-content-md">
-      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-        📋 Pool Overview
-      </h3>
+      <div className="flex justify-between">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          📋 Pool Overview
+        </h3>
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          Pool {pool.poolId}
+        </h3>
+      </div>
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -81,16 +93,19 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
         </div>
         <div className="bg-slate-800/30 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-400">
-            {formatNumber(pool.memberCount)} {/* Updated field name */}
+            {formatNumber(pool.memberCount)}
           </div>
           <div className="text-xs text-slate-400">Members</div>
         </div>
         <div className="bg-slate-800/30 rounded-lg p-3 text-center">
           <div className="text-lg font-bold text-yellow-400">
-            {createdDate.getFullYear()}
+            {createdDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
           </div>
           <div className="text-xs text-slate-400">
-            Est. {createdDate.getFullYear()}
+            {createdDate.getFullYear()}
           </div>
         </div>
       </div>
@@ -100,6 +115,12 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
         <div className="flex justify-between">
           <span className="text-slate-400">Network</span>
           <span className="text-blue-400">{pool.network}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400">Paymaster Address</span>
+          <span className="text-blue-400">
+            {formatAddress(pool.paymaster.address)}
+          </span>
         </div>
       </div>
     </div>

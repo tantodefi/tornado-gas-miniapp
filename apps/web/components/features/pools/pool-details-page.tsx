@@ -17,7 +17,6 @@ import ErrorState from "@/components/shared/error-state";
 import { LabelHeader } from "@/components/layout/page-header";
 import EnhancedPoolCard from "./enhanced-pool-card";
 import PoolOverview from "./pool-overview";
-import TechnicalDetailsSection from "./technical-details-section";
 import MembersSection from "./members-section";
 import PoolActivitySection from "./pool-activity-section";
 import PaymentModal from "../payment/payment-modal";
@@ -215,9 +214,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="space-y-8"
             >
-              {/* Technical Specifications */}
-              <TechnicalDetailsSection pool={pool} />
-
               {/* Members Section */}
               <MembersSection
                 pool={pool}

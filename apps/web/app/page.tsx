@@ -238,7 +238,7 @@ const Hero: React.FC = () => (
       transition={{ duration: 0.7, delay: 0.4 }}
     >
       Like prepaid mobile cards for blockchain gas. Buy credit anonymously,
-      spend without revealing which "card" you purchased. Built on{" "}
+      spend without revealing which &quot;card&quot; you purchased. Built on{" "}
       <span className="text-purple-400 font-semibold">ERC-4337 </span> with{" "}
       <span className="text-purple-400 font-semibold">Semaphore Protocol</span>.
     </motion.p>

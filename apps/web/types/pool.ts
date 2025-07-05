@@ -34,15 +34,3 @@ export interface FilterState {
   memberRange: string;
   sortBy: string;
 }
-
-/**
- * Pool overview data for display components
- * Updated to use new field names from data package
- */
-export interface PoolOverviewData {
-  joiningFee: string;
-  totalDeposits: string;
-  memberCount: string; // Updated from membersCount
-  createdAtTimestamp: string; // Updated from createdAt
-  network: string; // Simplified to just network name
-}

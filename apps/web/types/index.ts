@@ -5,7 +5,7 @@
  */
 
 // Pool-related types
-export type { Pool, PoolMember, FilterState, PoolOverviewData } from "./pool";
+export type { Pool, PoolMember, FilterState } from "./pool";
 
 // Card-related types
 export type {

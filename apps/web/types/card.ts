@@ -4,6 +4,8 @@
  * Updated to use new field names from data package
  */
 
+import { Identity } from "@semaphore-protocol/identity";
+
 /**
  * Card status enumeration
  */
@@ -55,7 +57,7 @@ export interface GenerateIdentityResult {
   mnemonic: string; // BIP39 recovery phrase
   privateKey: string; // Derived private key
   commitment: string; // Identity commitment
-  identity: any; // Semaphore Identity object
+  identity: Identity; // Semaphore Identity object
   expiresAt: string; // Expiration timestamp
 }
 

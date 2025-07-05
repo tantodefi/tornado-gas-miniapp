@@ -24,7 +24,6 @@ import type {
  */
 export function RainbowButton({
   pool,
-  card,
   getPaymentData,
   callbacks,
 }: PaymentButtonProps) {
