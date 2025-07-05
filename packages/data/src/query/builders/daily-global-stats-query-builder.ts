@@ -1,7 +1,12 @@
 // daily-global-stats-query-builder.ts (Refactored)
 
 import type { SubgraphClient } from "../../client/subgraph-client.js";
-import type { DailyGlobalStats, NetworkName } from "../../types/subgraph.js";
+import type {
+  DailyGlobalStats,
+  NetworkName,
+  SerializedDailyGlobalStats,
+} from "../../types/subgraph.js";
+import { serializeDailyGlobalStats } from "../../transformers/index.js";
 import {
   DailyGlobalStatsFields,
   DailyGlobalStatsWhereInput,
@@ -26,6 +31,7 @@ export type DailyGlobalStatsOrderBy =
  */
 export class DailyGlobalStatsQueryBuilder extends BaseQueryBuilder<
   DailyGlobalStats,
+  SerializedDailyGlobalStats,
   DailyGlobalStatsFields,
   DailyGlobalStatsWhereInput,
   DailyGlobalStatsOrderBy
@@ -34,6 +40,259 @@ export class DailyGlobalStatsQueryBuilder extends BaseQueryBuilder<
     // Default order by date descending.
     // Assuming the entity name in the subgraph schema is `dailyGlobalStats`
     super(subgraphClient, "dailyGlobalStats", "date", "desc");
+  }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const queryName = `GetDailyGlobalStats`;
+
+    return `
+      query ${queryName}(${variables}) {
+        dailyGlobalStats(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (
+    entity: DailyGlobalStats,
+  ) => SerializedDailyGlobalStats {
+    return serializeDailyGlobalStats;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<DailyGlobalStatsWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          declarations.push("$id: ID");
+          break;
+        case "network_in":
+          declarations.push("$network_in: [String!]");
+          break;
+        case "date":
+          declarations.push("$date: String");
+          break;
+        case "date_gte":
+          declarations.push("$date_gte: String");
+          break;
+        case "date_lte":
+          declarations.push("$date_lte: String");
+          break;
+        case "newPools_gte":
+          declarations.push("$newPools_gte: String");
+          break;
+        case "newPools_lte":
+          declarations.push("$newPools_lte: String");
+          break;
+        case "totalNewMembers_gte":
+          declarations.push("$totalNewMembers_gte: String");
+          break;
+        case "totalNewMembers_lte":
+          declarations.push("$totalNewMembers_lte: String");
+          break;
+        case "totalUserOperations_gte":
+          declarations.push("$totalUserOperations_gte: String");
+          break;
+        case "totalUserOperations_lte":
+          declarations.push("$totalUserOperations_lte: String");
+          break;
+        case "totalGasSpent_gte":
+          declarations.push("$totalGasSpent_gte: String");
+          break;
+        case "totalGasSpent_lte":
+          declarations.push("$totalGasSpent_lte: String");
+          break;
+        case "totalRevenueGenerated_gte":
+          declarations.push("$totalRevenueGenerated_gte: String");
+          break;
+        case "totalRevenueGenerated_lte":
+          declarations.push("$totalRevenueGenerated_lte: String");
+          break;
+        case "totalActivePools_gte":
+          declarations.push("$totalActivePools_gte: String");
+          break;
+        case "totalActivePools_lte":
+          declarations.push("$totalActivePools_lte: String");
+          break;
+        case "totalMembers_gte":
+          declarations.push("$totalMembers_gte: String");
+          break;
+        case "totalMembers_lte":
+          declarations.push("$totalMembers_lte: String");
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<DailyGlobalStatsWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          variables.id = value;
+          break;
+        case "network_in":
+          variables.network_in = value;
+          break;
+        case "date":
+          variables.date = value;
+          break;
+        case "date_gte":
+          variables.date_gte = value;
+          break;
+        case "date_lte":
+          variables.date_lte = value;
+          break;
+        case "newPools_gte":
+        case "newPools_lte":
+        case "totalNewMembers_gte":
+        case "totalNewMembers_lte":
+        case "totalUserOperations_gte":
+        case "totalUserOperations_lte":
+        case "totalGasSpent_gte":
+        case "totalGasSpent_lte":
+        case "totalRevenueGenerated_gte":
+        case "totalRevenueGenerated_lte":
+        case "totalActivePools_gte":
+        case "totalActivePools_lte":
+        case "totalMembers_gte":
+        case "totalMembers_lte":
+          variables[key] = value;
+          break;
+      }
+    }
+  }
+
+  private buildWhereConditions(
+    where: Partial<DailyGlobalStatsWhereInput>,
+  ): string[] {
+    const conditions: string[] = [];
+
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          conditions.push("id: $id");
+          break;
+        case "network_in":
+          conditions.push("network_in: $network_in");
+          break;
+        case "date":
+          conditions.push("date: $date");
+          break;
+        case "date_gte":
+          conditions.push("date_gte: $date_gte");
+          break;
+        case "date_lte":
+          conditions.push("date_lte: $date_lte");
+          break;
+        case "newPools_gte":
+          conditions.push("newPools_gte: $newPools_gte");
+          break;
+        case "newPools_lte":
+          conditions.push("newPools_lte: $newPools_lte");
+          break;
+        case "totalNewMembers_gte":
+          conditions.push("totalNewMembers_gte: $totalNewMembers_gte");
+          break;
+        case "totalNewMembers_lte":
+          conditions.push("totalNewMembers_lte: $totalNewMembers_lte");
+          break;
+        case "totalUserOperations_gte":
+          conditions.push("totalUserOperations_gte: $totalUserOperations_gte");
+          break;
+        case "totalUserOperations_lte":
+          conditions.push("totalUserOperations_lte: $totalUserOperations_lte");
+          break;
+        case "totalGasSpent_gte":
+          conditions.push("totalGasSpent_gte: $totalGasSpent_gte");
+          break;
+        case "totalGasSpent_lte":
+          conditions.push("totalGasSpent_lte: $totalGasSpent_lte");
+          break;
+        case "totalRevenueGenerated_gte":
+          conditions.push(
+            "totalRevenueGenerated_gte: $totalRevenueGenerated_gte",
+          );
+          break;
+        case "totalRevenueGenerated_lte":
+          conditions.push(
+            "totalRevenueGenerated_lte: $totalRevenueGenerated_lte",
+          );
+          break;
+        case "totalActivePools_gte":
+          conditions.push("totalActivePools_gte: $totalActivePools_gte");
+          break;
+        case "totalActivePools_lte":
+          conditions.push("totalActivePools_lte: $totalActivePools_lte");
+          break;
+        case "totalMembers_gte":
+          conditions.push("totalMembers_gte: $totalMembers_gte");
+          break;
+        case "totalMembers_lte":
+          conditions.push("totalMembers_lte: $totalMembers_lte");
+          break;
+      }
+    }
+
+    return conditions;
   }
 
   /**

@@ -1,7 +1,12 @@
 // daily-pool-stats-query-builder.ts (Refactored)
 
 import type { SubgraphClient } from "../../client/subgraph-client.js";
-import type { DailyPoolStats, NetworkName } from "../../types/subgraph.js";
+import type {
+  DailyPoolStats,
+  NetworkName,
+  SerializedDailyPoolStats,
+} from "../../types/subgraph.js";
+import { serializeDailyPoolStats } from "../../transformers/index.js";
 import { DailyPoolStatsFields, DailyPoolStatsWhereInput } from "../types.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
 
@@ -26,6 +31,7 @@ export type DailyPoolStatsOrderBy =
  */
 export class DailyPoolStatsQueryBuilder extends BaseQueryBuilder<
   DailyPoolStats,
+  SerializedDailyPoolStats,
   DailyPoolStatsFields,
   DailyPoolStatsWhereInput,
   DailyPoolStatsOrderBy
@@ -34,6 +40,310 @@ export class DailyPoolStatsQueryBuilder extends BaseQueryBuilder<
     // Default order by date descending
     // Assuming the entity name in the subgraph schema is `dailyPoolStats`
     super(subgraphClient, "dailyPoolStats", "date", "desc");
+  }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const queryName = `GetDailyPoolStats`;
+
+    return `
+      query ${queryName}(${variables}) {
+        dailyPoolStats(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (
+    entity: DailyPoolStats,
+  ) => SerializedDailyPoolStats {
+    return serializeDailyPoolStats;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<DailyPoolStatsWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          declarations.push("$id: ID");
+          break;
+        case "poolId":
+          declarations.push("$poolId: String");
+          break;
+        case "poolId_in":
+          declarations.push("$poolId_in: [String!]");
+          break;
+        case "network":
+          declarations.push("$network: String");
+          break;
+        case "network_in":
+          declarations.push("$network_in: [String!]");
+          break;
+        case "date":
+          declarations.push("$date: String");
+          break;
+        case "date_gte":
+          declarations.push("$date_gte: String");
+          break;
+        case "date_lte":
+          declarations.push("$date_lte: String");
+          break;
+        case "newMembers_gte":
+          declarations.push("$newMembers_gte: String");
+          break;
+        case "newMembers_lte":
+          declarations.push("$newMembers_lte: String");
+          break;
+        case "userOperations_gte":
+          declarations.push("$userOperations_gte: String");
+          break;
+        case "userOperations_lte":
+          declarations.push("$userOperations_lte: String");
+          break;
+        case "gasSpent_gte":
+          declarations.push("$gasSpent_gte: String");
+          break;
+        case "gasSpent_lte":
+          declarations.push("$gasSpent_lte: String");
+          break;
+        case "revenueGenerated_gte":
+          declarations.push("$revenueGenerated_gte: String");
+          break;
+        case "revenueGenerated_lte":
+          declarations.push("$revenueGenerated_lte: String");
+          break;
+        case "totalMembers_gte":
+          declarations.push("$totalMembers_gte: String");
+          break;
+        case "totalMembers_lte":
+          declarations.push("$totalMembers_lte: String");
+          break;
+        case "totalDeposits_gte":
+          declarations.push("$totalDeposits_gte: String");
+          break;
+        case "totalDeposits_lte":
+          declarations.push("$totalDeposits_lte: String");
+          break;
+        case "createdAtBlock":
+          declarations.push("$createdAtBlock: String");
+          break;
+        case "createdAtBlock_gte":
+          declarations.push("$createdAtBlock_gte: String");
+          break;
+        case "createdAtBlock_lte":
+          declarations.push("$createdAtBlock_lte: String");
+          break;
+        case "createdAtTimestamp":
+          declarations.push("$createdAtTimestamp: String");
+          break;
+        case "createdAtTimestamp_gte":
+          declarations.push("$createdAtTimestamp_gte: String");
+          break;
+        case "createdAtTimestamp_lte":
+          declarations.push("$createdAtTimestamp_lte: String");
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<DailyPoolStatsWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          variables.id = value;
+          break;
+        case "poolId":
+          variables.poolId = value;
+          break;
+        case "poolId_in":
+          variables.poolId_in = value;
+          break;
+        case "network":
+          variables.network = value;
+          break;
+        case "network_in":
+          variables.network_in = value;
+          break;
+        case "date":
+          variables.date = value;
+          break;
+        case "date_gte":
+          variables.date_gte = value;
+          break;
+        case "date_lte":
+          variables.date_lte = value;
+          break;
+        case "newMembers_gte":
+        case "newMembers_lte":
+        case "userOperations_gte":
+        case "userOperations_lte":
+        case "gasSpent_gte":
+        case "gasSpent_lte":
+        case "revenueGenerated_gte":
+        case "revenueGenerated_lte":
+        case "totalMembers_gte":
+        case "totalMembers_lte":
+        case "totalDeposits_gte":
+        case "totalDeposits_lte":
+        case "createdAtBlock":
+        case "createdAtBlock_gte":
+        case "createdAtBlock_lte":
+        case "createdAtTimestamp":
+        case "createdAtTimestamp_gte":
+        case "createdAtTimestamp_lte":
+          variables[key] = value;
+          break;
+      }
+    }
+  }
+
+  private buildWhereConditions(
+    where: Partial<DailyPoolStatsWhereInput>,
+  ): string[] {
+    const conditions: string[] = [];
+
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          conditions.push("id: $id");
+          break;
+        case "poolId":
+          conditions.push("poolId: $poolId");
+          break;
+        case "poolId_in":
+          conditions.push("poolId_in: $poolId_in");
+          break;
+        case "network":
+          conditions.push("network: $network");
+          break;
+        case "network_in":
+          conditions.push("network_in: $network_in");
+          break;
+        case "date":
+          conditions.push("date: $date");
+          break;
+        case "date_gte":
+          conditions.push("date_gte: $date_gte");
+          break;
+        case "date_lte":
+          conditions.push("date_lte: $date_lte");
+          break;
+        case "newMembers_gte":
+          conditions.push("newMembers_gte: $newMembers_gte");
+          break;
+        case "newMembers_lte":
+          conditions.push("newMembers_lte: $newMembers_lte");
+          break;
+        case "userOperations_gte":
+          conditions.push("userOperations_gte: $userOperations_gte");
+          break;
+        case "userOperations_lte":
+          conditions.push("userOperations_lte: $userOperations_lte");
+          break;
+        case "gasSpent_gte":
+          conditions.push("gasSpent_gte: $gasSpent_gte");
+          break;
+        case "gasSpent_lte":
+          conditions.push("gasSpent_lte: $gasSpent_lte");
+          break;
+        case "revenueGenerated_gte":
+          conditions.push("revenueGenerated_gte: $revenueGenerated_gte");
+          break;
+        case "revenueGenerated_lte":
+          conditions.push("revenueGenerated_lte: $revenueGenerated_lte");
+          break;
+        case "totalMembers_gte":
+          conditions.push("totalMembers_gte: $totalMembers_gte");
+          break;
+        case "totalMembers_lte":
+          conditions.push("totalMembers_lte: $totalMembers_lte");
+          break;
+        case "totalDeposits_gte":
+          conditions.push("totalDeposits_gte: $totalDeposits_gte");
+          break;
+        case "totalDeposits_lte":
+          conditions.push("totalDeposits_lte: $totalDeposits_lte");
+          break;
+        case "createdAtBlock":
+          conditions.push("createdAtBlock: $createdAtBlock");
+          break;
+        case "createdAtBlock_gte":
+          conditions.push("createdAtBlock_gte: $createdAtBlock_gte");
+          break;
+        case "createdAtBlock_lte":
+          conditions.push("createdAtBlock_lte: $createdAtBlock_lte");
+          break;
+        case "createdAtTimestamp":
+          conditions.push("createdAtTimestamp: $createdAtTimestamp");
+          break;
+        case "createdAtTimestamp_gte":
+          conditions.push("createdAtTimestamp_gte: $createdAtTimestamp_gte");
+          break;
+        case "createdAtTimestamp_lte":
+          conditions.push("createdAtTimestamp_lte: $createdAtTimestamp_lte");
+          break;
+      }
+    }
+
+    return conditions;
   }
 
   /**

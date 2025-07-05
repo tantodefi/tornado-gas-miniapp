@@ -8,9 +8,7 @@ import type {
   PaymasterContract,
   PaymasterType,
   NetworkName,
-  Pool, // Add Pool if you want to include nested Pool data in selected fields
-  UserOperation, // Add UserOperation if you want to include nested UserOperation data
-  RevenueWithdrawal, // Add RevenueWithdrawal if you want to include nested RevenueWithdrawal data
+  SerializedPaymasterContract,
 } from "../../types/subgraph.js";
 import { GET_PAYMASTER_WITH_RELATED } from "../../client/queries.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
@@ -18,8 +16,7 @@ import {
   PaymasterContractFields,
   PaymasterContractWhereInput,
 } from "../types.js";
-
-// Define specific types for PaymasterContractQueryBuilder
+import { serializePaymasterContract } from "../../transformers/index.js";
 
 export type PaymasterContractOrderBy =
   | "deployedAtTimestamp"
@@ -35,6 +32,7 @@ export type PaymasterContractOrderBy =
  */
 export class PaymasterContractQueryBuilder extends BaseQueryBuilder<
   PaymasterContract,
+  SerializedPaymasterContract,
   PaymasterContractFields,
   PaymasterContractWhereInput,
   PaymasterContractOrderBy
@@ -42,6 +40,202 @@ export class PaymasterContractQueryBuilder extends BaseQueryBuilder<
   constructor(private subgraphClient: SubgraphClient) {
     super(subgraphClient, "paymasterContracts", "deployedAtTimestamp", "desc");
   }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const queryName = `GetPaymasterContracts`;
+
+    return `
+      query ${queryName}(${variables}) {
+        paymasterContracts(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (
+    entity: PaymasterContract,
+  ) => SerializedPaymasterContract {
+    return serializePaymasterContract;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<PaymasterContractWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          declarations.push("$network: String");
+          break;
+        case "contractType":
+          declarations.push("$contractType: String");
+          break;
+        case "address":
+          declarations.push("$address: String");
+          break;
+        case "id":
+          declarations.push("$id: ID");
+          break;
+        case "revenue_gte":
+          declarations.push("$revenue_gte: String");
+          break;
+        case "revenue_lte":
+          declarations.push("$revenue_lte: String");
+          break;
+        case "revenue_gt":
+          declarations.push("$revenue_gt: String");
+          break;
+        case "currentDeposit_gte":
+          declarations.push("$currentDeposit_gte: String");
+          break;
+        case "currentDeposit_lte":
+          declarations.push("$currentDeposit_lte: String");
+          break;
+        case "deployedAtTimestamp_gte":
+          declarations.push("$deployedAtTimestamp_gte: String");
+          break;
+        case "deployedAtTimestamp_lte":
+          declarations.push("$deployedAtTimestamp_lte: String");
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<PaymasterContractWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          variables.network = value;
+          break;
+        case "contractType":
+          variables.contractType = value;
+          break;
+        case "address":
+          variables.address = value;
+          break;
+        case "id":
+          variables.id = value;
+          break;
+        case "revenue_gte":
+        case "revenue_lte":
+        case "revenue_gt":
+          variables[key] = value;
+          break;
+        case "currentDeposit_gte":
+        case "currentDeposit_lte":
+          variables[key] = value;
+          break;
+        case "deployedAtTimestamp_gte":
+        case "deployedAtTimestamp_lte":
+          variables[key] = value;
+          break;
+      }
+    }
+  }
+
+  private buildWhereConditions(
+    where: Partial<PaymasterContractWhereInput>,
+  ): string[] {
+    const conditions: string[] = [];
+
+    for (const [key] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          conditions.push("network: $network");
+          break;
+        case "contractType":
+          conditions.push("contractType: $contractType");
+          break;
+        case "address":
+          conditions.push("address: $address");
+          break;
+        case "id":
+          conditions.push("id: $id");
+          break;
+        case "revenue_gte":
+          conditions.push("revenue_gte: $revenue_gte");
+          break;
+        case "revenue_lte":
+          conditions.push("revenue_lte: $revenue_lte");
+          break;
+        case "revenue_gt":
+          conditions.push("revenue_gt: $revenue_gt");
+          break;
+        case "currentDeposit_gte":
+          conditions.push("currentDeposit_gte: $currentDeposit_gte");
+          break;
+        case "currentDeposit_lte":
+          conditions.push("currentDeposit_lte: $currentDeposit_lte");
+          break;
+        case "deployedAtTimestamp_gte":
+          conditions.push("deployedAtTimestamp_gte: $deployedAtTimestamp_gte");
+          break;
+        case "deployedAtTimestamp_lte":
+          conditions.push("deployedAtTimestamp_lte: $deployedAtTimestamp_lte");
+          break;
+      }
+    }
+
+    return conditions;
+  }
+
   /**
    * Override default fields for PaymasterContract entity.
    */
@@ -62,6 +256,7 @@ export class PaymasterContractQueryBuilder extends BaseQueryBuilder<
     lastUpdatedTimestamp
   `;
   }
+
   /**
    * ========================================
    * FILTERING METHODS
@@ -145,6 +340,7 @@ export class PaymasterContractQueryBuilder extends BaseQueryBuilder<
     this.byAddress(address);
     return this;
   }
+
   /**
    * Filter by minimum revenue
    *
@@ -357,80 +553,4 @@ export class PaymasterContractQueryBuilder extends BaseQueryBuilder<
 
     return result.paymasterContract || null;
   }
-}
-
-/**
- * ========================================
- * CONVENIENCE FUNCTIONS
- * ========================================
- */
-
-/**
- * Get all GasLimited paymasters for a network
- *
- * @param client - SubgraphClient instance
- * @param network - Network identifier
- * @returns Promise resolving to array of GasLimited paymaster contracts
- */
-export async function getGasLimitedPaymasters(
-  client: SubgraphClient,
-  network: NetworkName,
-): Promise<PaymasterContract[]> {
-  return new PaymasterContractQueryBuilder(client)
-    .byNetwork(network)
-    .byType("GasLimited")
-    .execute();
-}
-
-/**
- * Get all OneTimeUse paymasters for a network
- *
- * @param client - SubgraphClient instance
- * @param network - Network identifier
- * @returns Promise resolving to array of OneTimeUse paymaster contracts
- */
-export async function getOneTimeUsePaymasters(
-  client: SubgraphClient,
-  network: NetworkName,
-): Promise<PaymasterContract[]> {
-  return new PaymasterContractQueryBuilder(client)
-    .byNetwork(network)
-    .byType("OneTimeUse")
-    .execute();
-}
-
-/**
- * Get paymaster by address
- *
- * @param client - SubgraphClient instance
- * @param address - Contract address
- * @param network - Network identifier
- * @returns Promise resolving to paymaster contract or null
- */
-export async function getPaymasterByAddress(
-  client: SubgraphClient,
-  address: string,
-  network: NetworkName,
-): Promise<PaymasterContract | null> {
-  return new PaymasterContractQueryBuilder(client)
-    .byId(network, address) // Use the new byId method for direct lookup
-    .first();
-}
-
-/**
- * Check if a paymaster contract exists
- *
- * @param client - SubgraphClient instance
- * @param address - Contract address
- * @param network - Network identifier
- * @returns Promise resolving to true if contract exists
- */
-export async function paymasterExists(
-  client: SubgraphClient,
-  address: string,
-  network: NetworkName,
-): Promise<boolean> {
-  return new PaymasterContractQueryBuilder(client)
-    .byId(network, address) // Use the new byId method
-    .exists();
 }

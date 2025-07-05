@@ -5,7 +5,9 @@ import type {
   RevenueWithdrawal,
   NetworkName,
   PaymasterType,
+  SerializedRevenueWithdrawal,
 } from "../../types/subgraph.js";
+import { serializeRevenueWithdrawal } from "../../transformers/index.js";
 import {
   RevenueWithdrawalFields,
   RevenueWithdrawalWhereInput,
@@ -26,12 +28,223 @@ export type RevenueWithdrawalOrderBy =
  */
 export class RevenueWithdrawalQueryBuilder extends BaseQueryBuilder<
   RevenueWithdrawal,
+  SerializedRevenueWithdrawal,
   RevenueWithdrawalFields,
   RevenueWithdrawalWhereInput,
   RevenueWithdrawalOrderBy
 > {
   constructor(private subgraphClient: SubgraphClient) {
     super(subgraphClient, "revenueWithdrawals", "withdrawnAtTimestamp", "desc");
+  }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const queryName = `GetRevenueWithdrawals`;
+
+    return `
+      query ${queryName}(${variables}) {
+        revenueWithdrawals(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (
+    entity: RevenueWithdrawal,
+  ) => SerializedRevenueWithdrawal {
+    return serializeRevenueWithdrawal;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<RevenueWithdrawalWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          declarations.push("$network: String");
+          break;
+        case "recipient":
+          declarations.push("$recipient: String");
+          break;
+        case "amount_gte":
+          declarations.push("$amount_gte: String");
+          break;
+        case "amount_lte":
+          declarations.push("$amount_lte: String");
+          break;
+        case "withdrawnAtTimestamp_gte":
+          declarations.push("$withdrawnAtTimestamp_gte: String");
+          break;
+        case "withdrawnAtTimestamp_lte":
+          declarations.push("$withdrawnAtTimestamp_lte: String");
+          break;
+        case "withdrawnAtBlock":
+          declarations.push("$withdrawnAtBlock: String");
+          break;
+        case "transactionHash":
+          declarations.push("$transactionHash: String");
+          break;
+        case "paymaster_":
+          if (typeof value === "object" && value) {
+            if ("address" in value) {
+              declarations.push("$paymasterAddress: String");
+            }
+            if ("contractType" in value) {
+              declarations.push("$paymasterType: String");
+            }
+          }
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<RevenueWithdrawalWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          variables.network = value;
+          break;
+        case "recipient":
+          variables.recipient = value;
+          break;
+        case "amount_gte":
+        case "amount_lte":
+          variables[key] = value;
+          break;
+        case "withdrawnAtTimestamp_gte":
+        case "withdrawnAtTimestamp_lte":
+          variables[key] = value;
+          break;
+        case "withdrawnAtBlock":
+          variables.withdrawnAtBlock = value;
+          break;
+        case "transactionHash":
+          variables.transactionHash = value;
+          break;
+        case "paymaster_":
+          if (typeof value === "object" && value) {
+            if ("address" in value) {
+              variables.paymasterAddress = value.address;
+            }
+            if ("contractType" in value) {
+              variables.paymasterType = value.contractType;
+            }
+          }
+          break;
+      }
+    }
+  }
+
+  private buildWhereConditions(
+    where: Partial<RevenueWithdrawalWhereInput>,
+  ): string[] {
+    const conditions: string[] = [];
+
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          conditions.push("network: $network");
+          break;
+        case "recipient":
+          conditions.push("recipient: $recipient");
+          break;
+        case "amount_gte":
+          conditions.push("amount_gte: $amount_gte");
+          break;
+        case "amount_lte":
+          conditions.push("amount_lte: $amount_lte");
+          break;
+        case "withdrawnAtTimestamp_gte":
+          conditions.push(
+            "withdrawnAtTimestamp_gte: $withdrawnAtTimestamp_gte",
+          );
+          break;
+        case "withdrawnAtTimestamp_lte":
+          conditions.push(
+            "withdrawnAtTimestamp_lte: $withdrawnAtTimestamp_lte",
+          );
+          break;
+        case "withdrawnAtBlock":
+          conditions.push("withdrawnAtBlock: $withdrawnAtBlock");
+          break;
+        case "transactionHash":
+          conditions.push("transactionHash: $transactionHash");
+          break;
+        case "paymaster_":
+          if (typeof value === "object" && value) {
+            const nestedConditions: string[] = [];
+            if ("address" in value) {
+              nestedConditions.push("address: $paymasterAddress");
+            }
+            if ("contractType" in value) {
+              nestedConditions.push("contractType: $paymasterType");
+            }
+            if (nestedConditions.length > 0) {
+              conditions.push(`paymaster_: { ${nestedConditions.join(", ")} }`);
+            }
+          }
+          break;
+      }
+    }
+
+    return conditions;
   }
 
   /**

@@ -1,7 +1,12 @@
 // merkle-root-query-builder.ts (Refactored)
 
 import type { SubgraphClient } from "../../client/subgraph-client.js";
-import type { MerkleRoot, NetworkName } from "../../types/subgraph.js";
+import type {
+  MerkleRoot,
+  NetworkName,
+  SerializedMerkleRoot,
+} from "../../types/subgraph.js";
+import { serializeMerkleRoot } from "../../transformers/index.js";
 import { MerkleRootFields, MerkleRootWhereInput } from "../types.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
 
@@ -19,6 +24,7 @@ export type MerkleRootOrderBy =
  */
 export class MerkleRootQueryBuilder extends BaseQueryBuilder<
   MerkleRoot,
+  SerializedMerkleRoot,
   MerkleRootFields,
   MerkleRootWhereInput,
   MerkleRootOrderBy
@@ -27,6 +33,232 @@ export class MerkleRootQueryBuilder extends BaseQueryBuilder<
     // Default order by rootIndex descending.
     // Assuming the entity name in the subgraph schema is `merkleRoots`
     super(subgraphClient, "merkleRoots", "rootIndex", "desc");
+  }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const queryName = `GetMerkleRoots`;
+
+    return `
+      query ${queryName}(${variables}) {
+        merkleRoots(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (entity: MerkleRoot) => SerializedMerkleRoot {
+    return serializeMerkleRoot;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<MerkleRootWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          declarations.push("$id: ID");
+          break;
+        case "pool":
+          declarations.push("$pool: String");
+          break;
+        case "pool_in":
+          declarations.push("$pool_in: [String!]");
+          break;
+        case "network":
+          declarations.push("$network: String");
+          break;
+        case "network_in":
+          declarations.push("$network_in: [String!]");
+          break;
+        case "rootIndex":
+          declarations.push("$rootIndex: Int");
+          break;
+        case "rootIndex_gte":
+          declarations.push("$rootIndex_gte: Int");
+          break;
+        case "rootIndex_lte":
+          declarations.push("$rootIndex_lte: Int");
+          break;
+        case "root":
+          declarations.push("$root: String");
+          break;
+        case "root_in":
+          declarations.push("$root_in: [String!]");
+          break;
+        case "createdAtTimestamp_gte":
+          declarations.push("$createdAtTimestamp_gte: String");
+          break;
+        case "createdAtTimestamp_lte":
+          declarations.push("$createdAtTimestamp_lte: String");
+          break;
+        case "createdAtBlock":
+          declarations.push("$createdAtBlock: String");
+          break;
+        case "createdAtTransaction":
+          declarations.push("$createdAtTransaction: String");
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<MerkleRootWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          variables.id = value;
+          break;
+        case "pool":
+          variables.pool = value;
+          break;
+        case "pool_in":
+          variables.pool_in = value;
+          break;
+        case "network":
+          variables.network = value;
+          break;
+        case "network_in":
+          variables.network_in = value;
+          break;
+        case "rootIndex":
+          variables.rootIndex = value;
+          break;
+        case "rootIndex_gte":
+          variables.rootIndex_gte = value;
+          break;
+        case "rootIndex_lte":
+          variables.rootIndex_lte = value;
+          break;
+        case "root":
+          variables.root = value;
+          break;
+        case "root_in":
+          variables.root_in = value;
+          break;
+        case "createdAtTimestamp_gte":
+          variables.createdAtTimestamp_gte = value;
+          break;
+        case "createdAtTimestamp_lte":
+          variables.createdAtTimestamp_lte = value;
+          break;
+        case "createdAtBlock":
+          variables.createdAtBlock = value;
+          break;
+        case "createdAtTransaction":
+          variables.createdAtTransaction = value;
+          break;
+      }
+    }
+  }
+
+  private buildWhereConditions(where: Partial<MerkleRootWhereInput>): string[] {
+    const conditions: string[] = [];
+
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          conditions.push("id: $id");
+          break;
+        case "pool":
+          conditions.push("pool: $pool");
+          break;
+        case "pool_in":
+          conditions.push("pool_in: $pool_in");
+          break;
+        case "network":
+          conditions.push("network: $network");
+          break;
+        case "network_in":
+          conditions.push("network_in: $network_in");
+          break;
+        case "rootIndex":
+          conditions.push("rootIndex: $rootIndex");
+          break;
+        case "rootIndex_gte":
+          conditions.push("rootIndex_gte: $rootIndex_gte");
+          break;
+        case "rootIndex_lte":
+          conditions.push("rootIndex_lte: $rootIndex_lte");
+          break;
+        case "root":
+          conditions.push("root: $root");
+          break;
+        case "root_in":
+          conditions.push("root_in: $root_in");
+          break;
+        case "createdAtTimestamp_gte":
+          conditions.push("createdAtTimestamp_gte: $createdAtTimestamp_gte");
+          break;
+        case "createdAtTimestamp_lte":
+          conditions.push("createdAtTimestamp_lte: $createdAtTimestamp_lte");
+          break;
+        case "createdAtBlock":
+          conditions.push("createdAtBlock: $createdAtBlock");
+          break;
+        case "createdAtTransaction":
+          conditions.push("createdAtTransaction: $createdAtTransaction");
+          break;
+      }
+    }
+
+    return conditions;
   }
 
   /**

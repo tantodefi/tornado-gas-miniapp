@@ -1,7 +1,12 @@
 // network-info-query-builder.ts (Refactored)
 
 import type { SubgraphClient } from "../../client/subgraph-client.js";
-import type { NetworkInfo, NetworkName } from "../../types/subgraph.js";
+import type {
+  NetworkInfo,
+  NetworkName,
+  SerializedNetworkInfo,
+} from "../../types/subgraph.js";
+import { serializeNetworkInfo } from "../../transformers/index.js";
 import { NetworkInfoFields, NetworkInfoWhereInput } from "../types.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
 
@@ -26,12 +31,170 @@ export type NetworkInfoOrderBy =
  */
 export class NetworkInfoQueryBuilder extends BaseQueryBuilder<
   NetworkInfo,
+  SerializedNetworkInfo,
   NetworkInfoFields,
   NetworkInfoWhereInput,
   NetworkInfoOrderBy
 > {
   constructor(private subgraphClient: SubgraphClient) {
     super(subgraphClient, "networkInfos", "name", "asc"); // Default order by name, ascending
+  }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return `
+      query GetNetworkInfos(${variables}) {
+        networkInfos(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (entity: NetworkInfo) => SerializedNetworkInfo {
+    return serializeNetworkInfo;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<NetworkInfoWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key] of Object.entries(where)) {
+      switch (key) {
+        case "id":
+          declarations.push("$id: ID");
+          break;
+        case "totalPaymasters_gte":
+        case "totalPaymasters_lte":
+          declarations.push(
+            "$totalPaymasters_gte: String",
+            "$totalPaymasters_lte: String",
+          );
+          break;
+        case "totalPools_gte":
+        case "totalPools_lte":
+          declarations.push(
+            "$totalPools_gte: String",
+            "$totalPools_lte: String",
+          );
+          break;
+        case "totalMembers_gte":
+        case "totalMembers_lte":
+          declarations.push(
+            "$totalMembers_gte: String",
+            "$totalMembers_lte: String",
+          );
+          break;
+        case "totalUserOperations_gte":
+        case "totalUserOperations_lte":
+          declarations.push(
+            "$totalUserOperations_gte: String",
+            "$totalUserOperations_lte: String",
+          );
+          break;
+        case "totalGasSpent_gte":
+        case "totalGasSpent_lte":
+          declarations.push(
+            "$totalGasSpent_gte: String",
+            "$totalGasSpent_lte: String",
+          );
+          break;
+        case "totalRevenue_gte":
+        case "totalRevenue_lte":
+          declarations.push(
+            "$totalRevenue_gte: String",
+            "$totalRevenue_lte: String",
+          );
+          break;
+        case "firstDeploymentTimestamp_gte":
+        case "firstDeploymentTimestamp_lte":
+          declarations.push(
+            "$firstDeploymentTimestamp_gte: String",
+            "$firstDeploymentTimestamp_lte: String",
+          );
+          break;
+        case "lastActivityTimestamp_gte":
+        case "lastActivityTimestamp_lte":
+          declarations.push(
+            "$lastActivityTimestamp_gte: String",
+            "$lastActivityTimestamp_lte: String",
+          );
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<NetworkInfoWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      variables[key] = value;
+    }
+  }
+
+  private buildWhereConditions(
+    where: Partial<NetworkInfoWhereInput>,
+  ): string[] {
+    const conditions: string[] = [];
+
+    for (const [key] of Object.entries(where)) {
+      conditions.push(`${key}: $${key}`);
+    }
+
+    return conditions;
   }
 
   /**

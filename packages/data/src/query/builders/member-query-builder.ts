@@ -4,10 +4,15 @@
  */
 
 import type { SubgraphClient } from "../../client/subgraph-client.js";
-import type { PoolMember, NetworkName } from "../../types/subgraph.js";
+import type {
+  PoolMember,
+  NetworkName,
+  SerializedPoolMember,
+} from "../../types/subgraph.js";
 
 import { PoolMemberFields, PoolMemberWhereInput } from "../types.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
+import { serializePoolMember } from "../../transformers/index.js";
 
 export type PoolMemberOrderBy =
   | "addedAtTimestamp"
@@ -23,14 +28,262 @@ export type PoolMemberOrderBy =
  */
 export class PoolMemberQueryBuilder extends BaseQueryBuilder<
   PoolMember,
+  SerializedPoolMember,
   PoolMemberFields,
   PoolMemberWhereInput,
   PoolMemberOrderBy
 > {
-  // private config: PoolMemberQueryConfig = {};
-
   constructor(client: SubgraphClient) {
     super(client, "poolMembers", "addedAtTimestamp", "desc");
+  }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const queryName = `GetPoolMembers`;
+
+    return `
+      query ${queryName}(${variables}) {
+        poolMembers(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (entity: PoolMember) => SerializedPoolMember {
+    return serializePoolMember;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<PoolMemberWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          declarations.push("$network: String");
+          break;
+        case "id":
+          declarations.push("$id: ID");
+          break;
+        case "memberIndex":
+          declarations.push("$memberIndex: String");
+          break;
+        case "identityCommitment":
+          declarations.push("$identityCommitment: String");
+          break;
+        case "gasUsed_gte":
+          declarations.push("$gasUsed_gte: String");
+          break;
+        case "gasUsed_lte":
+          declarations.push("$gasUsed_lte: String");
+          break;
+        case "nullifierUsed":
+          declarations.push("$nullifierUsed: Boolean");
+          break;
+        case "addedAtTimestamp_gte":
+          declarations.push("$addedAtTimestamp_gte: String");
+          break;
+        case "addedAtTimestamp_lte":
+          declarations.push("$addedAtTimestamp_lte: String");
+          break;
+        case "rootIndexWhenAdded":
+          declarations.push("$rootIndexWhenAdded: Int");
+          break;
+        case "pool_":
+          if (typeof value === "object" && value) {
+            if ("id" in value) {
+              declarations.push("$poolId: String");
+            }
+            if ("poolId" in value) {
+              declarations.push("$poolIdValue: String");
+            }
+            if (
+              "paymaster_" in value &&
+              typeof value.paymaster_ === "object" &&
+              value.paymaster_
+            ) {
+              if ("address" in value.paymaster_) {
+                declarations.push("$paymasterAddress: String");
+              }
+            }
+          }
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<PoolMemberWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          variables.network = value;
+          break;
+        case "id":
+          variables.id = value;
+          break;
+        case "memberIndex":
+          variables.memberIndex = value;
+          break;
+        case "identityCommitment":
+          variables.identityCommitment = value;
+          break;
+        case "gasUsed_gte":
+        case "gasUsed_lte":
+          variables[key] = value;
+          break;
+        case "nullifierUsed":
+          variables.nullifierUsed = value;
+          break;
+        case "addedAtTimestamp_gte":
+        case "addedAtTimestamp_lte":
+          variables[key] = value;
+          break;
+        case "rootIndexWhenAdded":
+          variables.rootIndexWhenAdded = value;
+          break;
+        case "pool_":
+          if (typeof value === "object" && value) {
+            if ("id" in value) {
+              variables.poolId = value.id;
+            }
+            if ("poolId" in value) {
+              variables.poolIdValue = value.poolId;
+            }
+            if (
+              "paymaster_" in value &&
+              typeof value.paymaster_ === "object" &&
+              value.paymaster_
+            ) {
+              if ("address" in value.paymaster_) {
+                variables.paymasterAddress = value.paymaster_.address;
+              }
+            }
+          }
+          break;
+      }
+    }
+  }
+
+  private buildWhereConditions(where: Partial<PoolMemberWhereInput>): string[] {
+    const conditions: string[] = [];
+
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          conditions.push("network: $network");
+          break;
+        case "id":
+          conditions.push("id: $id");
+          break;
+        case "memberIndex":
+          conditions.push("memberIndex: $memberIndex");
+          break;
+        case "identityCommitment":
+          conditions.push("identityCommitment: $identityCommitment");
+          break;
+        case "gasUsed_gte":
+          conditions.push("gasUsed_gte: $gasUsed_gte");
+          break;
+        case "gasUsed_lte":
+          conditions.push("gasUsed_lte: $gasUsed_lte");
+          break;
+        case "nullifierUsed":
+          conditions.push("nullifierUsed: $nullifierUsed");
+          break;
+        case "addedAtTimestamp_gte":
+          conditions.push("addedAtTimestamp_gte: $addedAtTimestamp_gte");
+          break;
+        case "addedAtTimestamp_lte":
+          conditions.push("addedAtTimestamp_lte: $addedAtTimestamp_lte");
+          break;
+        case "rootIndexWhenAdded":
+          conditions.push("rootIndexWhenAdded: $rootIndexWhenAdded");
+          break;
+        case "pool_":
+          if (typeof value === "object" && value) {
+            const nestedConditions: string[] = [];
+            if ("id" in value) {
+              nestedConditions.push("id: $poolId");
+            }
+            if ("poolId" in value) {
+              nestedConditions.push("poolId: $poolIdValue");
+            }
+            if (
+              "paymaster_" in value &&
+              typeof value.paymaster_ === "object" &&
+              value.paymaster_
+            ) {
+              if ("address" in value.paymaster_) {
+                nestedConditions.push(
+                  "paymaster_: { address: $paymasterAddress }",
+                );
+              }
+            }
+            if (nestedConditions.length > 0) {
+              conditions.push(`pool_: { ${nestedConditions.join(", ")} }`);
+            }
+          }
+          break;
+      }
+    }
+
+    return conditions;
   }
 
   /**
