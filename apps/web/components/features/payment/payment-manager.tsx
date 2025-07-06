@@ -6,7 +6,7 @@ import { useCallback, useRef } from "react";
 import { Identity } from "@semaphore-protocol/identity";
 import { encodeFunctionData } from "viem";
 import { getPaymentProvider } from "@/components/providers/payment-provider-wrapper";
-import { PREPAID_GAS_PAYMASTER_ABI } from "@workspace/core";
+import { GAS_LIMITED_PAYMASTER_ABI } from "@workspace/core";
 import { DaimoButton } from "./daimo-button";
 import { RainbowButton } from "./rainbow-button";
 import type {
@@ -14,7 +14,6 @@ import type {
   PaymentData,
   PaymentDetails,
   PaymentError,
-  PaymentCallbacks,
   PaymentManagerConfig,
   DaimoPaymentEvent,
   RainbowTransactionEvent,
@@ -33,7 +32,7 @@ export function usePaymentDataGenerator(pool: PaymentPool, card: PoolCard) {
 
     // Generate calldata for addMember function
     const calldata = encodeFunctionData({
-      abi: PREPAID_GAS_PAYMASTER_ABI,
+      abi: GAS_LIMITED_PAYMASTER_ABI,
       functionName: "addMember",
       args: [BigInt(pool.poolId), identity.commitment],
     });
