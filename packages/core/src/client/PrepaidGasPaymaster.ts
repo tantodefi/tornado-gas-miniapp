@@ -15,18 +15,14 @@ import {
   parsePaymasterContext,
   PrepaidGasPaymasterMode,
 } from "../utils";
-import { POST_OP_GAS_LIMIT, PREPAID_GAS_PAYMASTER_ABI } from "../constants";
+import { POST_OP_GAS_LIMIT, GAS_LIMITED_PAYMASTER_ABI } from "../constants";
 import {
   PrepaidGasPaymasterConfig,
   GetPaymasterStubDataV7Parameters,
   ProofGenerationParams,
   ProofGenerationResult,
 } from "./";
-import {
-  getValidatedNetworkPreset,
-  getUnsupportedNetworkError,
-  type NetworkPreset,
-} from "@workspace/data";
+import { getValidatedNetworkPreset, type NetworkPreset } from "@workspace/data";
 import { NetworkConfig } from "@workspace/data";
 import { generateProof, SemaphoreProof } from "@semaphore-protocol/proof";
 import { Identity } from "@semaphore-protocol/identity";
@@ -88,7 +84,12 @@ export class PrepaidGasPaymaster {
         chainName: this.networkConfig.chainName,
         networkName: this.networkConfig.networkName,
         contracts: {
-          paymaster: this.networkConfig.contracts.paymaster,
+          paymasters: {
+            gasLimited:
+              this.networkConfig.contracts.paymasters?.gasLimited?.address,
+            oneTimeUse:
+              this.networkConfig.contracts.paymasters?.oneTimeUse?.address,
+          },
           verifier: this.networkConfig.contracts.verifier,
         },
       },
@@ -100,7 +101,6 @@ export class PrepaidGasPaymaster {
         subgraphUrl: config.subgraphUrl,
         network: this.networkConfig.name,
         chainId: this.networkConfig.chainId,
-        paymasterAddress: this.networkConfig.contracts.paymaster,
       });
     }
   }
@@ -261,7 +261,7 @@ export class PrepaidGasPaymaster {
     // Get message hash from contract
     const packedUserOpForHash = getPackedUserOperation(userOperation);
     const messageHash = await publicClient.readContract({
-      abi: PREPAID_GAS_PAYMASTER_ABI,
+      abi: GAS_LIMITED_PAYMASTER_ABI,
       address: parsedContext.paymasterAddress,
       functionName: "getMessageHash",
       args: [packedUserOpForHash],
@@ -270,8 +270,9 @@ export class PrepaidGasPaymaster {
     // Get pool members from subgraph
     const members = await this.subgraphClient
       .query()
-      .members()
-      .inPool(parsedContext.poolId.toString())
+      .poolMembers()
+      .byPool(parsedContext.poolId.toString())
+      .orderBy("memberIndex", "asc")
       .execute();
     const poolMembers = members.map((member) =>
       BigInt(member.identityCommitment),
@@ -279,7 +280,7 @@ export class PrepaidGasPaymaster {
 
     // Find the best merkle root index
     const [merkleRootIndex] = await publicClient.readContract({
-      abi: PREPAID_GAS_PAYMASTER_ABI,
+      abi: GAS_LIMITED_PAYMASTER_ABI,
       address: parsedContext.paymasterAddress,
       functionName: "getPoolRootHistoryInfo",
       args: [parsedContext.poolId],
@@ -518,8 +519,11 @@ export class PrepaidGasPaymaster {
       throw new Error("network.networkName is required");
     }
 
-    if (!network.contracts?.paymaster) {
-      throw new Error("network.contracts.paymaster address is required");
+    if (
+      !network.contracts?.paymasters?.gasLimited ||
+      !network.contracts.paymasters.oneTimeUse
+    ) {
+      throw new Error("network.contracts.paymaster addresses is required");
     }
 
     // Validate that the subgraph URL looks like a valid URL

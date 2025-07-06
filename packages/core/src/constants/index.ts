@@ -1,5 +1,5 @@
 // Constants exports
-export { PREPAID_GAS_PAYMASTER_ABI } from "./abi";
+export { GAS_LIMITED_PAYMASTER_ABI, ONE_TIME_USE_PAYMASTER_ABI } from "./abi";
 
 // Contract constants
 export const POST_OP_GAS_LIMIT = 65000n;

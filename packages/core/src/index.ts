@@ -27,7 +27,11 @@ export {
 export type { ParsedPaymasterContext } from "./utils";
 
 // Constants exports
-export { PREPAID_GAS_PAYMASTER_ABI, POOL_ROOT_HISTORY_SIZE } from "./constants";
+export {
+  GAS_LIMITED_PAYMASTER_ABI,
+  ONE_TIME_USE_PAYMASTER_ABI,
+  POOL_ROOT_HISTORY_SIZE,
+} from "./constants";
 
 // Version
 export const VERSION = "1.0.0";
