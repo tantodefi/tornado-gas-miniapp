@@ -133,9 +133,9 @@ console.log(networkInfo.network.chainId); // 84532
 
 ## Network Support
 
-| Network      | Chain ID | Status                                    |
-| ------------ | -------- | ----------------------------------------- |
-| Base Sepolia | 84532    | ✅ Active (default subgraph configured)  |
+| Network      | Chain ID | Status                                  |
+| ------------ | -------- | --------------------------------------- |
+| Base Sepolia | 84532    | ✅ Active (default subgraph configured) |
 | Base Mainnet | 8453     | ⚠️ Supported (requires custom subgraph) |
 
 ## Context Encoding
@@ -185,11 +185,11 @@ The core package is environment-agnostic and receives all configuration through 
 
 ```typescript
 interface PrepaidGasPaymasterConfig {
-  subgraphUrl: string;           // Required: Subgraph endpoint URL
-  network: NetworkConfig;        // Required: Network configuration
-  rpcUrl?: string;              // Optional: Custom RPC endpoint
-  debug?: boolean;              // Optional: Enable debug logging
-  timeout?: number;             // Optional: Request timeout in ms
+  subgraphUrl: string; // Required: Subgraph endpoint URL
+  network: NetworkConfig; // Required: Network configuration
+  rpcUrl?: string; // Optional: Custom RPC endpoint
+  debug?: boolean; // Optional: Enable debug logging
+  timeout?: number; // Optional: Request timeout in ms
 }
 ```
 
@@ -266,11 +266,11 @@ For advanced use cases, you can import network presets from the data package:
 
 ```typescript
 import { PrepaidGasPaymaster } from "@workspace/core";
-import { 
-  BASE_SEPOLIA_PRESET, 
+import {
+  BASE_SEPOLIA_PRESET,
   BASE_MAINNET_PRESET,
   getSupportedChainIds,
-  isSupportedChainId 
+  isSupportedChainId,
 } from "@workspace/data";
 
 // Check network support
@@ -293,10 +293,10 @@ const paymaster = new PrepaidGasPaymaster({
 The SDK is fully typed with comprehensive TypeScript support:
 
 ```typescript
-import type { 
+import type {
   PrepaidGasPaymasterConfig,
   ParsedPaymasterContext,
-  GetPaymasterStubDataV7Parameters 
+  GetPaymasterStubDataV7Parameters,
 } from "@workspace/core";
 
 // Type-safe configuration
