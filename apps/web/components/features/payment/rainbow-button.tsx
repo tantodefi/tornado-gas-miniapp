@@ -10,13 +10,13 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { useEffect, useState } from "react";
-import { formatJoiningFee } from "./payment-manager";
 import type {
   PaymentData,
   PaymentButtonProps,
   RainbowTransactionEvent,
   WagmiError,
 } from "@/types";
+import { formatJoiningFee } from "@/utils";
 
 /**
  * RainbowButton component for traditional wallet connections

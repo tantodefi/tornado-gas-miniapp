@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { usePoolsData } from "@/hooks/pools/use-pools-data";
 import { usePoolsFilter } from "@/hooks/pools/use-pools-filter";
 import { useApiError } from "@/hooks/shared/use-api-error";
-import PrepaidPoolCard from "./pool-card";
+import PrepaidPoolCard from "./multi-use-pool-card";
 import FilterBar from "./pool-filters";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

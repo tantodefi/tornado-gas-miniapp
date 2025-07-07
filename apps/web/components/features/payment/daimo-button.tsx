@@ -6,15 +6,13 @@ import { useState, useCallback } from "react";
 import { DaimoPayButton } from "@daimo/pay";
 import { base } from "viem/chains";
 import { zeroAddress } from "viem";
-import { formatJoiningFee } from "./payment-manager";
 import type {
-  PaymentPool,
   PaymentData,
   PaymentButtonProps,
   DaimoPaymentEvent,
   DaimoError,
-  PoolCard,
 } from "@/types";
+import { formatJoiningFee } from "@/utils";
 
 /**
  * DaimoButton component for seamless crypto payments

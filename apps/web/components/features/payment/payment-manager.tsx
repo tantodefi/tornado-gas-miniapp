@@ -248,20 +248,3 @@ export function PaymentManager({
     </div>
   );
 }
-
-/**
- * Helper function to format joining fee for display
- */
-export function formatJoiningFee(joiningFeeWei: string): string {
-  try {
-    const wei = BigInt(joiningFeeWei);
-    const eth = Number(wei) / 1e18;
-
-    if (eth === 0) return "0.00";
-    if (eth < 0.0001) return "< 0.0001";
-    if (eth < 1) return eth.toFixed(6).replace(/\.?0+$/, "");
-    return eth.toFixed(4).replace(/\.?0+$/, "");
-  } catch {
-    return "0.00";
-  }
-}

@@ -5,6 +5,10 @@ import React from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
+import {
+  GasCard,
+  GasCardsShowcase,
+} from "@/components/features/landing/gas-cards";
 
 // Types (keeping existing ones)
 interface FeatureCardProps {
@@ -79,59 +83,59 @@ const Header: React.FC = () => (
 );
 
 // GasCard Component (unchanged)
-const GasCard: React.FC = () => (
-  <div className="mx-auto perspective-1000">
-    <motion.div
-      className="w-[250px] h-[150px] sm:w-[280px] sm:h-[168px] lg:w-[320px] lg:h-[192px] mx-auto bg-gradient-to-br from-slate-800 to-slate-600 rounded-xl lg:rounded-2xl border border-purple-500/30 relative shadow-2xl"
-      animate={{
-        rotateY: [0, 5, 0, -5, 0],
-        rotateX: [0, 2, 0, -2, 0],
-      }}
-      transition={{
-        duration: 4,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    >
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-xl lg:rounded-2xl"
-        initial={{ x: "-100%" }}
-        animate={{ x: "100%" }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
+// const GasCard: React.FC = () => (
+//   <div className="mx-auto perspective-1000">
+//     <motion.div
+//       className="w-[250px] h-[150px] sm:w-[280px] sm:h-[168px] lg:w-[320px] lg:h-[192px] mx-auto bg-gradient-to-br from-slate-800 to-slate-600 rounded-xl lg:rounded-2xl border border-purple-500/30 relative shadow-2xl"
+//       animate={{
+//         rotateY: [0, 5, 0, -5, 0],
+//         rotateX: [0, 2, 0, -2, 0],
+//       }}
+//       transition={{
+//         duration: 4,
+//         repeat: Infinity,
+//         ease: "easeInOut",
+//       }}
+//     >
+//       <motion.div
+//         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-xl lg:rounded-2xl"
+//         initial={{ x: "-100%" }}
+//         animate={{ x: "100%" }}
+//         transition={{
+//           duration: 3,
+//           repeat: Infinity,
+//           ease: "easeInOut",
+//         }}
+//       />
 
-      <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between">
-        <div className="flex justify-between items-start">
-          <div className="flex flex-col items-start ">
-            <div className="text-xs sm:text-sm text-pink-500 font-bold">
-              PREPAID
-            </div>
-            <div className="text-xs text-slate-500">GAS CREDIT</div>
-          </div>
+//       <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between">
+//         <div className="flex justify-between items-start">
+//           <div className="flex flex-col items-start ">
+//             <div className="text-xs sm:text-sm text-pink-500 font-bold">
+//               PREPAID
+//             </div>
+//             <div className="text-xs text-slate-500">GAS CREDIT</div>
+//           </div>
 
-          <div className="flex flex-col items-end">
-            <div className="text-md sm:text-lg lg:text-xl font-bold text-purple-500">
-              0.05 ETH
-            </div>
-            <div className="text-[10px] text-slate-500">847 members</div>
-          </div>
-        </div>
-        <div className="flex justify-between items-end">
-          <div className="font-mono text-[10px] sm:text-xs text-slate-500">
-            **** **** **** 4337
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-slate-500">Ethereum</div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  </div>
-);
+//           <div className="flex flex-col items-end">
+//             <div className="text-md sm:text-lg lg:text-xl font-bold text-purple-500">
+//               0.05 ETH
+//             </div>
+//             <div className="text-[10px] text-slate-500">847 members</div>
+//           </div>
+//         </div>
+//         <div className="flex justify-between items-end">
+//           <div className="font-mono text-[10px] sm:text-xs text-slate-500">
+//             **** **** **** 4337
+//           </div>
+//           <div className="text-right">
+//             <div className="text-xs text-slate-500">Ethereum</div>
+//           </div>
+//         </div>
+//       </div>
+//     </motion.div>
+//   </div>
+// );
 
 // Feature Card Component (unchanged)
 const FeatureCard: React.FC<FeatureCardProps> = ({
@@ -210,6 +214,66 @@ const StatItem: React.FC<StatItemProps> = ({ number, label }) => (
 );
 
 // Hero Section Component - UPDATED with Next.js Links
+// const Hero: React.FC = () => (
+//   <section className="section-prepaid text-center relative z-10">
+//     <motion.div
+//       className="badge-prepaid mb-6 sm:mb-8"
+//       initial={{ opacity: 0, y: -20 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.5 }}
+//     >
+//       ✨ Prepaid Gas Credits • Unlinkable Spending
+//     </motion.div>
+
+//     <motion.h1
+//       className="heading-prepaid-hero mb-4 sm:mb-6"
+//       initial={{ opacity: 0, y: 30 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.7, delay: 0.2 }}
+//     >
+//       <div className="text-prepaid-gradient-white">Prepaid Gas</div>
+//       <div className="text-prepaid-gradient-brand">Credits</div>
+//     </motion.h1>
+
+//     <motion.p
+//       className="text-base sm:text-lg lg:text-xl text-slate-300 max-w-xl lg:max-w-2xl mx-auto mb-8 lg:mb-10 leading-relaxed px-4"
+//       initial={{ opacity: 0, y: 30 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.7, delay: 0.4 }}
+//     >
+//       Like prepaid mobile cards for blockchain gas. Buy credit anonymously,
+//       spend without revealing which &quot;card&quot; you purchased. Built on{" "}
+//       <span className="text-purple-400 font-semibold">ERC-4337 </span> with{" "}
+//       <span className="text-purple-400 font-semibold">Semaphore Protocol</span>.
+//     </motion.p>
+
+//     <motion.div
+//       className="flex-prepaid-responsive mb-8 sm:mb-12 px-4"
+//       initial={{ opacity: 0, y: 30 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.7, delay: 0.6 }}
+//     >
+//       <Link href="/pools">
+//         <Button className="btn-prepaid-primary btn-lg">Launch App →</Button>
+//       </Link>
+//       <Button className="btn-prepaid-outline btn-lg">View Docs</Button>
+//     </motion.div>
+
+//     <motion.div
+//       className="mt-8 sm:mt-12"
+//       initial={{ opacity: 0, scale: 0.8 }}
+//       animate={{ opacity: 1, scale: 1 }}
+//       transition={{ duration: 0.8, delay: 0.8 }}
+//     >
+//       <GasCard />
+//     </motion.div>
+//   </section>
+// );
+// Updated landing page content with simple, relatable language
+// This replaces the existing PrepaidGasLanding component content
+
+// Hero Section - Simple and Clear
+// Hero Section
 const Hero: React.FC = () => (
   <section className="section-prepaid text-center relative z-10">
     <motion.div
@@ -218,7 +282,7 @@ const Hero: React.FC = () => (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      ✨ Prepaid Gas Credits • Unlinkable Spending
+      ✨ Anonymous Gas Payments • ERC-4337 + Semaphore • Prepaid Privacy
     </motion.div>
 
     <motion.h1
@@ -237,10 +301,9 @@ const Hero: React.FC = () => (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.4 }}
     >
-      Like prepaid mobile cards for blockchain gas. Buy credit anonymously,
-      spend without revealing which &quot;card&quot; you purchased. Built on{" "}
-      <span className="text-purple-400 font-semibold">ERC-4337 </span> with{" "}
-      <span className="text-purple-400 font-semibold">Semaphore Protocol</span>.
+      Join a pool by paying upfront gas. Prove membership with zero-knowledge
+      proofs using Semaphore. Spend credits anonymously through an ERC-4337
+      paymaster — unlinkable and private by design.
     </motion.p>
 
     <motion.div
@@ -250,47 +313,46 @@ const Hero: React.FC = () => (
       transition={{ duration: 0.7, delay: 0.6 }}
     >
       <Link href="/pools">
-        <Button className="btn-prepaid-primary btn-lg">Launch App →</Button>
+        <Button className="btn-prepaid-primary btn-lg">
+          Browse Gas Pools →
+        </Button>
       </Link>
-      <Button className="btn-prepaid-outline btn-lg">View Docs</Button>
+      <Button className="btn-prepaid-outline btn-lg">How It Works</Button>
     </motion.div>
 
-    <motion.div
+    {/* <motion.div
       className="mt-8 sm:mt-12"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.8, delay: 0.8 }}
     >
       <GasCard />
-    </motion.div>
+    </motion.div> */}
   </section>
 );
 
-// All other sections stay exactly the same (Features, Process, Stats)
-// ... (keeping existing code for Features, Process, Stats, CTA)
-
-// Features Section Component (unchanged)
+// Features Section
 const Features: React.FC = () => {
   const features = [
     {
-      icon: "🛡️",
-      title: "Anonymous Purchase",
+      icon: "💳",
+      title: "Prepaid, Upfront Credit",
       description:
-        "Buy gas credit like a prepaid card - no one can trace your spending back to the purchase",
+        "Pay once to join a pool — your deposit becomes prepaid gas, like topping up a transit pass. This gas is used to sponsor your future transactions.",
       iconVariant: "blue" as const,
     },
     {
-      icon: "👥",
-      title: "Shared Credit Pools",
+      icon: "⚡",
+      title: "Reusable or One-Time Credits",
       description:
-        "Like buying cards from a busy store - more buyers means better anonymity for everyone",
+        "Choose ‘GasLimited’ credits for multiple uses within a gas limit, or ‘OneTimeUse’ vouchers for single, unlinkable transactions. Flexibility with privacy trade-offs.",
       iconVariant: "purple" as const,
     },
     {
-      icon: "⚡",
-      title: "Instant Gas Payments",
+      icon: "🔒",
+      title: "Private, Unlinkable Spending",
       description:
-        "Spend your credit seamlessly - just like using mobile data, but for blockchain transactions",
+        "Spend via zero-knowledge proofs. The paymaster verifies you're a pool member without revealing who you are. No link between credit and identity.",
       iconVariant: "pink" as const,
     },
   ];
@@ -308,8 +370,8 @@ const Features: React.FC = () => {
           How Prepaid Gas Credits Work
         </h2>
         <p className="text-base sm:text-lg lg:text-xl text-slate-400 max-w-xl lg:max-w-2xl mx-auto px-4">
-          Just like mobile prepaid cards, but for blockchain gas - buy
-          anonymously, spend unlinkably
+          Think prepaid SIMs — buy upfront, spend anonymously. But for gas on
+          Ethereum.
         </p>
       </motion.div>
 
@@ -323,28 +385,29 @@ const Features: React.FC = () => {
 };
 
 // Process Section Component (unchanged)
+// Process Section
 const Process: React.FC = () => {
   const steps = [
     {
       stepNumber: 1,
-      icon: "💳",
-      title: "Buy Gas Credit",
+      icon: "💸",
+      title: "Join a Gas Pool",
       description:
-        "Purchase gas credit anonymously, like buying a prepaid mobile card with cash",
+        "Pay a gas deposit (gas limit) to join a pool. This becomes your prepaid credit for future transactions.",
     },
     {
       stepNumber: 2,
-      icon: "🔑",
-      title: "Get Your Account",
+      icon: "🕵️‍♂️",
+      title: "Prove Membership Anonymously",
       description:
-        "Receive a unique account ID (like a phone number) to spend your credit",
+        "You receive a Semaphore-based identity to prove you're part of the pool — without revealing who you are.",
     },
     {
       stepNumber: 3,
-      icon: "✅",
-      title: "Spend Unlinkably",
+      icon: "🚀",
+      title: "Send Private Transactions",
       description:
-        "Pay for transactions - observers can't trace spending back to your purchase",
+        "Use ERC-4337 to submit transactions. The paymaster verifies your proof and pays gas — no link to your wallet.",
     },
   ];
 
@@ -358,7 +421,7 @@ const Process: React.FC = () => {
         transition={{ duration: 0.6 }}
       >
         <h2 className="heading-prepaid-section text-prepaid-gradient-white px-4">
-          Simple 3-Step Process
+          Step-by-Step Flow
         </h2>
       </motion.div>
 
@@ -372,12 +435,13 @@ const Process: React.FC = () => {
 };
 
 // Stats Section Component (unchanged)
+// Stats Section
 const Stats: React.FC = () => {
   const stats = [
-    { number: "847", label: "Active Gas Cards" },
-    { number: "23.8", label: "ETH in Credit Pools" },
-    { number: "3,421", label: "Unlinkable Transactions" },
-    { number: "12", label: "Credit Pool Stores" },
+    { number: "847", label: "Gas Credit Users" },
+    { number: "23.8", label: "ETH Deposited Across Pools" },
+    { number: "3,421", label: "Anonymous Transactions" },
+    { number: "12", label: "Available Pools" },
   ];
 
   return (
@@ -392,6 +456,7 @@ const Stats: React.FC = () => {
 };
 
 // CTA Section Component - UPDATED with Next.js Link
+// CTA Section
 const CTA: React.FC = () => (
   <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 text-center bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-t border-purple-500/20">
     <motion.div
@@ -402,19 +467,17 @@ const CTA: React.FC = () => (
       transition={{ duration: 0.6 }}
     >
       <h2 className="heading-prepaid-section mb-4 sm:mb-6 text-prepaid-gradient-white">
-        Ready for Prepaid Gas Credits?
+        Ready to Join a Gas Pool?
       </h2>
       <p className="text-base sm:text-lg lg:text-xl text-slate-300 mb-8 sm:mb-10 px-4 leading-relaxed">
-        Get your anonymous gas credit. Buy once, spend many times - just like
-        prepaid mobile, but for blockchain transactions.
+        Pay upfront once, then spend anonymously. Secure, reusable gas credits
+        with zero-knowledge membership proofs.
       </p>
       <Link href="/pools">
-        <Button className="btn-prepaid-primary btn-lg">
-          Launch Protocol →
-        </Button>
+        <Button className="btn-prepaid-primary btn-lg">Launch App →</Button>
       </Link>
       <div className="text-xs sm:text-sm text-slate-400 font-mono mt-4 sm:mt-6 px-4">
-        Anonymous Credit • Unlinkable Spending • ERC-4337 Compatible
+        Built with ERC-4337 • Powered by Semaphore • Privacy by Default
       </div>
     </motion.div>
   </section>
@@ -426,6 +489,7 @@ const PrepaidGasLanding: React.FC = () => (
     <FloatingBackground />
     <Header />
     <Hero />
+    <GasCardsShowcase />
     <Features />
     <Process />
     <Stats />

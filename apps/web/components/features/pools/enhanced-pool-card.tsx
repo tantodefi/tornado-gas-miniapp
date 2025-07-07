@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import PrepaidPoolCard from "./pool-card";
+import PrepaidPoolCard from "./multi-use-pool-card";
 import { Pool } from "@/types";
 
 /**
