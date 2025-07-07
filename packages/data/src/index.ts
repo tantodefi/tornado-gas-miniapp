@@ -21,10 +21,6 @@ export type {
   PoolMember,
   MerkleRoot,
   UserOperation,
-  RevenueWithdrawal,
-  NullifierUsage,
-  DailyPoolStats,
-  DailyGlobalStats,
   NetworkMetadata,
   SubgraphResponse,
   PaymasterType,
@@ -32,6 +28,8 @@ export type {
 
 // Event types
 export type {
+  ChainId,
+  NetworkName,
   PoolCreatedEvent,
   MemberAddedEvent,
   MembersAddedEvent,
@@ -48,7 +46,6 @@ export type {
 
 // Client configuration and interfaces
 export type {
-  SubgraphClientConfig,
   PaginationOptions,
   PoolQueryOptions,
   PaymasterQueryOptions,
@@ -71,10 +68,6 @@ export type {
   SerializedPoolMember,
   SerializedMerkleRoot,
   SerializedUserOperation,
-  SerializedRevenueWithdrawal,
-  SerializedNullifierUsage,
-  SerializedDailyPoolStats,
-  SerializedDailyGlobalStats,
 } from "./types/subgraph.js";
 
 // Serialization functions
@@ -89,14 +82,6 @@ export {
   deserializeMerkleRoot,
   serializeUserOperation,
   deserializeUserOperation,
-  serializeRevenueWithdrawal,
-  deserializeRevenueWithdrawal,
-  serializeNullifierUsage,
-  deserializeNullifierUsage,
-  serializeDailyPoolStats,
-  deserializeDailyPoolStats,
-  serializeDailyGlobalStats,
-  deserializeDailyGlobalStats,
 } from "./transformers/index.js";
 
 /**
@@ -159,17 +144,6 @@ export { PoolMemberQueryBuilder } from "./query/builders/member-query-builder.js
 
 export { UserOperationQueryBuilder } from "./query/builders/user-operation-query-builder.js";
 
-export { RevenueWithdrawalQueryBuilder } from "./query/builders/revenue-query-builder.js";
-
-export { NullifierUsageQueryBuilder } from "./query/builders/nullifier-usage-query-builder.js";
-
-// export {
-//   DailyPoolStatsQueryBuilder,
-//   DailyPoolStatsQueryWithPoolBuilder,
-//   DailyGlobalStatsQueryBuilder,
-// } from "./query/builders/analytics-query-builder.js";
-
-// Base query builder (for advanced usage or extending)
 export { BaseQueryBuilder } from "./query/builders/base-query-builder.js";
 
 /**
@@ -188,10 +162,6 @@ export type {
   PoolMemberFields,
   MerkleRootFields,
   UserOperationFields,
-  RevenueWithdrawalFields,
-  NullifierUsageFields,
-  DailyPoolStatsFields,
-  DailyGlobalStatsFields,
 } from "./query/types.js";
 
 // Where condition types

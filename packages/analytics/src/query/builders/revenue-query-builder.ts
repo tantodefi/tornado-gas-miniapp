@@ -1,10 +1,8 @@
 // revenue-withdrawal-query-builder.ts
 
-import type { SubgraphClient } from "../../client/subgraph-client.js";
+import type { AnalyticsClient } from "../../client/analytics-client.js";
 import type {
   RevenueWithdrawal,
-  NetworkName,
-  PaymasterType,
   SerializedRevenueWithdrawal,
 } from "../../types/subgraph.js";
 import { serializeRevenueWithdrawal } from "../../transformers/index.js";
@@ -12,7 +10,7 @@ import {
   RevenueWithdrawalFields,
   RevenueWithdrawalWhereInput,
 } from "../types.js";
-import { BaseQueryBuilder } from "./base-query-builder.js";
+import { BaseQueryBuilder, PaymasterType, NetworkName } from "@workspace/data";
 
 export type RevenueWithdrawalOrderBy =
   | "withdrawnAtTimestamp"
@@ -33,7 +31,7 @@ export class RevenueWithdrawalQueryBuilder extends BaseQueryBuilder<
   RevenueWithdrawalWhereInput,
   RevenueWithdrawalOrderBy
 > {
-  constructor(private subgraphClient: SubgraphClient) {
+  constructor(private subgraphClient: AnalyticsClient) {
     super(subgraphClient, "revenueWithdrawals", "withdrawnAtTimestamp", "desc");
   }
 
@@ -892,7 +890,7 @@ export class RevenueWithdrawalQueryBuilder extends BaseQueryBuilder<
 /**
  * Get revenue withdrawals by a specific paymaster.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param paymasterAddress - The address of the paymaster contract.
  * @param network - The network identifier.
  * @returns A promise resolving to an array of RevenueWithdrawal entities.
@@ -907,7 +905,7 @@ export class RevenueWithdrawalQueryBuilder extends BaseQueryBuilder<
  * ```
  */
 export async function getRevenueWithdrawalsByPaymaster(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   paymasterAddress: string,
   network: NetworkName,
 ): Promise<RevenueWithdrawal[]> {
@@ -921,7 +919,7 @@ export async function getRevenueWithdrawalsByPaymaster(
 /**
  * Get revenue withdrawals sent to a specific recipient.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param recipientAddress - The address of the recipient.
  * @param network - The network identifier.
  * @returns A promise resolving to an array of RevenueWithdrawal entities.
@@ -936,7 +934,7 @@ export async function getRevenueWithdrawalsByPaymaster(
  * ```
  */
 export async function getRevenueWithdrawalsByRecipient(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   recipientAddress: string,
   network: NetworkName,
 ): Promise<RevenueWithdrawal[]> {
@@ -950,7 +948,7 @@ export async function getRevenueWithdrawalsByRecipient(
 /**
  * Get the most recent revenue withdrawals.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param network - The network identifier.
  * @param limit - The maximum number of results to return (default is 10).
  * @returns A promise resolving to an array of recent RevenueWithdrawal entities.
@@ -961,7 +959,7 @@ export async function getRevenueWithdrawalsByRecipient(
  * ```
  */
 export async function getRecentRevenueWithdrawals(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   network: NetworkName,
   limit: number = 10,
 ): Promise<RevenueWithdrawal[]> {
@@ -975,7 +973,7 @@ export async function getRecentRevenueWithdrawals(
 /**
  * Get revenue withdrawals above a certain amount.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param network - The network identifier.
  * @param minAmount - The minimum amount threshold in wei (as string).
  * @param limit - The maximum number of results to return (default is 10).
@@ -992,7 +990,7 @@ export async function getRecentRevenueWithdrawals(
  * ```
  */
 export async function getLargeRevenueWithdrawals(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   network: NetworkName,
   minAmount: string,
   limit: number = 10,
@@ -1008,7 +1006,7 @@ export async function getLargeRevenueWithdrawals(
 /**
  * Get withdrawal statistics for a specific paymaster.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param paymasterAddress - The address of the paymaster contract.
  * @param network - The network identifier.
  * @returns A promise resolving to an object containing withdrawal statistics for the given paymaster.
@@ -1024,7 +1022,7 @@ export async function getLargeRevenueWithdrawals(
  * ```
  */
 export async function getPaymasterWithdrawalStats(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   paymasterAddress: string,
   network: NetworkName,
 ): Promise<{

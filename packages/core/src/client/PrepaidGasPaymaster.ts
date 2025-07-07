@@ -7,7 +7,7 @@ import {
 import { createPublicClient, fromHex, http } from "viem";
 import { getPackedUserOperation } from "permissionless";
 
-import { SubgraphClient } from "@workspace/data";
+import { ChainId, SubgraphClient } from "@workspace/data";
 
 import {
   generatePaymasterData,
@@ -17,13 +17,12 @@ import {
 } from "../utils";
 import { POST_OP_GAS_LIMIT, GAS_LIMITED_PAYMASTER_ABI } from "../constants";
 import {
-  PrepaidGasPaymasterConfig,
   GetPaymasterStubDataV7Parameters,
   ProofGenerationParams,
   ProofGenerationResult,
+  PaymasterOptions,
 } from "./";
 import { getValidatedNetworkPreset, type NetworkPreset } from "@workspace/data";
-import { NetworkConfig } from "@workspace/data";
 import { generateProof, SemaphoreProof } from "@semaphore-protocol/proof";
 import { Identity } from "@semaphore-protocol/identity";
 import { Group } from "@semaphore-protocol/group";
@@ -63,44 +62,47 @@ import { Group } from "@semaphore-protocol/group";
  */
 export class PrepaidGasPaymaster {
   private subgraphClient: SubgraphClient;
-  private config: PrepaidGasPaymasterConfig;
-  private networkConfig: NetworkConfig;
+  private chainId: ChainId;
+  private options: PaymasterOptions;
 
   // Service instances
 
-  constructor(config: PrepaidGasPaymasterConfig) {
-    this.config = config;
-    this.networkConfig = config.network;
+  constructor(
+    chainId: ChainId,
+    options: {
+      /** Custom subgraph URL (optional, uses default if not provided) */
+      subgraphUrl?: string;
+      /** Enable debug logging */
+      debug?: boolean;
+      /** Custom RPC URL */
+      rpcUrl?: string;
+      /** Request timeout in milliseconds */
+      timeout?: number;
+    } = {},
+  ) {
+    const preset: NetworkPreset = getValidatedNetworkPreset(chainId);
+    this.chainId = chainId;
+    this.options = options;
+    // Use provided subgraph URL or fall back to preset default
+    const finalSubgraphUrl = options.subgraphUrl || preset.defaultSubgraphUrl;
 
-    // Validate required configuration
-    this.validateConfig(config);
+    if (!finalSubgraphUrl) {
+      throw new Error(
+        `No subgraph URL available for network ${preset.network.name} (chainId: ${chainId}). Please provide one in options.subgraphUrl`,
+      );
+    }
 
     // Initialize subgraph client with explicit configuration
-    this.subgraphClient = new SubgraphClient({
-      subgraphUrl: config.subgraphUrl,
-      network: {
-        name: this.networkConfig.name,
-        chainId: this.networkConfig.chainId,
-        chainName: this.networkConfig.chainName,
-        networkName: this.networkConfig.networkName,
-        contracts: {
-          paymasters: {
-            gasLimited:
-              this.networkConfig.contracts.paymasters?.gasLimited?.address,
-            oneTimeUse:
-              this.networkConfig.contracts.paymasters?.oneTimeUse?.address,
-          },
-          verifier: this.networkConfig.contracts.verifier,
-        },
-      },
+    this.subgraphClient = new SubgraphClient(chainId, {
+      subgraphUrl: options.subgraphUrl,
+      timeout: options.timeout,
     });
 
     // Initialize services
-    if (config.debug) {
+    if (options.debug) {
       console.log("✅ PrepaidGasPaymaster initialized:", {
-        subgraphUrl: config.subgraphUrl,
-        network: this.networkConfig.name,
-        chainId: this.networkConfig.chainId,
+        subgraphUrl: options.subgraphUrl,
+        chainId: chainId,
       });
     }
   }
@@ -125,7 +127,7 @@ export class PrepaidGasPaymaster {
    * ```
    */
   static createForNetwork(
-    chainId: number,
+    chainId: ChainId,
     options: {
       /** Custom subgraph URL (optional, uses default if not provided) */
       subgraphUrl?: string;
@@ -137,26 +139,7 @@ export class PrepaidGasPaymaster {
       timeout?: number;
     } = {},
   ): PrepaidGasPaymaster {
-    let preset: NetworkPreset;
-
-    preset = getValidatedNetworkPreset(chainId);
-
-    const { subgraphUrl, ...restOptions } = options;
-
-    // Use provided subgraph URL or fall back to preset default
-    const finalSubgraphUrl = subgraphUrl || preset.defaultSubgraphUrl;
-
-    if (!finalSubgraphUrl) {
-      throw new Error(
-        `No subgraph URL available for network ${preset.network.name} (chainId: ${chainId}). Please provide one in options.subgraphUrl`,
-      );
-    }
-
-    return new PrepaidGasPaymaster({
-      subgraphUrl: finalSubgraphUrl,
-      network: preset.network,
-      ...restOptions,
-    });
+    return new PrepaidGasPaymaster(chainId, options);
   }
 
   /**
@@ -239,14 +222,14 @@ export class PrepaidGasPaymaster {
     };
 
     // Get chain and create public client
-    const chain = getChainById(this.networkConfig.chainId);
+    const chain = getChainById(this.chainId);
     if (!chain) {
-      throw new Error(`Unsupported chainId: ${this.networkConfig.chainId}`);
+      throw new Error(`Unsupported chainId: ${this.chainId}`);
     }
 
     const publicClient = createPublicClient({
       chain,
-      transport: http(this.config.rpcUrl),
+      transport: http(this.options.rpcUrl),
     });
 
     // Parse context to get paymaster details
@@ -322,18 +305,6 @@ export class PrepaidGasPaymaster {
     return this.subgraphClient;
   }
 
-  /**
-   * Get the current network configuration
-   *
-   * @returns Current network configuration
-   */
-  getNetworkInfo() {
-    return {
-      subgraphUrl: this.config.subgraphUrl,
-      network: this.networkConfig,
-      rpcUrl: this.config.rpcUrl,
-    };
-  }
   // ========================================
   // PRIVATE METHODS
   // ========================================
@@ -481,57 +452,6 @@ export class PrepaidGasPaymaster {
       group,
       identity,
     };
-  }
-
-  // ========================================
-  // VALIDATION METHODS
-  // ========================================
-
-  /**
-   * Validate the provided configuration
-   */
-  private validateConfig(config: PrepaidGasPaymasterConfig): void {
-    if (!config.subgraphUrl || !config.subgraphUrl.trim()) {
-      throw new Error("subgraphUrl is required and must be a valid URL");
-    }
-
-    if (!config.network) {
-      throw new Error("network configuration is required");
-    }
-
-    const { network } = config;
-
-    if (!network.name || !network.name.trim()) {
-      throw new Error("network.name is required");
-    }
-
-    if (!network.chainId || network.chainId <= 0) {
-      throw new Error(
-        "network.chainId is required and must be a positive number",
-      );
-    }
-
-    if (!network.chainName || !network.chainName.trim()) {
-      throw new Error("network.chainName is required");
-    }
-
-    if (!network.networkName || !network.networkName.trim()) {
-      throw new Error("network.networkName is required");
-    }
-
-    if (
-      !network.contracts?.paymasters?.gasLimited ||
-      !network.contracts.paymasters.oneTimeUse
-    ) {
-      throw new Error("network.contracts.paymaster addresses is required");
-    }
-
-    // Validate that the subgraph URL looks like a valid URL
-    try {
-      new URL(config.subgraphUrl);
-    } catch {
-      throw new Error("subgraphUrl must be a valid URL");
-    }
   }
 
   /**

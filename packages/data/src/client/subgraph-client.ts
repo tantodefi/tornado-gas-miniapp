@@ -1,5 +1,5 @@
 import { GraphQLClient } from "graphql-request";
-import type { ChainId, NetworkMetadata } from "../types/subgraph.js";
+import type { ChainId } from "../types/subgraph.js";
 import {
   getValidatedNetworkPreset,
   NETWORK_PRESETS,
@@ -11,27 +11,10 @@ import { QueryBuilder } from "../query/query-builder.js";
  * Configuration for the subgraph client
  * Updated to support multiple paymaster contracts
  */
-export interface SubgraphClientConfig {
-  /** Subgraph endpoint URL */
-  subgraphUrl: string;
-  /** Network information */
-  network: {
-    name: string;
-    chainId: number;
-    chainName: string;
-    networkName: string;
-    contracts: {
-      /** Map of paymaster contracts by type */
-      paymasters: {
-        gasLimited?: string;
-        oneTimeUse?: string;
-      };
-      verifier?: string;
-    };
-  };
-  /** Request timeout in milliseconds (default: 30000) */
+export type ClientOptions = {
+  subgraphUrl?: string;
   timeout?: number;
-}
+};
 
 /**
  * Pagination options for queries
@@ -96,20 +79,16 @@ export interface AnalyticsQueryOptions extends PaginationOptions {
  */
 export class SubgraphClient {
   private client: GraphQLClient;
-  private networkMetadata: NetworkMetadata;
+  private chainId: ChainId;
   private requestMap: Map<string, Promise<any>> = new Map();
   private readonly maxPendingRequests = 100;
 
-  constructor(config: SubgraphClientConfig) {
-    this.client = new GraphQLClient(config.subgraphUrl);
-
-    this.networkMetadata = {
-      network: config.network.name,
-      chainId: config.network.chainId,
-      chainName: config.network.chainName,
-      networkName: config.network.networkName,
-      contracts: config.network.contracts,
-    };
+  constructor(chainId: ChainId, options: ClientOptions = {}) {
+    const preset = getValidatedNetworkPreset(chainId);
+    this.client = new GraphQLClient(
+      options.subgraphUrl || preset.defaultSubgraphUrl,
+    );
+    this.chainId = chainId;
   }
 
   /**
@@ -181,7 +160,7 @@ export class SubgraphClient {
    * ```
    */
   static createForNetwork(
-    chainId: number,
+    chainId: ChainId,
     options: {
       /** Custom subgraph URL (optional, uses preset default if not provided) */
       subgraphUrl?: string;
@@ -189,25 +168,7 @@ export class SubgraphClient {
       timeout?: number;
     } = {},
   ): SubgraphClient {
-    const preset = getValidatedNetworkPreset(chainId);
-
-    return new SubgraphClient({
-      subgraphUrl: options.subgraphUrl || preset.defaultSubgraphUrl,
-      network: {
-        name: preset.network.name,
-        chainId: preset.network.chainId,
-        chainName: preset.network.chainName,
-        networkName: preset.network.networkName,
-        contracts: {
-          paymasters: {
-            gasLimited: preset.network.contracts.paymasters.gasLimited?.address,
-            oneTimeUse: preset.network.contracts.paymasters.oneTimeUse?.address,
-          },
-          verifier: preset.network.contracts.verifier,
-        },
-      },
-      timeout: options.timeout,
-    });
+    return new SubgraphClient(chainId, options);
   }
 
   /**
@@ -223,6 +184,21 @@ export class SubgraphClient {
    */
   static getSupportedNetworks(): NetworkPreset[] {
     return Object.values(NETWORK_PRESETS);
+  }
+  /**
+   * Get supported network preset
+   *
+   * @returns Supported network preset
+   *
+   * @example
+   * ```typescript
+   * const networkPreset = SubgraphClient.getNetworkPreset(84532);
+   * console.log(networkPreset.chainName); // "Base Sepolia"
+   * ```
+   */
+  static getNetworkPreset(chainId: ChainId): NetworkPreset {
+    const preset = getValidatedNetworkPreset(chainId);
+    return preset;
   }
 
   /**
@@ -240,47 +216,6 @@ export class SubgraphClient {
    */
   static isNetworkSupported(chainId: number): boolean {
     return chainId in NETWORK_PRESETS;
-  }
-
-  /**
-   * Get available paymaster contracts for a network
-   *
-   * @param chainId - The chain ID to get paymasters for
-   * @returns Array of paymaster contract information
-   *
-   * @example
-   * ```typescript
-   * const paymasters = SubgraphClient.getPaymasterContracts(84532);
-   * console.log(paymasters); // [{ address: "0x...", type: "GasLimited" }, ...]
-   * ```
-   */
-  static getPaymasterContracts(chainId: ChainId): Array<{
-    address: string;
-    type: "GasLimited" | "OneTimeUse";
-    startBlock: number;
-  }> {
-    const preset = NETWORK_PRESETS[chainId];
-    if (!preset) return [];
-
-    const contracts = [];
-
-    if (preset.network.contracts.paymasters.gasLimited) {
-      contracts.push({
-        address: preset.network.contracts.paymasters.gasLimited.address,
-        type: "GasLimited" as const,
-        startBlock: preset.network.contracts.paymasters.gasLimited.startBlock,
-      });
-    }
-
-    if (preset.network.contracts.paymasters.oneTimeUse) {
-      contracts.push({
-        address: preset.network.contracts.paymasters.oneTimeUse.address,
-        type: "OneTimeUse" as const,
-        startBlock: preset.network.contracts.paymasters.oneTimeUse.startBlock,
-      });
-    }
-
-    return contracts;
   }
 
   /**
@@ -326,101 +261,6 @@ export class SubgraphClient {
    */
   query(): QueryBuilder {
     return new QueryBuilder(this);
-  }
-
-  /**
-   * Get current network metadata
-   *
-   * @returns Network metadata including contract addresses
-   *
-   * @example
-   * ```typescript
-   * const metadata = client.getNetworkMetadata();
-   * console.log(metadata.contracts.paymasters.gasLimited); // "0x..."
-   * ```
-   */
-  getNetworkMetadata(): NetworkMetadata {
-    return this.networkMetadata;
-  }
-
-  /**
-   * Get paymaster contract addresses for current network
-   *
-   * @returns Object containing paymaster contract addresses
-   *
-   * @example
-   * ```typescript
-   * const paymasters = client.getPaymasterAddresses();
-   * console.log(paymasters.gasLimited); // "0x..."
-   * console.log(paymasters.oneTimeUse); // "0x..."
-   * ```
-   */
-  getPaymasterAddresses(): {
-    gasLimited?: string;
-    oneTimeUse?: string;
-  } {
-    return this.networkMetadata.contracts.paymasters;
-  }
-
-  /**
-   * Get specific paymaster address by type
-   *
-   * @param type - Paymaster type ("GasLimited" or "OneTimeUse")
-   * @returns Paymaster address or undefined if not available
-   *
-   * @example
-   * ```typescript
-   * const gasLimitedAddress = client.getPaymasterAddress("GasLimited");
-   * if (gasLimitedAddress) {
-   *   // Use the address
-   * }
-   * ```
-   */
-  getPaymasterAddress(type: "GasLimited" | "OneTimeUse"): string | undefined {
-    const paymasters = this.getPaymasterAddresses();
-    return type === "GasLimited"
-      ? paymasters.gasLimited
-      : paymasters.oneTimeUse;
-  }
-
-  /**
-   * Check if network supports a specific paymaster type
-   *
-   * @param type - Paymaster type to check
-   * @returns True if supported, false otherwise
-   *
-   * @example
-   * ```typescript
-   * if (client.supportsPaymasterType("GasLimited")) {
-   *   const gasLimitedPools = await client.query().pools()
-   *     .byPaymaster(client.getPaymasterAddress("GasLimited")!)
-   *     .execute();
-   * }
-   * ```
-   */
-  supportsPaymasterType(type: "GasLimited" | "OneTimeUse"): boolean {
-    return this.getPaymasterAddress(type) !== undefined;
-  }
-
-  /**
-   * Get all supported paymaster types for current network
-   *
-   * @returns Array of supported paymaster types
-   *
-   * @example
-   * ```typescript
-   * const supportedTypes = client.getSupportedPaymasterTypes();
-   * console.log(supportedTypes); // ["GasLimited", "OneTimeUse"]
-   * ```
-   */
-  getSupportedPaymasterTypes(): Array<"GasLimited" | "OneTimeUse"> {
-    const types: Array<"GasLimited" | "OneTimeUse"> = [];
-    const paymasters = this.getPaymasterAddresses();
-
-    if (paymasters.gasLimited) types.push("GasLimited");
-    if (paymasters.oneTimeUse) types.push("OneTimeUse");
-
-    return types;
   }
 
   /**
@@ -476,7 +316,7 @@ export class SubgraphClient {
           error,
           query: query.substring(0, 200) + "...", // Log first 200 chars
           variables,
-          network: this.networkMetadata.chainName,
+          chainId: this.chainId,
         });
 
         throw error;
@@ -632,7 +472,7 @@ export class SubgraphClient {
    * ```
    */
   switchNetwork(
-    chainId: number,
+    chainId: ChainId,
     options: {
       subgraphUrl?: string;
       timeout?: number;

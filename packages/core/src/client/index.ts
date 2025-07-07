@@ -1,25 +1,23 @@
 // src/client/types.ts
 import { Address, PartialBy } from "viem";
 import { UserOperation } from "viem/account-abstraction";
-import { NetworkConfig } from "@workspace/data";
+import { ChainId, NetworkConfig } from "@workspace/data";
 import { SemaphoreProof } from "@semaphore-protocol/proof";
 import { Group } from "@semaphore-protocol/group";
 import { Identity } from "@semaphore-protocol/identity";
 
 /**
- * Configuration options for the PrepaidGasPaymaster client
+ * Options for configuring PrepaidGasPaymaster
  */
-export interface PrepaidGasPaymasterConfig {
-  /** URL of the subgraph endpoint (required) */
-  subgraphUrl: string;
-  /** Network configuration */
-  network: NetworkConfig;
-  /** RPC URL for blockchain interactions (optional, will use default) */
+export interface PaymasterOptions {
+  /** Custom subgraph URL (optional, uses preset default if not provided) */
+  subgraphUrl?: string;
+  /** Custom RPC URL for blockchain interactions */
   rpcUrl?: string;
-  /** Default timeout for requests in milliseconds */
-  timeout?: number;
   /** Enable debug logging */
   debug?: boolean;
+  /** Request timeout in milliseconds */
+  timeout?: number;
 }
 
 /**

@@ -7,17 +7,14 @@
  */
 
 import type {
-  PaymasterContract,
-  Pool,
-  PoolMember,
-  MerkleRoot,
-  UserOperation,
-  NetworkInfo,
-  SerializedPaymasterContract,
-  SerializedPool,
-  SerializedPoolMember,
-  SerializedMerkleRoot,
-  SerializedUserOperation,
+  RevenueWithdrawal,
+  NullifierUsage,
+  DailyPoolStats,
+  DailyGlobalStats,
+  SerializedRevenueWithdrawal,
+  SerializedNullifierUsage,
+  SerializedDailyPoolStats,
+  SerializedDailyGlobalStats,
   SerializedNetworkInfo,
 } from "../types/subgraph.js";
 
@@ -231,33 +228,27 @@ const BIGINT_FIELDS = {
  * ========================================
  */
 
-export function serializePaymasterContract(
-  entity: PaymasterContract,
-): SerializedPaymasterContract {
+export function serializeRevenueWithdrawal(
+  entity: RevenueWithdrawal,
+): SerializedRevenueWithdrawal {
   return convertBigIntsToStrings(entity);
 }
 
-export function serializePool(entity: Pool): SerializedPool {
+export function serializeNullifierUsage(
+  entity: NullifierUsage,
+): SerializedNullifierUsage {
   return convertBigIntsToStrings(entity);
 }
 
-export function serializePoolMember(entity: PoolMember): SerializedPoolMember {
+export function serializeDailyPoolStats(
+  entity: DailyPoolStats,
+): SerializedDailyPoolStats {
   return convertBigIntsToStrings(entity);
 }
 
-export function serializeMerkleRoot(entity: MerkleRoot): SerializedMerkleRoot {
-  return convertBigIntsToStrings(entity);
-}
-
-export function serializeUserOperation(
-  entity: UserOperation,
-): SerializedUserOperation {
-  return convertBigIntsToStrings(entity);
-}
-
-export function serializeNetworkInfo(
-  entity: NetworkInfo,
-): SerializedNetworkInfo {
+export function serializeDailyGlobalStats(
+  entity: DailyGlobalStats,
+): SerializedDailyGlobalStats {
   return convertBigIntsToStrings(entity);
 }
 
@@ -267,38 +258,28 @@ export function serializeNetworkInfo(
  * ========================================
  */
 
-export function deserializePaymasterContract(
-  entity: SerializedPaymasterContract,
-): PaymasterContract {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.paymasterContract);
+export function deserializeRevenueWithdrawal(
+  entity: SerializedRevenueWithdrawal,
+): RevenueWithdrawal {
+  return convertStringsToBigInts(entity, BIGINT_FIELDS.revenueWithdrawal);
 }
 
-export function deserializePool(entity: SerializedPool): Pool {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.pool);
+export function deserializeNullifierUsage(
+  entity: SerializedNullifierUsage,
+): NullifierUsage {
+  return convertStringsToBigInts(entity, BIGINT_FIELDS.nullifierUsage);
 }
 
-export function deserializePoolMember(
-  entity: SerializedPoolMember,
-): PoolMember {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.poolMember);
+export function deserializeDailyPoolStats(
+  entity: SerializedDailyPoolStats,
+): DailyPoolStats {
+  return convertStringsToBigInts(entity, BIGINT_FIELDS.dailyPoolStats);
 }
 
-export function deserializeMerkleRoot(
-  entity: SerializedMerkleRoot,
-): MerkleRoot {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.merkleRoot);
-}
-
-export function deserializeUserOperation(
-  entity: SerializedUserOperation,
-): UserOperation {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.userOperation);
-}
-
-export function deserializeNetworkInfo(
-  entity: SerializedNetworkInfo,
-): NetworkInfo {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.networkInfo);
+export function deserializeDailyGlobalStats(
+  entity: SerializedDailyGlobalStats,
+): DailyGlobalStats {
+  return convertStringsToBigInts(entity, BIGINT_FIELDS.dailyGlobalStats);
 }
 
 /**
@@ -311,22 +292,18 @@ export function deserializeNetworkInfo(
  * All serialization functions
  */
 export const serializers = {
-  paymasterContract: serializePaymasterContract,
-  pool: serializePool,
-  poolMember: serializePoolMember,
-  merkleRoot: serializeMerkleRoot,
-  userOperation: serializeUserOperation,
-  networkInfo: serializeNetworkInfo,
+  revenueWithdrawal: serializeRevenueWithdrawal,
+  nullifierUsage: serializeNullifierUsage,
+  dailyPoolStats: serializeDailyPoolStats,
+  dailyGlobalStats: serializeDailyGlobalStats,
 };
 
 /**
  * All deserialization functions
  */
 export const deserializers = {
-  paymasterContract: deserializePaymasterContract,
-  pool: deserializePool,
-  poolMember: deserializePoolMember,
-  merkleRoot: deserializeMerkleRoot,
-  userOperation: deserializeUserOperation,
-  networkInfo: deserializeNetworkInfo,
+  revenueWithdrawal: deserializeRevenueWithdrawal,
+  nullifierUsage: deserializeNullifierUsage,
+  dailyPoolStats: deserializeDailyPoolStats,
+  dailyGlobalStats: deserializeDailyGlobalStats,
 };

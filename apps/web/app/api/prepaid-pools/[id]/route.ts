@@ -1,6 +1,4 @@
 import { NextRequest } from "next/server";
-import { ClientFactory } from "@/lib/services/client-factory";
-import { CACHE_CONFIG } from "@/constants/network";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -8,8 +6,9 @@ import {
   handleApiError,
   setCacheHeaders,
 } from "@/lib/api/response";
+import { SubgraphClient } from "@workspace/data";
 
-const CACHE_TTL = CACHE_CONFIG.POOL_DETAILS_TTL;
+const CACHE_TTL = parseInt(process.env.POOLS_CACHE_TTL || "300", 10);
 
 export async function GET(
   request: NextRequest,
@@ -46,7 +45,9 @@ export async function GET(
     }
 
     // Create client using factory
-    const subgraphClient = ClientFactory.getSubgraphClient();
+    const subgraphClient = SubgraphClient.createForNetwork(84532, {
+      subgraphUrl: process.env.SUBGRAPH_URL,
+    });
 
     // Build query using the query builder pattern
     const poolQuery = subgraphClient.query().pools().byPoolId(id);
@@ -80,7 +81,7 @@ export async function GET(
       // No network transformation needed - data package already includes network info
       // Construct response metadata using ClientFactory
       const enhancedMeta = {
-        ...ClientFactory.getNetworkMetadata(),
+        ...SubgraphClient.getNetworkPreset(84532),
         requestId,
         processingTime: Date.now() - startTime,
         poolId: id,
@@ -136,7 +137,7 @@ export async function GET(
       // No network transformation needed - data package already includes network info
       // Construct response metadata using ClientFactory
       const enhancedMeta = {
-        ...ClientFactory.getNetworkMetadata(),
+        ...SubgraphClient.getNetworkPreset(84532),
         requestId,
         processingTime: Date.now() - startTime,
         poolId: id,

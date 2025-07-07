@@ -1,14 +1,13 @@
 // daily-pool-stats-query-builder.ts (Refactored)
 
-import type { SubgraphClient } from "../../client/subgraph-client.js";
+import type { AnalyticsClient } from "../../client/analytics-client.js";
 import type {
   DailyPoolStats,
-  NetworkName,
   SerializedDailyPoolStats,
 } from "../../types/subgraph.js";
 import { serializeDailyPoolStats } from "../../transformers/index.js";
 import { DailyPoolStatsFields, DailyPoolStatsWhereInput } from "../types.js";
-import { BaseQueryBuilder } from "./base-query-builder.js";
+import { BaseQueryBuilder, NetworkName } from "@workspace/data";
 
 // Define specific types for DailyPoolStatsQueryBuilder
 
@@ -36,7 +35,7 @@ export class DailyPoolStatsQueryBuilder extends BaseQueryBuilder<
   DailyPoolStatsWhereInput,
   DailyPoolStatsOrderBy
 > {
-  constructor(private subgraphClient: SubgraphClient) {
+  constructor(private subgraphClient: AnalyticsClient) {
     // Default order by date descending
     // Assuming the entity name in the subgraph schema is `dailyPoolStats`
     super(subgraphClient, "dailyPoolStats", "date", "desc");
@@ -1004,7 +1003,7 @@ export class DailyPoolStatsQueryBuilder extends BaseQueryBuilder<
 /**
  * Get daily pool stats for a specific date range.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param poolId - The ID of the pool.
  * @param network - The network identifier.
  * @param startDate - The start date (YYYY-MM-DD).
@@ -1018,7 +1017,7 @@ export class DailyPoolStatsQueryBuilder extends BaseQueryBuilder<
  * ```
  */
 export async function getDailyPoolStatsForDateRange(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   poolId: string,
   network: NetworkName,
   startDate: string,
@@ -1035,7 +1034,7 @@ export async function getDailyPoolStatsForDateRange(
 /**
  * Get recent daily pool statistics for a given pool.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param poolId - The ID of the pool.
  * @param network - The network identifier.
  * @param days - The number of most recent days to fetch (defaults to 30).
@@ -1048,7 +1047,7 @@ export async function getDailyPoolStatsForDateRange(
  * ```
  */
 export async function getRecentDailyPoolStats(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   poolId: string,
   network: NetworkName,
   days: number = 30,
@@ -1064,7 +1063,7 @@ export async function getRecentDailyPoolStats(
 /**
  * Get top-performing pools based on user activity.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param network - The network identifier.
  * @param limit - The maximum number of top pools to return (defaults to 10).
  * @returns A promise resolving to an array of DailyPoolStats for the top pools.
@@ -1076,7 +1075,7 @@ export async function getRecentDailyPoolStats(
  * ```
  */
 export async function getTopPerformingPools(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   network: NetworkName,
   limit: number = 10,
 ): Promise<DailyPoolStats[]> {
@@ -1090,7 +1089,7 @@ export async function getTopPerformingPools(
 /**
  * Perform a comprehensive performance analysis for a specific pool over a given period.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param poolId - The ID of the pool.
  * @param network - The network identifier.
  * @param days - The number of past days to include in the analysis (defaults to 30).
@@ -1103,7 +1102,7 @@ export async function getTopPerformingPools(
  * ```
  */
 export async function getPoolPerformanceAnalysis(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   poolId: string,
   network: NetworkName,
   days: number = 30,

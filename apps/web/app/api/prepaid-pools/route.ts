@@ -1,6 +1,4 @@
 import { NextRequest } from "next/server";
-import { ClientFactory } from "@/lib/services/client-factory";
-import { CACHE_CONFIG } from "@/constants/network";
 import {
   createSuccessResponse,
   createValidationErrorResponse,
@@ -8,9 +6,10 @@ import {
   handleApiError,
   setCacheHeaders,
 } from "@/lib/api/response";
+import { SubgraphClient } from "@workspace/data";
 
 // Environment validation
-const CACHE_TTL = CACHE_CONFIG.POOLS_TTL;
+const CACHE_TTL = parseInt(process.env.POOLS_CACHE_TTL || "300", 10);
 
 interface ValidationResult {
   isValid: boolean;
@@ -82,7 +81,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Create client using factory
-    const subgraphClient = ClientFactory.getSubgraphClient();
+    const subgraphClient = SubgraphClient.createForNetwork(84532, {
+      subgraphUrl: process.env.SUBGRAPH_URL,
+    });
 
     // Calculate skip for pagination
     const skip = paginated ? page * limit : 0;
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
 
     // Construct response metadata using ClientFactory
     const meta = {
-      ...ClientFactory.getNetworkMetadata(),
+      ...SubgraphClient.getNetworkPreset(84532),
       requestId,
       processingTime: Date.now() - startTime,
       cached: false,

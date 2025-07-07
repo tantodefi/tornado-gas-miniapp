@@ -1,15 +1,13 @@
 // nullifier-usage-query-builder.ts (Refactored)
 
-import type { SubgraphClient } from "../../client/subgraph-client.js";
+import type { AnalyticsClient } from "../../client/analytics-client.js";
 import type {
   NullifierUsage,
-  NetworkName,
-  PaymasterType,
   SerializedNullifierUsage,
 } from "../../types/subgraph.js";
 import { serializeNullifierUsage } from "../../transformers/index.js";
 import { NullifierUsageFields, NullifierUsageWhereInput } from "../types.js";
-import { BaseQueryBuilder } from "./base-query-builder.js";
+import { BaseQueryBuilder, NetworkName, PaymasterType } from "@workspace/data";
 
 // Define specific types for NullifierUsageQueryBuilder
 
@@ -37,7 +35,7 @@ export class NullifierUsageQueryBuilder extends BaseQueryBuilder<
   NullifierUsageWhereInput,
   NullifierUsageOrderBy
 > {
-  constructor(private subgraphClient: SubgraphClient) {
+  constructor(private subgraphClient: AnalyticsClient) {
     // Default order by lastUpdatedTimestamp descending, as this often indicates recent activity.
     // Assuming the entity name in the subgraph schema is `nullifierUsages`
     super(subgraphClient, "nullifierUsages", "lastUpdatedTimestamp", "desc");
@@ -947,7 +945,7 @@ export class NullifierUsageQueryBuilder extends BaseQueryBuilder<
 /**
  * Check if a nullifier is used for a given network.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param nullifier - The nullifier value to check.
  * @param network - The network identifier.
  * @returns A promise resolving to `true` if the nullifier is used, `false` otherwise.
@@ -959,7 +957,7 @@ export class NullifierUsageQueryBuilder extends BaseQueryBuilder<
  * ```
  */
 export async function isNullifierUsed(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   nullifier: string,
   network: NetworkName,
 ): Promise<boolean> {
@@ -973,7 +971,7 @@ export async function isNullifierUsed(
  * Get the total gas used by a specific nullifier on a given network.
  * Primarily relevant for GasLimited paymaster types.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param nullifier - The nullifier value.
  * @param network - The network identifier.
  * @returns A promise resolving to the total gas used as a string (BigInt compatible), or "0" if not found.
@@ -985,7 +983,7 @@ export async function isNullifierUsed(
  * ```
  */
 export async function getNullifierGasUsed(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   nullifier: string,
   network: NetworkName,
 ): Promise<string> {
@@ -998,7 +996,7 @@ export async function getNullifierGasUsed(
 /**
  * Get all nullifier usages marked as "used" for fraud prevention purposes on a specific network.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param network - The network identifier.
  * @returns A promise resolving to an array of NullifierUsage entities that have been used.
  *
@@ -1009,7 +1007,7 @@ export async function getNullifierGasUsed(
  * ```
  */
 export async function getUsedNullifiers(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   network: NetworkName,
 ): Promise<NullifierUsage[]> {
   return new NullifierUsageQueryBuilder(client).getAllUsedNullifiers(network);

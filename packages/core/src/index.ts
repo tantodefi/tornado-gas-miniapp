@@ -14,7 +14,7 @@
 export { PrepaidGasPaymaster } from "./client/PrepaidGasPaymaster";
 // Client exports
 export type {
-  PrepaidGasPaymasterConfig,
+  PaymasterOptions,
   GetPaymasterStubDataV7Parameters,
 } from "./client";
 

@@ -1,9 +1,8 @@
 // daily-global-stats-query-builder.ts (Refactored)
 
-import type { SubgraphClient } from "../../client/subgraph-client.js";
+import type { AnalyticsClient } from "../../client/analytics-client.js";
 import type {
   DailyGlobalStats,
-  NetworkName,
   SerializedDailyGlobalStats,
 } from "../../types/subgraph.js";
 import { serializeDailyGlobalStats } from "../../transformers/index.js";
@@ -11,7 +10,7 @@ import {
   DailyGlobalStatsFields,
   DailyGlobalStatsWhereInput,
 } from "../types.js";
-import { BaseQueryBuilder } from "./base-query-builder.js";
+import { BaseQueryBuilder, NetworkName } from "@workspace/data";
 
 export type DailyGlobalStatsOrderBy =
   | "date"
@@ -36,7 +35,7 @@ export class DailyGlobalStatsQueryBuilder extends BaseQueryBuilder<
   DailyGlobalStatsWhereInput,
   DailyGlobalStatsOrderBy
 > {
-  constructor(private subgraphClient: SubgraphClient) {
+  constructor(private subgraphClient: AnalyticsClient) {
     // Default order by date descending.
     // Assuming the entity name in the subgraph schema is `dailyGlobalStats`
     super(subgraphClient, "dailyGlobalStats", "date", "desc");
@@ -1020,7 +1019,7 @@ export class DailyGlobalStatsQueryBuilder extends BaseQueryBuilder<
 /**
  * Get daily global statistics for a specific network within a given date range.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param network - The network identifier (e.g., "base-sepolia").
  * @param startDate - The start date in YYYY-MM-DD format.
  * @param endDate - The end date in YYYY-MM-DD format.
@@ -1033,7 +1032,7 @@ export class DailyGlobalStatsQueryBuilder extends BaseQueryBuilder<
  * ```
  */
 export async function getDailyGlobalStatsForDateRange(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   network: NetworkName,
   startDate: string,
   endDate: string,
@@ -1048,7 +1047,7 @@ export async function getDailyGlobalStatsForDateRange(
 /**
  * Get the most recent daily global statistics for a specific network.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param network - The network identifier (e.g., "base-sepolia").
  * @param days - The number of recent days to fetch (defaults to 30).
  * @returns A promise resolving to an array of recent DailyGlobalStats entities.
@@ -1060,7 +1059,7 @@ export async function getDailyGlobalStatsForDateRange(
  * ```
  */
 export async function getRecentDailyGlobalStats(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   network: NetworkName,
   days: number = 30,
 ): Promise<DailyGlobalStats[]> {
@@ -1074,7 +1073,7 @@ export async function getRecentDailyGlobalStats(
 /**
  * Get the days with the highest activity (based on user operations) for a specific network.
  *
- * @param client - The SubgraphClient instance.
+ * @param client - The AnalyticsClient instance.
  * @param network - The network identifier (e.g., "base-sepolia").
  * @param limit - The maximum number of peak activity days to return (defaults to 10).
  * @returns A promise resolving to an array of DailyGlobalStats entities representing peak activity days.
@@ -1086,7 +1085,7 @@ export async function getRecentDailyGlobalStats(
  * ```
  */
 export async function getPeakActivityDays(
-  client: SubgraphClient,
+  client: AnalyticsClient,
   network: NetworkName,
   limit: number = 10,
 ): Promise<DailyGlobalStats[]> {
