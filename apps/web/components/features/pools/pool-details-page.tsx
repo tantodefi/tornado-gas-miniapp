@@ -17,7 +17,6 @@ import ErrorState from "@/components/shared/error-state";
 import { LabelHeader } from "@/components/layout/page-header";
 import EnhancedPoolCard from "./enhanced-pool-card";
 import PoolOverview from "./pool-overview";
-import MembersSection from "./members-section";
 import PoolActivitySection from "./pool-activity-section";
 import PaymentModal from "../payment/payment-modal";
 import SecureSuccessScreen from "../identity/secure-success-screen";
@@ -120,11 +119,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
     }
   };
 
-  // Member section handlers
-  const handleToggleMembers = () => {
-    setShowMembers(!showMembers);
-  };
-
   // Payment handlers
   const handlePaymentSuccess = async (activatedCard: PoolCard) => {
     console.log("Payment successful, card activated:", activatedCard.id);
@@ -206,7 +200,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
             </motion.div>
           </div>
 
-          {/* Right Column - Technical Details & Members */}
+          {/* Right Column -   Pool Activity */}
           <div className="lg:col-span-7">
             <motion.div
               initial={{ opacity: 0, x: 30 }}
@@ -214,17 +208,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="space-y-8"
             >
-              {/* Members Section */}
-              <MembersSection
-                pool={pool}
-                members={members}
-                showMembers={showMembers}
-                memberLimit={memberLimit}
-                isLoading={isLoading}
-                onToggleMembers={handleToggleMembers}
-                onMemberLimitChange={setMemberLimit}
-              />
-
               {/* Pool Activity */}
               <PoolActivitySection pool={pool} isLoading={isLoading} />
             </motion.div>

@@ -4,8 +4,19 @@
  * Single source of truth for all type definitions
  */
 
-// Pool-related types
-export type { Pool, PoolMember, FilterState } from "./pool";
+// Pool-related types (Updated to include activity types)
+export type {
+  Pool,
+  PoolMember,
+  FilterState,
+  ActivityType,
+  ActivityItem,
+  BaseActivityItem,
+  MemberAddedActivity,
+  TransactionActivity,
+  PoolWithActivity,
+  ActivityOptions,
+} from "./pool";
 
 // Card-related types
 export type {
@@ -54,6 +65,7 @@ export type {
   CardItemProps,
   PoolCardProps,
   EnhancedPoolCardProps,
+  PoolActivitySectionProps,
   ModalProps,
   PaymentModalProps,
   LoadingSkeletonProps,

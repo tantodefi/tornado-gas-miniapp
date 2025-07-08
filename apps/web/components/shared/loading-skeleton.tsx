@@ -41,7 +41,6 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ onBack }) => (
 
         {/* Right Column Skeleton */}
         <div className="lg:col-span-7">
-          <div className="w-full h-[300px] bg-slate-800/50 rounded-2xl animate-pulse mb-8"></div>
           <div className="w-full h-[400px] bg-slate-800/50 rounded-2xl animate-pulse"></div>
         </div>
       </div>

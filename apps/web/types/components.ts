@@ -1,11 +1,11 @@
 //file:prepaid-gas-website/apps/web/types/components.ts
 /**
  * UI component prop and styling type definitions
- * Updated to use new field names from data package
+ * Updated to use new field names from data package and PoolWithActivity
  */
 
 import type { ReactNode } from "react";
-import type { Pool, PoolMember, FilterState } from "./pool";
+import type { Pool, PoolMember, FilterState, PoolWithActivity } from "./pool";
 import type { PoolCard, CardStats } from "./card";
 import type { PaymentPool, PaymentState } from "./payment";
 
@@ -78,12 +78,22 @@ export interface PoolCardProps {
 
 /**
  * Enhanced pool card props for detail pages
+ * Updated to use PoolWithActivity for pools with activity data
  */
 export interface EnhancedPoolCardProps {
-  pool: Pool;
+  pool: PoolWithActivity; // Updated to support activity data
   onJoin: () => void;
   isJoining: boolean;
   showPayment: boolean;
+}
+
+/**
+ * Pool Activity Section Props - NEW
+ * Updated to use PoolWithActivity specifically for activity display
+ */
+export interface PoolActivitySectionProps {
+  pool?: PoolWithActivity; // Updated to use PoolWithActivity
+  isLoading?: boolean;
 }
 
 /**
@@ -280,24 +290,20 @@ export interface FormFieldProps {
  * Search input props
  */
 export interface SearchInputProps {
-  placeholder?: string;
   value: string;
   onChange: (value: string) => void;
-  onClear?: () => void;
-  isLoading?: boolean;
-  disabled?: boolean;
+  placeholder?: string;
+  className?: string;
 }
 
 /**
- * Pagination props
+ * Pagination component props
  */
 export interface PaginationProps {
-  page: number;
-  limit: number;
-  total: number;
-  hasMore: boolean;
+  currentPage: number;
+  totalPages: number;
   onPageChange: (page: number) => void;
-  onLimitChange: (limit: number) => void;
+  showInfo?: boolean;
 }
 
 /**
@@ -305,7 +311,7 @@ export interface PaginationProps {
  */
 export interface CardDashboardProps {
   stats: CardStats;
-  isLoading?: boolean;
+  isLoading: boolean;
 }
 
 /**
@@ -320,13 +326,9 @@ export interface PaymentStateDisplayProps {
  * Theme configuration
  */
 export interface ThemeConfig {
-  colors: {
-    primary: string;
-    secondary: string;
-    accent: string;
-  };
-  fonts: {
-    body: string;
-    heading: string;
-  };
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  surface: string;
 }

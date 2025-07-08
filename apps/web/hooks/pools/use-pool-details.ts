@@ -1,12 +1,12 @@
 //file:prepaid-gas-website/apps/web/hooks/pools/use-pool-details.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { prepaidPoolsApi } from "@/lib/api/api-client";
-import type { Pool } from "@/types";
+import type { PoolWithActivity } from "@/types";
 import { ApiError } from "@/lib/api/type";
 
 // Custom hook for managing pool details state
 export const usePoolDetails = (poolId: string) => {
-  const [pool, setPool] = useState<Pool | null>(null);
+  const [pool, setPool] = useState<PoolWithActivity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +40,8 @@ export const usePoolDetails = (poolId: string) => {
       }
 
       console.log(`✅ Pool details loaded for ${poolId}`);
-      setPool(response.data as Pool);
+      // Cast to PoolWithActivity since API now returns activity property
+      setPool(response.data as PoolWithActivity);
     } catch (err) {
       let errorMessage = "Failed to load pool details. Please try again.";
 
@@ -111,5 +112,9 @@ export const usePoolDetails = (poolId: string) => {
     members: pool?.members || [],
     hasMembers: (pool?.members?.length || 0) > 0,
     memberCount: pool?.members?.length || 0,
+    // 🆕 NEW: Direct access to activity
+    activity: pool?.activity || [],
+    hasActivity: (pool?.activity?.length || 0) > 0,
+    activityCount: pool?.activity?.length || 0,
   };
 };

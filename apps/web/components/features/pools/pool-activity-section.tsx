@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Pool } from "@/types";
+import { PoolWithActivity, ActivityItem } from "@/types"; // Updated imports
 import { getExplorerUrl, getTimeAgo } from "@/utils";
 import { formatGwei } from "viem";
 import {
@@ -15,42 +15,50 @@ import {
 } from "@workspace/ui/components/table";
 
 /**
- * Transaction data interface
- */
-interface Transaction {
-  id: string;
-  userOpHash: string;
-  sender: string;
-  actualGasCost: string;
-  executedAtTimestamp: string;
-  nullifier: string;
-}
-
-/**
- * Pool data interface (minimal, just what we need)
+ * Pool data interface (updated to use PoolWithActivity)
  */
 interface PoolActivitySectionProps {
-  pool?: Pool;
+  pool?: PoolWithActivity; // Updated to use PoolWithActivity
   isLoading?: boolean;
 }
 
 /**
- * TransactionItem Component
- * Displays individual transaction information in a single line
+ * ActivityRow Component
+ * Displays individual activity information (member additions or transactions)
  */
-const TransactionRow: React.FC<{
-  transaction: Transaction;
+const ActivityRow: React.FC<{
+  activity: ActivityItem;
   chainId?: string;
-}> = ({ transaction, chainId }) => {
+}> = ({ activity, chainId }) => {
   const explorerUrl = chainId
-    ? getExplorerUrl(chainId, transaction.userOpHash)
+    ? getExplorerUrl(chainId, activity.transactionHash)
     : null;
 
-  return (
-    <TableRow className="hover:bg-slate-800/40 border-slate-700/50">
-      {/* Action */}
-      <TableCell className="font-medium">
+  // Render different content based on activity type
+  const renderAction = () => {
+    if (activity.type === "member_added") {
+      return (
         <div className="flex items-center gap-2">
+          <span className="text-2xl">👤</span>
+          {explorerUrl ? (
+            <a
+              href={explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:text-purple-400 transition-colors flex items-center gap-1"
+            >
+              Member Joined
+              <span className="text-slate-400 text-xs">↗</span>
+            </a>
+          ) : (
+            <span className="text-white">Member Joined</span>
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">⛽</span>
           {explorerUrl ? (
             <a
               href={explorerUrl}
@@ -65,19 +73,45 @@ const TransactionRow: React.FC<{
             <span className="text-white">Gas Payment</span>
           )}
         </div>
+      );
+    }
+  };
+
+  // Render different values based on activity type
+  const renderValue = () => {
+    if (activity.type === "member_added") {
+      return (
+        <span className="text-blue-400 font-medium">
+          Index #{activity.member.memberIndex}
+        </span>
+      );
+    } else {
+      return (
+        <span className="text-green-400 font-medium">
+          {parseFloat(
+            formatGwei(BigInt(activity.transaction.actualGasCost || "0")),
+          ).toFixed(3)}{" "}
+          Gwei
+        </span>
+      );
+    }
+  };
+
+  return (
+    <TableRow className="hover:bg-slate-800/40 border-slate-700/50">
+      {/* Action */}
+      <TableCell className="font-medium">
+        {renderAction()}
       </TableCell>
 
       {/* Value */}
-      <TableCell className="text-green-400 font-medium">
-        {parseFloat(
-          formatGwei(BigInt(transaction.actualGasCost || "0")),
-        ).toFixed(3)}{" "}
-        Gwei
+      <TableCell>
+        {renderValue()}
       </TableCell>
 
       {/* Time */}
       <TableCell className="text-slate-400 text-right">
-        {getTimeAgo(transaction.executedAtTimestamp)}
+        {getTimeAgo(activity.timestamp)}
       </TableCell>
     </TableRow>
   );
@@ -85,7 +119,7 @@ const TransactionRow: React.FC<{
 
 /**
  * LoadingSkeleton Component
- * Shows loading state for transactions
+ * Shows loading state for activities
  */
 const LoadingSkeleton: React.FC = () => (
   <Table>
@@ -120,13 +154,15 @@ const LoadingSkeleton: React.FC = () => (
 /**
  * PoolActivitySection Component
  *
- * Single Responsibility: Display pool transaction activity in a clean, scannable format
+ * Single Responsibility: Display unified pool activity in a clean, scannable format
  *
  * Features:
- * - Single-line transaction entries with 3 key fields: Action, Value, Time
- * - Clickable explorer links for transaction verification
+ * - Unified activity feed showing both member additions and transactions
+ * - Single-line activity entries with 3 key fields: Action, Value, Time
+ * - Different icons and styling for different activity types
+ * - Clickable explorer links for activity verification
  * - Loading state with matching skeleton
- * - Empty state for pools with no transactions
+ * - Empty state for pools with no activity
  * - Maintains consistent card styling
  * - Responsive layout with proper spacing
  */
@@ -134,7 +170,8 @@ const PoolActivitySection: React.FC<PoolActivitySectionProps> = ({
   pool,
   isLoading = false,
 }) => {
-  const transactions = pool?.userOperations || [];
+  // Use the new unified activity array instead of userOperations
+  const activities = pool?.activity || [];
 
   return (
     <div className="card-prepaid-glass card-content-lg">
@@ -145,7 +182,7 @@ const PoolActivitySection: React.FC<PoolActivitySectionProps> = ({
 
       {isLoading ? (
         <LoadingSkeleton />
-      ) : transactions.length > 0 ? (
+      ) : activities.length > 0 ? (
         <div>
           <Table>
             <TableHeader>
@@ -158,31 +195,30 @@ const PoolActivitySection: React.FC<PoolActivitySectionProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((transaction) => (
-                <TransactionRow
-                  key={transaction.id}
-                  transaction={transaction}
+              {activities.map((activity) => (
+                <ActivityRow
+                  key={activity.id}
+                  activity={activity}
                   chainId={pool?.chainId}
                 />
               ))}
             </TableBody>
           </Table>
 
-          {transactions.length >= 20 && (
+          {activities.length >= 50 && (
             <div className="text-center pt-4 mt-4 border-t border-slate-700/50">
               <p className="text-slate-400 text-sm">
-                Showing latest 20 transactions
+                Showing latest {activities.length} activities
               </p>
             </div>
           )}
         </div>
       ) : (
         <div className="text-center py-8 opacity-60">
-          <div className="text-4xl mb-4">💳</div>
-          <p className="text-slate-400 mb-2">No transactions yet</p>
+          <div className="text-4xl mb-4">📈</div>
+          <p className="text-slate-400 mb-2">No activity yet</p>
           <p className="text-xs text-slate-500">
-            Transactions will appear here when members use the pool for gas
-            payments
+            Activity will appear here when members join the pool or use it for gas payments
           </p>
         </div>
       )}

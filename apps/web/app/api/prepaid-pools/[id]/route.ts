@@ -1,3 +1,4 @@
+//file:prepaid-gas-website/apps/web/app/api/prepaid-pools/[id]/route.ts
 import { NextRequest } from "next/server";
 import {
   createSuccessResponse,
@@ -7,8 +8,84 @@ import {
   setCacheHeaders,
 } from "@/lib/api/response";
 import { SubgraphClient } from "@workspace/data";
+import type {
+  ActivityItem,
+  MemberAddedActivity,
+  TransactionActivity,
+} from "@/types";
 
 const CACHE_TTL = parseInt(process.env.POOLS_CACHE_TTL || "300", 10);
+
+/**
+ * Transform pool members into activity items
+ */
+function transformMembersToActivity(members: any[]): MemberAddedActivity[] {
+  return members.map((member) => ({
+    id: `member-${member.id}`,
+    type: "member_added" as const,
+    timestamp: member.addedAtTimestamp,
+    blockNumber: member.addedAtBlock,
+    transactionHash: member.addedAtTransaction,
+    network: member.network,
+    member: {
+      memberIndex: member.memberIndex,
+      identityCommitment: member.identityCommitment,
+      merkleRootWhenAdded: member.merkleRootWhenAdded,
+      rootIndexWhenAdded: member.rootIndexWhenAdded,
+    },
+  }));
+}
+
+/**
+ * Transform user operations into activity items
+ */
+function transformTransactionsToActivity(
+  userOperations: any[],
+): TransactionActivity[] {
+  return userOperations.map((op) => ({
+    id: `transaction-${op.id}`,
+    type: "transaction" as const,
+    timestamp: op.executedAtTimestamp,
+    blockNumber: op.executedAtBlock,
+    transactionHash: op.executedAtTransaction,
+    network: op.network,
+    transaction: {
+      userOpHash: op.userOpHash,
+      sender: op.sender,
+      actualGasCost: op.actualGasCost,
+      nullifier: op.nullifier,
+      gasPrice: op.gasPrice,
+    },
+  }));
+}
+
+/**
+ * Combine and sort activities by timestamp (newest first)
+ */
+function createUnifiedActivity(
+  members: any[],
+  userOperations: any[],
+  limit: number = 50,
+): ActivityItem[] {
+  const memberActivities = transformMembersToActivity(members);
+  const transactionActivities = transformTransactionsToActivity(userOperations);
+
+  // Combine all activities
+  const allActivities: ActivityItem[] = [
+    ...memberActivities,
+    ...transactionActivities,
+  ];
+
+  // Sort by timestamp (newest first)
+  allActivities.sort((a, b) => {
+    const timestampA = parseInt(a.timestamp);
+    const timestampB = parseInt(b.timestamp);
+    return timestampB - timestampA; // Descending order (newest first)
+  });
+
+  // Limit the results
+  return allActivities.slice(0, limit);
+}
 
 export async function GET(
   request: NextRequest,
@@ -29,20 +106,27 @@ export async function GET(
       );
     }
 
+    // Parse query parameters for activity options
+    const { searchParams } = new URL(request.url);
+    const activityLimit = parseInt(
+      searchParams.get("activityLimit") || "50",
+      10,
+    );
+    const memberLimit = parseInt(searchParams.get("memberLimit") || "100", 10);
+
     // Create client using factory
     const subgraphClient = SubgraphClient.createForNetwork(84532, {
       subgraphUrl: process.env.SUBGRAPH_URL,
     });
 
     // Build query using the query builder pattern
-    const poolQuery = subgraphClient
-      .query()
-      .pools()
-      .byPoolId(id)
-      .withMembers(20)
-      .withUserOperations(20);
+    let poolQuery = subgraphClient.query().pools().byPoolId(id);
 
-    // Execute basic pool query without members
+    // Include members and userOperations for activity
+    poolQuery = poolQuery.withMembers(memberLimit);
+    poolQuery = poolQuery.withUserOperations(activityLimit);
+
+    // Execute basic pool query
     const serializedPools = await poolQuery.executeAndSerialize();
 
     if (!serializedPools || serializedPools.length === 0) {
@@ -65,7 +149,36 @@ export async function GET(
       );
     }
 
-    // No network transformation needed - data package already includes network info
+    // 🆕 CREATE UNIFIED ACTIVITY FEED
+    const members = poolData.members || [];
+    const userOperations = poolData.userOperations || [];
+
+    // Create unified activity array
+    const activity = createUnifiedActivity(
+      members,
+      userOperations,
+      activityLimit,
+    );
+
+    // Add activity to pool data
+    const enhancedPoolData = {
+      ...poolData,
+      activity, // Add the unified activity feed
+    };
+
+    console.log(`✅ Pool ${id} activity created:`, {
+      totalMembers: members.length,
+      totalTransactions: userOperations.length,
+      totalActivities: activity.length,
+      activityTypes: activity.reduce(
+        (acc, item) => {
+          acc[item.type] = (acc[item.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+    });
+
     // Construct response metadata using ClientFactory
     const enhancedMeta = {
       ...SubgraphClient.getNetworkPreset(84532),
@@ -73,6 +186,9 @@ export async function GET(
       processingTime: Date.now() - startTime,
       poolId: id,
       timestamp: new Date().toISOString(),
+      activityCount: activity.length,
+      memberCount: members.length,
+      transactionCount: userOperations.length,
     };
 
     // Construct pagination info
@@ -83,9 +199,9 @@ export async function GET(
       hasMore: false,
     };
 
-    // Create response - pool already has network info
+    // Create response - pool already has network info + activity
     const response = createSuccessResponse(
-      poolData,
+      enhancedPoolData,
       enhancedMeta,
       pagination,
       requestId,
