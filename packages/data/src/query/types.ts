@@ -56,7 +56,8 @@ export type PaymasterContractFields =
 export type PoolFields =
   | keyof Pool
   | "paymaster { id contractType address }"
-  | "members { id memberIndex }"
+  | "members { id memberIndex addedAtTimestamp identityCommitment }"
+  | "userOperations { id userOpHash sender actualGasCost executedAtTimestamp nullifier }"
   | "merkleRoots { id root }";
 
 /**

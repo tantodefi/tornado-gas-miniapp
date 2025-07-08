@@ -29,144 +29,72 @@ export async function GET(
       );
     }
 
-    // Parse query parameters
-    const { searchParams } = new URL(request.url);
-    const includeMembers = searchParams.get("includeMembers") === "true";
-    const memberLimit = parseInt(searchParams.get("memberLimit") || "100", 10);
-
-    // Validate memberLimit
-    if (memberLimit < 1 || memberLimit > 1000) {
-      return createErrorResponse(
-        "Member limit must be between 1 and 1000",
-        "INVALID_MEMBER_LIMIT",
-        400,
-        requestId,
-      );
-    }
-
     // Create client using factory
     const subgraphClient = SubgraphClient.createForNetwork(84532, {
       subgraphUrl: process.env.SUBGRAPH_URL,
     });
 
     // Build query using the query builder pattern
-    const poolQuery = subgraphClient.query().pools().byPoolId(id);
+    const poolQuery = subgraphClient
+      .query()
+      .pools()
+      .byPoolId(id)
+      .withMembers(20)
+      .withUserOperations(20);
 
-    // If members are requested, include them in the query
-    if (includeMembers) {
-      const poolWithMembersQuery = poolQuery.withMembers().limit(memberLimit);
-      // Execute query and get serialized results
-      const serializedPools = await poolWithMembersQuery.executeAndSerialize();
+    // Execute basic pool query without members
+    const serializedPools = await poolQuery.executeAndSerialize();
 
-      if (!serializedPools || serializedPools.length === 0) {
-        return createErrorResponse(
-          `Pool with ID ${id} not found`,
-          "POOL_NOT_FOUND",
-          404,
-          requestId,
-        );
-      }
-
-      const poolData = serializedPools[0];
-
-      if (!poolData) {
-        return createErrorResponse(
-          `Pool with ID ${id} not found`,
-          "POOL_NOT_FOUND",
-          404,
-          requestId,
-        );
-      }
-
-      // No network transformation needed - data package already includes network info
-      // Construct response metadata using ClientFactory
-      const enhancedMeta = {
-        ...SubgraphClient.getNetworkPreset(84532),
-        requestId,
-        processingTime: Date.now() - startTime,
-        poolId: id,
-        timestamp: new Date().toISOString(),
-        includeMembers,
-        memberLimit,
-      };
-
-      // Construct pagination info
-      const pagination = {
-        page: 0,
-        limit: 1,
-        total: 1,
-        hasMore: false,
-      };
-
-      // Create response - pool already has network info
-      const response = createSuccessResponse(
-        poolData,
-        enhancedMeta,
-        pagination,
+    if (!serializedPools || serializedPools.length === 0) {
+      return createErrorResponse(
+        `Pool with ID ${id} not found`,
+        "POOL_NOT_FOUND",
+        404,
         requestId,
       );
-
-      // Set caching headers
-      setCacheHeaders(response, CACHE_TTL);
-
-      return response;
-    } else {
-      // Execute basic pool query without members
-      const serializedPools = await poolQuery.executeAndSerialize();
-
-      if (!serializedPools || serializedPools.length === 0) {
-        return createErrorResponse(
-          `Pool with ID ${id} not found`,
-          "POOL_NOT_FOUND",
-          404,
-          requestId,
-        );
-      }
-
-      const poolData = serializedPools[0];
-
-      if (!poolData) {
-        return createErrorResponse(
-          `Pool with ID ${id} not found`,
-          "POOL_NOT_FOUND",
-          404,
-          requestId,
-        );
-      }
-
-      // No network transformation needed - data package already includes network info
-      // Construct response metadata using ClientFactory
-      const enhancedMeta = {
-        ...SubgraphClient.getNetworkPreset(84532),
-        requestId,
-        processingTime: Date.now() - startTime,
-        poolId: id,
-        timestamp: new Date().toISOString(),
-        includeMembers,
-        memberLimit: includeMembers ? memberLimit : undefined,
-      };
-
-      // Construct pagination info
-      const pagination = {
-        page: 0,
-        limit: 1,
-        total: 1,
-        hasMore: false,
-      };
-
-      // Create response - pool already has network info
-      const response = createSuccessResponse(
-        poolData,
-        enhancedMeta,
-        pagination,
-        requestId,
-      );
-
-      // Set caching headers
-      setCacheHeaders(response, CACHE_TTL);
-
-      return response;
     }
+
+    const poolData = serializedPools[0];
+
+    if (!poolData) {
+      return createErrorResponse(
+        `Pool with ID ${id} not found`,
+        "POOL_NOT_FOUND",
+        404,
+        requestId,
+      );
+    }
+
+    // No network transformation needed - data package already includes network info
+    // Construct response metadata using ClientFactory
+    const enhancedMeta = {
+      ...SubgraphClient.getNetworkPreset(84532),
+      requestId,
+      processingTime: Date.now() - startTime,
+      poolId: id,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Construct pagination info
+    const pagination = {
+      page: 0,
+      limit: 1,
+      total: 1,
+      hasMore: false,
+    };
+
+    // Create response - pool already has network info
+    const response = createSuccessResponse(
+      poolData,
+      enhancedMeta,
+      pagination,
+      requestId,
+    );
+
+    // Set caching headers
+    setCacheHeaders(response, CACHE_TTL);
+
+    return response;
   } catch (error) {
     return handleApiError(error, requestId);
   }

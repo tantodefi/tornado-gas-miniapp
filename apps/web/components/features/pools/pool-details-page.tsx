@@ -226,7 +226,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
               />
 
               {/* Pool Activity */}
-              <PoolActivitySection />
+              <PoolActivitySection pool={pool} isLoading={isLoading} />
             </motion.div>
           </div>
         </div>

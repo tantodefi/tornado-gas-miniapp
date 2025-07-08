@@ -11,7 +11,6 @@ import type {
 } from "../../types/subgraph.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
 
-import { GET_POOL_DETAILS } from "../../client/queries.js";
 import { PoolFields, PoolWhereInput } from "../types.js";
 import { serializePool } from "../../transformers/index.js";
 
@@ -38,6 +37,8 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
 > {
   private includeMembers: boolean = false;
   private membersLimit: number = 10;
+  private includeUserOperations: boolean = false;
+  private userOperationsLimit: number = 10;
 
   constructor(client: SubgraphClient) {
     super(client, "pools", "poolId", "desc");
@@ -275,7 +276,7 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    * Override default fields for Pool entity.
    */
   protected getDefaultFields(): string {
-    const baseFields = `
+    let baseFields = `
       id
       poolId
       network
@@ -300,7 +301,7 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
 
     // If members are requested, include them in the query
     if (this.includeMembers) {
-      return (
+      baseFields =
         baseFields +
         `
       members(first: ${this.membersLimit}, orderBy: addedAtTimestamp, orderDirection: desc) {
@@ -316,8 +317,22 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
         nullifierUsed
         nullifier
       }
-      `
-      );
+      `;
+    }
+
+    if (this.includeUserOperations) {
+      baseFields =
+        baseFields +
+        `
+      userOperations (first: ${this.userOperationsLimit}, orderBy: executedAtTimestamp, orderDirection: desc) {
+        id
+        userOpHash
+        sender
+        actualGasCost
+        executedAtTimestamp
+        nullifier
+      }
+      `;
     }
 
     return baseFields;
@@ -525,6 +540,25 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
   withMembers(limit: number = 10): this {
     this.includeMembers = true;
     this.membersLimit = limit;
+    return this;
+  }
+
+  /**
+   * Include userOperations in pools
+   *
+   * @returns PoolQueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * const activePools = await client.query().pools()
+   *   .byNetwork("base-sepolia")
+   *   .withUserOperations(20)  // Include up to 20 userOperations
+   *   .execute();
+   * ```
+   */
+  withUserOperations(limit: number = 10): this {
+    this.includeUserOperations = true;
+    this.userOperationsLimit = limit;
     return this;
   }
 
