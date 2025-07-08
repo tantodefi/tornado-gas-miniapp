@@ -166,19 +166,6 @@ export async function GET(
       activity, // Add the unified activity feed
     };
 
-    console.log(`✅ Pool ${id} activity created:`, {
-      totalMembers: members.length,
-      totalTransactions: userOperations.length,
-      totalActivities: activity.length,
-      activityTypes: activity.reduce(
-        (acc, item) => {
-          acc[item.type] = (acc[item.type] || 0) + 1;
-          return acc;
-        },
-        {} as Record<string, number>,
-      ),
-    });
-
     // Construct response metadata using ClientFactory
     const enhancedMeta = {
       ...SubgraphClient.getNetworkPreset(84532),

@@ -14,7 +14,7 @@ import { saveCardToIndexedDB } from "@/lib/storage/indexed-db";
 import { encodePaymasterContext } from "@workspace/core";
 import LoadingSkeleton from "@/components/shared/loading-skeleton";
 import ErrorState from "@/components/shared/error-state";
-import { LabelHeader } from "@/components/layout/page-header";
+import { PoolPageHeader } from "@/components/layout/page-header";
 import EnhancedPoolCard from "./enhanced-pool-card";
 import PoolOverview from "./pool-overview";
 import PoolActivitySection from "./pool-activity-section";
@@ -40,10 +40,6 @@ interface PoolDetailsPageProps {
 const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   const router = useRouter();
 
-  // Member display state
-  const [showMembers, setShowMembers] = useState(false);
-  const [memberLimit, setMemberLimit] = useState(100);
-
   // Join flow state
   const [isJoining, setIsJoining] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -56,7 +52,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   const [activatedCard, setActivatedCard] = useState<PoolCard | null>(null);
 
   // Pool data hook
-  const { pool, isLoading, error, refetch, members } = usePoolDetails(poolId);
+  const { pool, isLoading, error, refetch } = usePoolDetails(poolId);
 
   // Navigation handlers
   const handleBack = () => {
@@ -169,21 +165,22 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {/* Header */}
-        <LabelHeader
+        <PoolPageHeader
           backText="← Back to Pools"
           onBack={handleBack}
           label="Pool Details"
         />
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 h-[calc(100vh-20rem)]">
+
           {/* Left Column - Pool Card & Overview */}
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 h-full">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className="sticky top-8"
+              className="h-full flex flex-col justify-start"
             >
               {/* Enhanced Pool Card */}
               <div className="mb-6">
@@ -201,15 +198,17 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
           </div>
 
           {/* Right Column -   Pool Activity */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 h-full overflow-hidden">
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="space-y-8"
+              className="h-full"
             >
               {/* Pool Activity */}
-              <PoolActivitySection pool={pool} isLoading={isLoading} />
+              <div className="card-prepaid-glass card-content-lg h-full overflow-y-auto pr-2">
+                <PoolActivitySection pool={pool} isLoading={isLoading} />
+              </div>
             </motion.div>
           </div>
         </div>

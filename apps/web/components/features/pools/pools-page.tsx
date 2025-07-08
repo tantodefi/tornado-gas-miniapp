@@ -10,6 +10,7 @@ import PrepaidPoolCard from "./multi-use-pool-card";
 import FilterBar from "./pool-filters";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PoolsPageHeader } from "@/components/layout/page-header";
 
 // Card Skeleton Loader Component (unchanged)
 const CardSkeleton: React.FC = () => (
@@ -73,54 +74,7 @@ const PrepaidPoolsPage = () => {
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* UPDATED Header with Navigation */}
-        <div className="text-center mb-12">
-          <div className="flex justify-between items-center mb-6">
-            <button
-              onClick={handleBackToHome}
-              className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono"
-            >
-              ← Back to Home
-            </button>
-
-            {/* NEW: Navigation Links */}
-            <div className="flex items-center gap-4">
-              <Link
-                href="/cards/pending"
-                className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono flex items-center gap-2"
-              >
-                💳 My Cards
-              </Link>
-              <div className="text-xs text-slate-500 font-mono">
-                {lastFetchTime && (
-                  <span
-                    title={`Last updated: ${new Date(lastFetchTime).toLocaleString()}`}
-                  >
-                    v0.1 • {new Date(lastFetchTime).toLocaleTimeString()}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <motion.h1
-            className="heading-prepaid-section"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
-            <span className="text-prepaid-gradient-white">Prepaid Gas </span>
-            <span className="text-prepaid-gradient-brand">Cards</span>
-          </motion.h1>
-
-          <motion.p
-            className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-          >
-            Join anonymous gas credit pools. Click any card to view details.
-          </motion.p>
-        </div>
+        <PoolsPageHeader />
 
         {/* Filter Bar (unchanged) */}
         <FilterBar

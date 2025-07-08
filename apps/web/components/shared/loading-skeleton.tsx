@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { LabelHeader } from "../layout/page-header";
+import { PoolPageHeader } from "../layout/page-header";
 
 /**
  * Props for LoadingSkeleton component
@@ -26,7 +26,7 @@ interface LoadingSkeletonProps {
 const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ onBack }) => (
   <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <LabelHeader
+      <PoolPageHeader
         backText="← Back to Pools"
         onBack={onBack}
         label="Loading..."

@@ -9,7 +9,7 @@ import {
   deleteCardFromIndexedDB,
   getCardStatsFromIndexedDB,
 } from "@/lib/storage/indexed-db";
-import { LabelHeader } from "../../layout/page-header";
+import { PageHeader } from "../../layout/page-header";
 import { formatMnemonicForDisplay } from "@/lib/identity/generator";
 import { PoolCard } from "@/types";
 
@@ -103,10 +103,10 @@ const PendingCardsPage: React.FC<PendingCardsPageProps> = () => {
     return (
       <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <LabelHeader
+          <PageHeader
             backText="← Back to Pools"
             onBack={handleBack}
-            label="Pending Cards"
+            // label="Pending Cards"
           />
 
           <div className="text-center py-16">
@@ -124,10 +124,10 @@ const PendingCardsPage: React.FC<PendingCardsPageProps> = () => {
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <LabelHeader
+        <PageHeader
           backText="← Back to Pools"
           onBack={handleBack}
-          label="Pending Cards"
+          // label="Pending Cards"
         />
 
         {/* Page Title */}

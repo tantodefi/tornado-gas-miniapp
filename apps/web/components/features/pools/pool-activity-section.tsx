@@ -100,14 +100,10 @@ const ActivityRow: React.FC<{
   return (
     <TableRow className="hover:bg-slate-800/40 border-slate-700/50">
       {/* Action */}
-      <TableCell className="font-medium">
-        {renderAction()}
-      </TableCell>
+      <TableCell className="font-medium">{renderAction()}</TableCell>
 
       {/* Value */}
-      <TableCell>
-        {renderValue()}
-      </TableCell>
+      <TableCell>{renderValue()}</TableCell>
 
       {/* Time */}
       <TableCell className="text-slate-400 text-right">
@@ -174,7 +170,7 @@ const PoolActivitySection: React.FC<PoolActivitySectionProps> = ({
   const activities = pool?.activity || [];
 
   return (
-    <div className="card-prepaid-glass card-content-lg">
+    <>
       <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
         <span className="text-2xl">📊</span>
         Recent Activity
@@ -218,11 +214,12 @@ const PoolActivitySection: React.FC<PoolActivitySectionProps> = ({
           <div className="text-4xl mb-4">📈</div>
           <p className="text-slate-400 mb-2">No activity yet</p>
           <p className="text-xs text-slate-500">
-            Activity will appear here when members join the pool or use it for gas payments
+            Activity will appear here when members join the pool or use it for
+            gas payments
           </p>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

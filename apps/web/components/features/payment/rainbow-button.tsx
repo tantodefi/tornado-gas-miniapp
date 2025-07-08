@@ -3,7 +3,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   useAccount,
   useSendTransaction,
@@ -17,6 +17,7 @@ import type {
   WagmiError,
 } from "@/types";
 import { formatJoiningFee } from "@/utils";
+import { Button } from "@workspace/ui/components/button";
 
 /**
  * RainbowButton component for traditional wallet connections
@@ -33,6 +34,7 @@ export function RainbowButton({
   >("idle");
   const [currentPaymentData, setCurrentPaymentData] =
     useState<PaymentData | null>(null);
+  const { openConnectModal, connectModalOpen } = useConnectModal();
 
   const {
     sendTransaction,
@@ -137,8 +139,13 @@ export function RainbowButton({
   if (!isConnected) {
     return (
       <div className="space-y-4">
-        <ConnectButton />
         <div className="text-center">
+          <Button
+            className="btn-prepaid-primary btn-md my-3 "
+            onClick={openConnectModal}
+          >
+            Connect Wallet
+          </Button>
           <p className="text-xs text-slate-400">
             Connect your wallet to continue
           </p>
