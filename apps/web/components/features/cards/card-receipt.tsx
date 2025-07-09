@@ -1,82 +1,37 @@
-//file:prepaid-gas-website/apps/web/components/features/identity/secure-success-screen.tsx
+//file:prepaid-gas-website/apps/web/components/features/cards/card-receipt.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check } from "lucide-react";
-import {
-  formatMnemonicForDisplay,
-  type GenerateIdentityResult,
-} from "@/lib/identity/generator";
-import { Pool, PoolCard } from "@/types";
-import { formatJoiningFee } from "@/utils";
+import { Copy, Check, ExternalLink, X } from "lucide-react";
+import { PoolCard } from "@/types";
+import { formatJoiningFee, getExplorerUrl } from "@/utils";
 import QRCode from "react-qr-code";
 
-/**
- * Interface for pool data needed by success screen
- */
-interface PoolData {
-  poolId: string;
-  joiningFee: string;
-  network: {
-    name: string;
-  };
-}
-
-/**
- * Props for SecureSuccessScreen component
- */
-interface SecureSuccessScreenProps {
-  /** Activated card data */
+interface CardReceiptProps {
   card: PoolCard;
-  /** Generated identity with recovery phrase */
-  identity: GenerateIdentityResult;
-  /** Pool data for display */
-  pool: Pool;
-  /** Handler called when user completes the flow */
-  onComplete: () => void;
+  showRecoveryPhrase?: boolean;
+  onClose: () => void;
 }
 
 /**
- * Elegant SecureSuccessScreen Component
- *
- * Focused on essential information:
- * - Success celebration
- * - Recovery phrase display
- * - Paymaster context for demo app
- * - Simple confirmation
- * - Clear action
+ * CardReceipt Component
+ * 
+ * Reusable receipt-like component for displaying card details
+ * Used for both payment success and viewing existing cards
  */
-const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
+const CardReceipt: React.FC<CardReceiptProps> = ({
   card,
-  identity,
-  pool,
-  onComplete,
+  showRecoveryPhrase = false,
+  onClose,
 }) => {
-  const [recoveryPhraseSaved, setRecoveryPhraseSaved] = useState(false);
   const [contextCopied, setContextCopied] = useState(false);
-  // const formattedWords = formatMnemonicForDisplay(identity.mnemonic);
+  const [recoveryPhraseSaved, setRecoveryPhraseSaved] = useState(false);
 
-  // Prevent accidental navigation
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!recoveryPhraseSaved) {
-        e.preventDefault();
-        e.returnValue = "Save your recovery phrase before leaving!";
-      }
-    };
+  // Generate explorer URL
+  const explorerUrl = getExplorerUrl(card.chainId, card.transactionHash);
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [recoveryPhraseSaved]);
-
-  const handleComplete = () => {
-    if (recoveryPhraseSaved) {
-      onComplete();
-    }
-  };
-
-  // Copy paymaster context to clipboard
+  // Helper functions
   const copyPaymasterContext = async () => {
     try {
       await navigator.clipboard.writeText(card.paymasterContext);
@@ -88,10 +43,30 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
     }
   };
 
+  const handleExplorerClick = () => {
+    window.open(explorerUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const formatTransactionHash = (hash: string) => {
+    if (!hash || hash.length < 10) return hash;
+    return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
       <div className="max-w-md w-full max-h-[85vh] overflow-y-auto">
-        {/* Success title */}
+        
+        {/* Header */}
         <motion.div
           className="text-center mb-8"
           initial={{ y: 30, opacity: 0 }}
@@ -99,12 +74,12 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
           transition={{ delay: 0.3 }}
         >
           <h1 className="text-2xl font-bold mb-2 text-white">
-            Payment Successful!
+            Gas Card Receipt
           </h1>
-          <p className="text-slate-400">🎉 Your gas credit is ready to use</p>
+          <p className="text-slate-400">💳 Your prepaid gas credit details</p>
         </motion.div>
 
-        {/* Success Ticket Container */}
+        {/* Receipt Container */}
         <motion.div
           className="card-prepaid-glass rounded-2xl overflow-hidden relative shadow-2xl border-0"
           initial={{ scale: 0.8, opacity: 0 }}
@@ -116,6 +91,15 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
             damping: 20,
           }}
         >
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-white transition-colors"
+            title="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
           {/* Top Section - QR Code */}
           <motion.div
             className="bg-gradient-to-br from-purple-600 to-purple-800 p-8 text-white relative"
@@ -125,7 +109,7 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
           >
             <div className="text-center mb-4">
               <p className="text-purple-200 text-sm mb-4">
-                Save this code to configure your gas credit
+                Demo App Configuration Code
               </p>
             </div>
             <div className="flex justify-center">
@@ -149,7 +133,7 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
                   ) : (
                     <>
                       <Copy className="w-3 h-3" />
-                      Copy
+                      Copy Code
                     </>
                   )}
                 </button>
@@ -157,41 +141,40 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
             </div>
           </motion.div>
 
-          {/* Tear Line Section */}
+          {/* Tear Line */}
           <div className="relative bg-slate-800/50 border-t-2 border-dashed border-slate-600/50">
             <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-black/90 border-0" />
             <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-8 h-8 rounded-full bg-black/90 border-0" />
             <div className="border-t-2 border-dashed border-slate-600/50 mx-6" />
           </div>
 
-          {/* Bottom Section - Purchase Details */}
+          {/* Bottom Section - Card Details */}
           <motion.div
             className="p-8 bg-slate-500/20 space-y-6"
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.8 }}
           >
-            {/* Grid layout for detail items */}
+            {/* Card Details Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
-              {/* Credit Type */}
+              
+              {/* Card Type */}
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
-                  Credit Type
+                  Card Type
                 </p>
                 <p className="text-lg font-semibold text-white">
-                  {pool.paymaster.contractType === "GasLimited"
-                    ? "Multi-Use"
-                    : "One-Time-Use"}
+                  {card.poolInfo.paymasterType === "GasLimited" ? "Multi-Use" : "One-Time-Use"}
                 </p>
               </div>
 
-              {/* Pool Id */}
+              {/* Pool ID */}
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
-                  Pool Id
+                  Pool ID
                 </p>
                 <p className="text-lg font-semibold text-white">
-                  {pool.poolId}
+                  {card.poolInfo.poolId}
                 </p>
               </div>
 
@@ -201,34 +184,33 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
                   Amount
                 </p>
                 <p className="text-lg font-semibold text-white">
-                  {formatJoiningFee(pool.joiningFee)} ETH
+                  {formatJoiningFee(card.poolInfo.joiningFee)} ETH
                 </p>
               </div>
 
-              {/* Purchase Date */}
+              {/* Purchased Date */}
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
                   Purchased
                 </p>
                 <p className="text-lg font-semibold text-white">
-                  {new Date().toLocaleDateString("en-US", {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {formatDate(card.purchasedAt)}
                 </p>
               </div>
 
-              {/* Transaction Details */}
+              {/* Transaction */}
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
                   Transaction
                 </p>
-                <p className="text-lg font-semibold text-white capitalize">
-                  View on explorer
-                </p>
+                <button
+                  onClick={handleExplorerClick}
+                  className="text-lg font-semibold text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 group"
+                  title="View transaction on explorer"
+                >
+                  <span>{formatTransactionHash(card.transactionHash)} ↗</span>
+                  <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </button>
               </div>
 
               {/* Network */}
@@ -237,30 +219,59 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
                   Network
                 </p>
                 <p className="text-lg font-semibold text-white capitalize">
-                  {pool.network}
+                  {card.poolInfo.network}
+                </p>
+              </div>
+
+              {/* Balance */}
+              <div className="sm:col-span-2">
+                <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
+                  Current Balance
+                </p>
+                <p className="text-lg font-semibold text-green-400">
+                  {parseFloat(card.balance).toFixed(6)} ETH
                 </p>
               </div>
             </div>
 
-            {/* Recovery confirmation */}
-            <div className="mb-6">
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={recoveryPhraseSaved}
-                  onChange={(e) => setRecoveryPhraseSaved(e.target.checked)}
-                  className="mt-1 w-5 h-5 text-green-500 bg-slate-700 border-slate-600 rounded focus:ring-green-500 focus:ring-2"
-                />
-                <div className="text-sm">
-                  <div className="text-white font-medium group-hover:text-green-400 transition-colors">
-                    I have save it
-                  </div>
-                  <div className="text-slate-400 text-xs mt-1">
-                    Keep this safe - it's the only way to recover your card
+            {/* Recovery Phrase Section - Conditional */}
+            {showRecoveryPhrase && (
+              <div className="border-t border-slate-600/50 pt-6">
+                <p className="text-slate-400 text-sm uppercase tracking-wide mb-3">
+                  Recovery Phrase
+                </p>
+                <div className="bg-slate-800/50 rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    {card.identity.mnemonic.split(" ").map((word, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="text-slate-500 text-xs w-6">{index + 1}.</span>
+                        <span className="text-white font-mono">{word}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </label>
-            </div>
+                
+                {/* Recovery Phrase Confirmation */}
+                <div className="mb-4">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={recoveryPhraseSaved}
+                      onChange={(e) => setRecoveryPhraseSaved(e.target.checked)}
+                      className="mt-1 w-5 h-5 text-green-500 bg-slate-700 border-slate-600 rounded focus:ring-green-500 focus:ring-2"
+                    />
+                    <div className="text-sm">
+                      <div className="text-white font-medium group-hover:text-green-400 transition-colors">
+                        I have saved my recovery phrase
+                      </div>
+                      <div className="text-slate-400 text-xs mt-1">
+                        Keep this safe - it's the only way to recover your card
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
 
             {/* Action Button */}
             <motion.div
@@ -269,17 +280,21 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
               transition={{ delay: 1.2 }}
             >
               <button
-                onClick={handleComplete}
-                disabled={!recoveryPhraseSaved}
+                onClick={onClose}
+                disabled={showRecoveryPhrase && !recoveryPhraseSaved}
                 className={`w-full py-4 px-6 rounded-xl text-lg font-semibold transition-all duration-300 ${
-                  recoveryPhraseSaved
-                    ? "btn-prepaid-primary hover:scale-[1.02]"
-                    : "bg-slate-700 text-slate-400 cursor-not-allowed"
+                  showRecoveryPhrase && !recoveryPhraseSaved
+                    ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                    : "btn-prepaid-primary hover:scale-[1.02]"
                 }`}
               >
-                {recoveryPhraseSaved ? "Continue to Dashboard →" : "Save"}
+                {showRecoveryPhrase && !recoveryPhraseSaved 
+                  ? "Save Recovery Phrase First" 
+                  : "Close"
+                }
               </button>
             </motion.div>
+
           </motion.div>
         </motion.div>
       </div>
@@ -287,4 +302,4 @@ const SecureSuccessScreen: React.FC<SecureSuccessScreenProps> = ({
   );
 };
 
-export default SecureSuccessScreen;
+export default CardReceipt;

@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/types/storage.ts
 /**
  * Client-side storage and data persistence type definitions
- * Single source of truth for IndexedDB, local storage, and data backup types
+ * REFACTORED: Updated to match new PoolCard structure
  */
 
 import type { PoolCard, CardFilterOptions } from "./card";
@@ -38,12 +38,10 @@ export interface StorageResult<T = any> {
 }
 
 /**
- * Storage statistics
+ * Storage statistics - UPDATED: Removed pending card counts
  */
 export interface StorageStats {
   totalCards: number;
-  activeCards: number;
-  pendingCards: number;
   totalSize: number; // Storage size in bytes
   lastAccessed: string; // ISO timestamp
   indexedDBSupported: boolean;
@@ -104,7 +102,7 @@ export interface EncryptionConfig {
 }
 
 /**
- * Storage query options
+ * Storage query options - UPDATED: Use new filter options
  */
 export interface StorageQueryOptions {
   filter?: CardFilterOptions;
@@ -127,13 +125,12 @@ export interface StorageTransaction {
 }
 
 /**
- * Storage cleanup configuration
+ * Storage cleanup configuration - UPDATED
  */
 export interface CleanupConfig {
   expiredCards: boolean; // Remove expired cards
   maxAge: number; // Max age in days
   maxCards: number; // Max number of cards to keep
-  keepActiveCards: boolean; // Never delete active cards
   backupBeforeCleanup: boolean; // Create backup before cleanup
 }
 
@@ -175,7 +172,7 @@ export interface SyncStatus {
 }
 
 /**
- * Storage event types for listeners
+ * Storage event types for listeners - UPDATED
  */
 export type StorageEventType =
   | "card-created"
@@ -207,7 +204,7 @@ export interface CacheConfig {
 }
 
 /**
- * Data validation rules for storage
+ * Data validation rules for storage - UPDATED
  */
 export interface ValidationRules {
   cardId: {
@@ -223,6 +220,10 @@ export interface ValidationRules {
     required: boolean;
     wordCount: number;
     checksum: boolean;
+  };
+  transactionHash: {
+    required: boolean;
+    pattern: RegExp; // 0x[a-fA-F0-9]{64}
   };
 }
 

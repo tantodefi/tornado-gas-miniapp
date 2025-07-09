@@ -227,9 +227,7 @@ export async function getCardStatsFromIndexedDB() {
 
     const total = cards.length;
     const active = cards.filter((card) => card.status === "active").length;
-    const pending = cards.filter(
-      (card) => card.status === "pending-topup",
-    ).length;
+
     const totalValue = cards
       .filter((card) => card.status === "active" && card.balance)
       .reduce((sum, card) => sum + parseFloat(card.balance || "0"), 0);
@@ -237,7 +235,6 @@ export async function getCardStatsFromIndexedDB() {
     return {
       total,
       active,
-      pending,
       totalValue,
     };
   } catch (error) {
@@ -245,7 +242,6 @@ export async function getCardStatsFromIndexedDB() {
     return {
       total: 0,
       active: 0,
-      pending: 0,
       totalValue: 0,
     };
   }

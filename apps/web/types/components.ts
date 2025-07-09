@@ -1,13 +1,13 @@
 //file:prepaid-gas-website/apps/web/types/components.ts
 /**
  * UI component prop and styling type definitions
- * Updated to use new field names from data package and PoolWithActivity
+ * REFACTORED: Updated to match new card structure, removed top-up flow
  */
 
 import type { ReactNode } from "react";
 import type { Pool, PoolMember, FilterState, PoolWithActivity } from "./pool";
 import type { PoolCard, CardStats } from "./card";
-import type { PaymentPool, PaymentState } from "./payment";
+import type { PaymentPool, PaymentState, PaymentDetails } from "./payment";
 
 /**
  * Button variant options
@@ -55,16 +55,21 @@ export interface FilterBarProps {
 }
 
 /**
- * Card item component props for different card types
+ * Cards table component props - NEW: Replaces individual card items
  */
-export interface CardItemProps {
+export interface CardsTableProps {
+  cards: PoolCard[];
+  isLoading: boolean;
+  onCardClick: (card: PoolCard) => void;
+}
+
+/**
+ * Card receipt component props - NEW: Common component for showing card details
+ */
+export interface CardReceiptProps {
   card: PoolCard;
-  index: number;
-  onTopUp: () => void;
-  onDelete: () => void;
-  onShowMnemonic: () => void;
-  showMnemonic: boolean;
-  onHideMnemonic: () => void;
+  showRecoveryPhrase?: boolean; // Whether to show mnemonic
+  onClose: () => void;
 }
 
 /**
@@ -78,21 +83,19 @@ export interface PoolCardProps {
 
 /**
  * Enhanced pool card props for detail pages
- * Updated to use PoolWithActivity for pools with activity data
  */
 export interface EnhancedPoolCardProps {
-  pool: PoolWithActivity; // Updated to support activity data
+  pool: PoolWithActivity;
   onJoin: () => void;
   isJoining: boolean;
   showPayment: boolean;
 }
 
 /**
- * Pool Activity Section Props - NEW
- * Updated to use PoolWithActivity specifically for activity display
+ * Pool Activity Section Props
  */
 export interface PoolActivitySectionProps {
-  pool?: PoolWithActivity; // Updated to use PoolWithActivity
+  pool?: PoolWithActivity;
   isLoading?: boolean;
 }
 
@@ -109,14 +112,17 @@ export interface ModalProps {
 }
 
 /**
- * Payment modal specific props
+ * Payment modal props - UPDATED: Include PaymentDetails in callback
  */
 export interface PaymentModalProps {
   isVisible: boolean;
   paymentPool: PaymentPool;
   generatedCard: PoolCard;
   poolId: string;
-  onPaymentSuccess: (activatedCard: PoolCard) => void;
+  onPaymentSuccess: (
+    activatedCard: PoolCard,
+    paymentDetails: PaymentDetails,
+  ) => void;
   onPaymentError: (error: string) => void;
   onCancel: () => void;
 }
@@ -149,45 +155,41 @@ export interface InfoRowProps {
 
 /**
  * Pool overview section props
- * Updated to use new field names from data package
  */
 export interface PoolOverviewProps {
   pool: {
     joiningFee: string;
     totalDeposits: string;
-    memberCount: string; // Updated from membersCount
-    createdAtTimestamp: string; // Updated from createdAt
-    network: string; // Simplified from network object
+    memberCount: string;
+    createdAtTimestamp: string;
+    network: string;
   };
 }
 
 /**
  * Technical details section props
- * Updated to use new field names from data package
  */
 export interface TechnicalDetailsSectionProps {
   pool: {
     poolId: string;
     rootHistoryCount: number;
     currentRootIndex: number;
-    memberCount: string; // Updated from membersCount
+    memberCount: string;
     createdAtBlock: string;
-    createdAtTimestamp: string; // Updated from createdAt
-    network: string; // Simplified from network object
+    createdAtTimestamp: string;
+    network: string;
     chainId: string;
-    // Removed deprecated fields: merkleTreeDuration, merkleTreeDepth
   };
 }
 
 /**
  * Members section component props
- * Updated to use new field names from data package
  */
 export interface MembersSectionProps {
   pool: {
     poolId: string;
-    memberCount: string; // Updated from membersCount
-    createdAtTimestamp: string; // Updated from createdAt
+    memberCount: string;
+    createdAtTimestamp: string;
   };
   members: PoolMember[];
   showMembers: boolean;
@@ -232,20 +234,6 @@ export interface ProcessStepProps {
 export interface StatItemProps {
   number: string;
   label: string;
-}
-
-/**
- * Success screen props
- */
-export interface SuccessScreenProps {
-  card: PoolCard;
-  identity: any; // GenerateIdentityResult
-  pool: {
-    poolId: string;
-    joiningFee: string;
-    network: string; // Simplified from network object
-  };
-  onComplete: () => void;
 }
 
 /**
@@ -307,7 +295,7 @@ export interface PaginationProps {
 }
 
 /**
- * Card dashboard props
+ * Card dashboard props - UPDATED: Simplified stats
  */
 export interface CardDashboardProps {
   stats: CardStats;

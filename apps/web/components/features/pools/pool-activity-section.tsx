@@ -37,43 +37,9 @@ const ActivityRow: React.FC<{
   // Render different content based on activity type
   const renderAction = () => {
     if (activity.type === "member_added") {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">👤</span>
-          {explorerUrl ? (
-            <a
-              href={explorerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white hover:text-purple-400 transition-colors flex items-center gap-1"
-            >
-              Member Joined
-              <span className="text-slate-400 text-xs">↗</span>
-            </a>
-          ) : (
-            <span className="text-white">Member Joined</span>
-          )}
-        </div>
-      );
+      return <div className="flex items-center gap-2"> Member Joined </div>;
     } else {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">⛽</span>
-          {explorerUrl ? (
-            <a
-              href={explorerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white hover:text-purple-400 transition-colors flex items-center gap-1"
-            >
-              Gas Payment
-              <span className="text-slate-400 text-xs">↗</span>
-            </a>
-          ) : (
-            <span className="text-white">Gas Payment</span>
-          )}
-        </div>
-      );
+      return <div className="flex items-center gap-2"> Gas Payment </div>;
     }
   };
 
@@ -87,7 +53,7 @@ const ActivityRow: React.FC<{
       );
     } else {
       return (
-        <span className="text-green-400 font-medium">
+        <span className="text-red-400 font-medium">
           {parseFloat(
             formatGwei(BigInt(activity.transaction.actualGasCost || "0")),
           ).toFixed(3)}{" "}
@@ -106,8 +72,22 @@ const ActivityRow: React.FC<{
       <TableCell>{renderValue()}</TableCell>
 
       {/* Time */}
-      <TableCell className="text-slate-400 text-right">
+      <TableCell className="text-slate-400">
         {getTimeAgo(activity.timestamp)}
+      </TableCell>
+
+      {/* Explorer Link */}
+      <TableCell className="text-slate-400 flex justify-center">
+        {explorerUrl && (
+          <a
+            href={explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white hover:text-purple-400 transition-colors flex items-center gap-1"
+          >
+            <span className="text-slate-400 text-xs">↗</span>
+          </a>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -185,8 +165,9 @@ const PoolActivitySection: React.FC<PoolActivitySectionProps> = ({
               <TableRow className="border-slate-700/50">
                 <TableHead className="text-slate-400">Action</TableHead>
                 <TableHead className="text-slate-400">Value</TableHead>
-                <TableHead className="text-slate-400 text-right">
-                  Time
+                <TableHead className="text-slate-400">Time</TableHead>
+                <TableHead className="text-slate-400 text-center">
+                  View on explorer
                 </TableHead>
               </TableRow>
             </TableHeader>

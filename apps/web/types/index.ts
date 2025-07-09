@@ -1,10 +1,10 @@
 //file:prepaid-gas-website/apps/web/types/index.ts
 /**
  * Central type exports for the web application
- * Single source of truth for all type definitions
+ * REFACTORED: Updated exports to match new structure
  */
 
-// Pool-related types (Updated to include activity types)
+// Pool-related types
 export type {
   Pool,
   PoolMember,
@@ -18,12 +18,12 @@ export type {
   ActivityOptions,
 } from "./pool";
 
-// Card-related types
+// Card-related types - UPDATED: Removed old interfaces
 export type {
   PoolCard,
   CardIdentity,
   CardStatus,
-  CardPoolDetails,
+  CardPoolInfo, // NEW: Replaces CardPoolDetails
   GenerateIdentityResult,
   MnemonicWord,
   CardStats,
@@ -58,11 +58,12 @@ export type {
   PaymentMethod,
 } from "./payment";
 
-// Component prop types
+// Component prop types - UPDATED: Removed old, added new
 export type {
   PageHeaderProps,
   FilterBarProps,
-  CardItemProps,
+  CardsTableProps, // NEW: Replaces CardItemProps
+  CardReceiptProps, // NEW: Common receipt component
   PoolCardProps,
   EnhancedPoolCardProps,
   PoolActivitySectionProps,
@@ -78,7 +79,6 @@ export type {
   FeatureCardProps,
   ProcessStepProps,
   StatItemProps,
-  SuccessScreenProps,
   IdentityGenerationFlowProps,
   ToastProps,
   FormFieldProps,

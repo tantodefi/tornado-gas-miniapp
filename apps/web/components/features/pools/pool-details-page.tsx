@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { GenerateIdentityResult, PaymentPool, PoolCard } from "@/types";
+import { GenerateIdentityResult, PaymentDetails, PaymentPool, PoolCard } from "@/types";
 import { usePoolDetails } from "@/hooks/pools/use-pool-details";
 import {
   generateCompleteIdentity,
@@ -19,7 +19,7 @@ import EnhancedPoolCard from "./enhanced-pool-card";
 import PoolOverview from "./pool-overview";
 import PoolActivitySection from "./pool-activity-section";
 import PaymentModal from "../payment/payment-modal";
-import SecureSuccessScreen from "../identity/secure-success-screen";
+import CardReceipt from "../cards/card-receipt";
 
 interface PoolDetailsPageProps {
   poolId: string;
@@ -47,11 +47,8 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
 
   // Generated data state
   const [generatedCard, setGeneratedCard] = useState<PoolCard | null>(null);
-  const [generatedIdentity, setGeneratedIdentity] =
-    useState<GenerateIdentityResult | null>(null);
   const [activatedCard, setActivatedCard] = useState<PoolCard | null>(null);
 
-  // Pool data hook
   const { pool, isLoading, error, refetch } = usePoolDetails(poolId);
 
   // Navigation handlers
@@ -71,25 +68,22 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
 
       // Generate identity automatically
       const identity = generateCompleteIdentity();
-      setGeneratedIdentity(identity);
 
-      // Generate encoded paymaster context using the new function
+      // Generate encoded paymaster context
       const paymasterContext = encodePaymasterContext(
         pool.paymaster.address as `0x${string}`, // paymaster address
         pool.poolId, // pool ID
         identity.identity.export(), // identity string
       );
 
-      console.log("Generated paymaster context:", paymasterContext);
-
-      // Create the card but don't save to IndexedDB yet (wait for payment success)
+      // Create the card with new structure - UPDATED
       const newCard: PoolCard = {
-        id: identity.cardId,
-        poolId: pool.poolId,
-        poolDetails: {
+        id: crypto.randomUUID(),
+        poolInfo: {
+          poolId: pool.poolId,
           joiningFee: pool.joiningFee,
-          memberCount: pool.memberCount, // Updated from membersCount
           network: pool.network,
+          paymasterType: pool.paymaster.contractType,
         },
         identity: {
           mnemonic: identity.mnemonic,
@@ -97,56 +91,75 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
           commitment: identity.commitment,
         },
         paymasterContract: pool.paymaster.address,
-        paymasterContext: paymasterContext,
-        createdAt: new Date().toISOString(),
-        status: "pending-topup",
+        paymasterContext,
+        // Transaction data will be filled after payment
+        transactionHash: "", // Will be updated after payment
+        chainId: "", // Will be updated after payment
+        purchasedAt: new Date().toISOString(),
         expiresAt: identity.expiresAt,
+        status: "active",
+        balance: "0", // Will be updated after payment
       };
 
+      // Save card to IndexedDB (will be updated after payment)
+      await saveCardToIndexedDB(newCard);
       setGeneratedCard(newCard);
 
-      // Show payment component instead of redirecting
+      console.log("✅ Card created and saved:", newCard.id);
+
+      // Show payment modal
       setShowPayment(true);
     } catch (error) {
-      console.error("Failed to create identity:", error);
-      alert("Failed to create gas card. Please try again.");
+      console.error("Failed to join pool:", error);
+      alert(
+        error instanceof Error
+          ? `Failed to join pool: ${error.message}`
+          : "Failed to join pool. Please try again.",
+      );
     } finally {
       setIsJoining(false);
     }
   };
 
   // Payment handlers
-  const handlePaymentSuccess = async (activatedCard: PoolCard) => {
-    console.log("Payment successful, card activated:", activatedCard.id);
-    // Save the activated card to IndexedDB
-    await saveCardToIndexedDB(activatedCard);
-    // Store activated card and show success screen
-    setActivatedCard(activatedCard);
+  const handlePaymentSuccess = (activatedCard: PoolCard, details: PaymentDetails) => {
+    console.log("✅ Payment successful:", {
+      cardId: activatedCard.id,
+      transactionHash: details.transactionHash,
+      network: details.network,
+    });
+
+    // Update the card with transaction details
+    const updatedCard: PoolCard = {
+      ...activatedCard,
+      transactionHash: details.transactionHash,
+      chainId: details.network.chainId,
+      blockNumber: details.blockNumber,
+      gasUsed: details.gasUsed,
+      balance: (parseFloat(details.pool.joiningFee) / 1e18).toString(), // Convert wei to ETH
+    };
+
+    setActivatedCard(updatedCard);
     setShowPayment(false);
     setShowSuccessScreen(true);
   };
 
+  
   const handlePaymentError = (error: string) => {
-    console.error("Payment failed:", error);
+    console.error("❌ Payment failed:", error);
+    alert(`Payment failed: ${error}`);
     setShowPayment(false);
-    alert(`Payment failed: ${error}`); // Temporary error handling
   };
 
-  const handleCancelPayment = () => {
+  const handlePaymentCancel = () => {
     setShowPayment(false);
-    setGeneratedCard(null);
-    setGeneratedIdentity(null);
   };
 
-  // Success screen handlers
   const handleSuccessComplete = () => {
     setShowSuccessScreen(false);
-    setGeneratedCard(null);
-    setGeneratedIdentity(null);
-    setActivatedCard(null);
-    // Navigate to cards dashboard or pools
-    router.push("/cards/pending");
+    router.push("/cards/my-cards"); // UPDATED: Navigate to my-cards
   };
+
 
   // Convert pool to PaymentPool format
   const paymentPool: PaymentPool | null = pool;
@@ -173,7 +186,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 h-[calc(100vh-20rem)]">
-
           {/* Left Column - Pool Card & Overview */}
           <div className="lg:col-span-5 h-full">
             <motion.div
@@ -223,17 +235,16 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
           poolId={poolId}
           onPaymentSuccess={handlePaymentSuccess}
           onPaymentError={handlePaymentError}
-          onCancel={handleCancelPayment}
+          onCancel={handlePaymentCancel}
         />
       )}
 
-      {/* Success Screen Modal */}
-      {showSuccessScreen && activatedCard && generatedIdentity && (
-        <SecureSuccessScreen
-          card={activatedCard}
-          identity={generatedIdentity}
-          pool={pool}
-          onComplete={handleSuccessComplete}
+      {/* Success Screen  */}
+      {showSuccessScreen && activatedCard && (
+        <CardReceipt
+        card={activatedCard}
+        showRecoveryPhrase={true} // Show recovery phrase for new purchases
+        onClose={handleSuccessComplete}
         />
       )}
     </div>

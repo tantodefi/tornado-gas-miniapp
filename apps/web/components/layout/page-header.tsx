@@ -23,6 +23,7 @@ interface PageHeaderProps {
  * Reusable page header component
  * Single responsibility: Provide consistent header layout with back navigation
  * Used across all app pages for consistent UX
+ * UPDATED: Link to my-cards instead of pending
  */
 export const PageHeader: React.FC<PageHeaderProps> = ({
   backText = "← Back",
@@ -62,8 +63,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       </button>
 
       <div className="flex items-center space-x-4">
+        {/* UPDATED: Link to my-cards instead of pending */}
         <Link
-          href="/cards/pending"
+          href="/cards/my-cards"
           className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono flex items-center gap-2"
         >
           💳 My Cards

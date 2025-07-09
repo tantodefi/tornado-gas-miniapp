@@ -2,11 +2,12 @@
 "use client";
 
 import { PaymentManager } from "@/components/features/payment/payment-manager";
-import { PaymentPool, PoolCard } from "@/types";
+import { PaymentPool, PoolCard, PaymentDetails } from "@/types";
 import React from "react";
+import { formatEther } from "viem";
 
 /**
- * Props for PaymentModal component
+ * Props for PaymentModal component - UPDATED to include PaymentDetails
  */
 interface PaymentModalProps {
   /** Whether the modal is visible */
@@ -17,30 +18,14 @@ interface PaymentModalProps {
   generatedCard: PoolCard;
   /** Pool ID for display */
   poolId: string;
-  /** Handler for successful payment completion */
-  onPaymentSuccess: (activatedCard: PoolCard) => void;
+  /** Handler for successful payment completion - UPDATED to include PaymentDetails */
+  onPaymentSuccess: (activatedCard: PoolCard, paymentDetails: PaymentDetails) => void;
   /** Handler for payment errors */
   onPaymentError: (error: string) => void;
   /** Handler for canceling the payment */
   onCancel: () => void;
 }
 
-/**
- * Format wei amount to ETH display
- */
-const formatEthAmount = (weiString: string): string => {
-  try {
-    const wei = BigInt(weiString);
-    const eth = Number(wei) / 1e18;
-
-    if (eth === 0) return "0.00";
-    if (eth < 0.0001) return "< 0.0001";
-    if (eth < 1) return eth.toFixed(6).replace(/\.?0+$/, "");
-    return eth.toFixed(4).replace(/\.?0+$/, "");
-  } catch {
-    return "0.00";
-  }
-};
 
 /**
  * PaymentModal Component
@@ -65,18 +50,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   if (!isVisible) return null;
 
-  const handlePaymentCompleted = (details: any) => {
+  const handlePaymentCompleted = (details: PaymentDetails) => {
     console.log("Payment completed:", details);
 
     // Update card status and save
     const activatedCard: PoolCard = {
       ...generatedCard,
       status: "active",
-      balance: formatEthAmount(paymentPool.joiningFee),
-      joinedAt: new Date().toISOString(),
+      balance: formatEther(BigInt(paymentPool.joiningFee)),
+      purchasedAt: new Date().toISOString(),
     };
 
-    onPaymentSuccess(activatedCard);
+    // UPDATED: Pass both activatedCard AND PaymentDetails
+    onPaymentSuccess(activatedCard, details);
   };
 
   const handlePaymentError = (error: any) => {
@@ -95,7 +81,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             Complete Payment
           </h2>
           <p className="text-slate-400">
-            Join Pool {poolId} with {formatEthAmount(paymentPool.joiningFee)}{" "}
+            Join Pool {poolId} with {formatEther(BigInt(paymentPool.joiningFee))}{" "}
             ETH
           </p>
         </div>
