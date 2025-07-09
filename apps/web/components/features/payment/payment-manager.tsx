@@ -21,9 +21,10 @@ import type {
   DaimoError,
   PoolCard,
 } from "@/types";
+
 /**
  * Hook for generating payment data using existing card identity
- * Unlike old system, this uses the identity from pending card
+ * Unlike old system, this uses the identity from existing card
  */
 export function usePaymentDataGenerator(pool: PaymentPool, card: PoolCard) {
   const generatePaymentData = useCallback((): PaymentData => {
@@ -70,18 +71,28 @@ export function PaymentManager({
   // Handle payment started - store payment data for later use
   const handlePaymentStarted = useCallback(
     (paymentData: PaymentData) => {
-      console.log("Payment started:", {
+      console.log("🔐 PaymentManager: Payment started:", {
         poolId: pool.poolId,
         cardId: card.id,
         provider: actualProvider,
         identityCommitment: paymentData.identity.commitment.toString(),
+        timing: "wallet_confirmation_dialog_appeared",
       });
 
       // Store payment data for completion callback
       currentPaymentDataRef.current = paymentData;
 
-      // Call external callback
-      callbacks.onPaymentStarted(paymentData);
+      // 🔧 FIX: Ensure callback is called properly
+      try {
+        callbacks.onPaymentStarted(paymentData);
+        console.log("✅ PaymentManager: onPaymentStarted callback completed");
+      } catch (error) {
+        console.error(
+          "❌ PaymentManager: Error in onPaymentStarted callback:",
+          error,
+        );
+        // Don't fail the payment flow for callback errors
+      }
     },
     [pool.poolId, card.id, actualProvider, callbacks],
   );
@@ -89,24 +100,28 @@ export function PaymentManager({
   // Handle payment completed - create payment details for card activation
   const handlePaymentCompleted = useCallback(
     (event: DaimoPaymentEvent | RainbowTransactionEvent) => {
-      console.log("Payment completed:", {
+      console.log("✅ PaymentManager: Payment completed:", {
         event,
         poolId: pool.poolId,
         cardId: card.id,
         provider: actualProvider,
       });
 
-      // Get stored payment data
+      // 🔧 FIX: Better validation of payment data
       const paymentData = currentPaymentDataRef.current;
 
       if (!paymentData) {
-        console.error("No payment data found for success callback");
+        console.error(
+          "❌ PaymentManager: No payment data found for success callback",
+        );
         const error: PaymentError = {
-          message: "Payment completed but missing payment data",
+          message:
+            "Payment completed but missing payment data. This may indicate a timing issue.",
           provider: actualProvider,
           poolId: pool.poolId,
           cardId: card.id,
           timestamp: Date.now(),
+          cause: new Error("Missing payment data in success callback"),
         };
         callbacks.onPaymentError(error);
         return;
@@ -117,7 +132,7 @@ export function PaymentManager({
       let blockNumber: number | undefined;
       let gasUsed: string | undefined;
 
-      // Type guard for Rainbow event
+      // 🔧 IMPROVED: More robust hash extraction
       if ("hash" in event && typeof event.hash === "string") {
         // Rainbow/Wagmi event
         transactionHash = event.hash;
@@ -141,9 +156,13 @@ export function PaymentManager({
 
       // Validate that we have a transaction hash
       if (!transactionHash) {
-        console.error("No transaction hash found in payment event:", event);
+        console.error(
+          "❌ PaymentManager: No transaction hash found in payment event:",
+          event,
+        );
         const error: PaymentError = {
-          message: "Payment completed but no transaction hash received",
+          message:
+            "Payment completed but no transaction hash received. Please contact support.",
           provider: actualProvider,
           poolId: pool.poolId,
           cardId: card.id,
@@ -154,7 +173,10 @@ export function PaymentManager({
         return;
       }
 
-      console.log("✅ Transaction hash extracted:", transactionHash);
+      console.log(
+        "✅ PaymentManager: Transaction hash extracted:",
+        transactionHash,
+      );
 
       // 🔧 FIX: Create PaymentDetails with correct network structure
       const paymentDetails: PaymentDetails = {
@@ -170,14 +192,36 @@ export function PaymentManager({
         gasUsed,
       };
 
-      console.log("✅ PaymentDetails created:", {
+      console.log("✅ PaymentManager: PaymentDetails created:", {
         transactionHash: paymentDetails.transactionHash,
         network: paymentDetails.network,
         cardId: paymentDetails.card.id,
       });
 
+      // 🔧 FIX: Clear payment data before calling success callback
+      currentPaymentDataRef.current = null;
+
       // Call success callback with complete details
-      callbacks.onPaymentCompleted(paymentDetails);
+      try {
+        callbacks.onPaymentCompleted(paymentDetails);
+        console.log("✅ PaymentManager: onPaymentCompleted callback completed");
+      } catch (error) {
+        console.error(
+          "❌ PaymentManager: Error in onPaymentCompleted callback:",
+          error,
+        );
+        // Convert callback error to payment error
+        const paymentError: PaymentError = {
+          message:
+            "Payment succeeded but failed to process completion. Please check your cards.",
+          provider: actualProvider,
+          poolId: pool.poolId,
+          cardId: card.id,
+          timestamp: Date.now(),
+          cause: error,
+        };
+        callbacks.onPaymentError(paymentError);
+      }
     },
     [pool, card, actualProvider, callbacks],
   );
@@ -185,19 +229,21 @@ export function PaymentManager({
   // Handle payment error - create standardized error
   const handlePaymentError = useCallback(
     (error: DaimoError | WagmiError | unknown) => {
-      console.log("Payment error:", {
+      console.log("❌ PaymentManager: Payment error:", {
         error,
         poolId: pool.poolId,
         cardId: card.id,
         provider: actualProvider,
       });
 
-      // Clear stored payment data on error
+      // 🔧 FIX: Always clear stored payment data on error
+      const hadPaymentData = currentPaymentDataRef.current !== null;
       currentPaymentDataRef.current = null;
 
       // Extract error message for user display
       let errorMessage = "Payment failed. Please try again.";
 
+      // 🔧 IMPROVED: Better error message extraction
       if (error && typeof error === "object") {
         if ("message" in error && typeof error.message === "string") {
           errorMessage = error.message;
@@ -221,19 +267,38 @@ export function PaymentManager({
         cause: error,
       };
 
-      callbacks.onPaymentError(paymentError);
+      console.log("🔧 PaymentManager: Created standardized error:", {
+        message: paymentError.message,
+        provider: paymentError.provider,
+        hadPaymentData,
+      });
+
+      // 🔧 FIX: Ensure callback is called properly
+      try {
+        callbacks.onPaymentError(paymentError);
+        console.log("✅ PaymentManager: onPaymentError callback completed");
+      } catch (callbackError) {
+        console.error(
+          "❌ PaymentManager: Error in onPaymentError callback:",
+          callbackError,
+        );
+        // Can't really handle this - just log it
+      }
     },
     [pool.poolId, card.id, actualProvider, callbacks],
   );
 
-  // Unified callbacks for payment buttons
+  // 🔧 FIX: Unified callbacks for payment buttons (consistent interface)
   const paymentCallbacks = {
     handlePaymentStarted,
     handlePaymentCompleted,
     handlePaymentError,
   };
 
-  console.log("PaymentManager: Using provider:", actualProvider);
+  console.log("🎯 PaymentManager: Using provider:", actualProvider, {
+    poolId: pool.poolId,
+    cardId: card.id,
+  });
 
   // Render appropriate payment button based on provider
   return (

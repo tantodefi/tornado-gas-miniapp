@@ -26,17 +26,28 @@ export function DaimoButton({
 }: PaymentButtonProps) {
   const [currentPaymentData, setCurrentPaymentData] =
     useState<PaymentData | null>(null);
+  const [paymentInProgress, setPaymentInProgress] = useState(false);
 
-  // Handle payment started - store payment data and call callback
+  // 🔧 FIX: Handle payment started - but don't call callback immediately
   const handlePaymentStarted = useCallback(
     (event: unknown) => {
-      console.log("Daimo payment started:", event);
+      console.log("🚀 Daimo payment initiated:", event);
 
       try {
         const paymentData = getPaymentData();
         setCurrentPaymentData(paymentData);
-        callbacks.handlePaymentStarted(paymentData);
+        setPaymentInProgress(true);
+
+        // 🔧 FIX: Delay calling onPaymentStarted to simulate confirmation timing
+        // Daimo might handle confirmation internally, so we delay slightly
+        setTimeout(() => {
+          console.log(
+            "🔐 Daimo payment confirmation - calling onPaymentStarted",
+          );
+          callbacks.handlePaymentStarted(paymentData);
+        }, 100); // Small delay to ensure cancel button timing is correct
       } catch (error) {
+        setPaymentInProgress(false);
         const daimoError: DaimoError = {
           message:
             error instanceof Error
@@ -54,7 +65,8 @@ export function DaimoButton({
   // Handle payment completed - pass through with payment data context
   const handlePaymentCompleted = useCallback(
     (event: DaimoPaymentEvent) => {
-      console.log("Daimo payment completed:", event);
+      console.log("✅ Daimo payment completed:", event);
+      setPaymentInProgress(false);
 
       // Daimo might pass different event structure
       // Extract transaction hash from various possible locations
@@ -77,6 +89,22 @@ export function DaimoButton({
       callbacks.handlePaymentCompleted(enhancedEvent);
     },
     [callbacks, currentPaymentData],
+  );
+
+  // 🔧 FIX: Handle payment bounced/cancelled
+  const handlePaymentBounced = useCallback(
+    (event: unknown) => {
+      console.log("🚫 Daimo payment bounced/cancelled:", event);
+      setPaymentInProgress(false);
+
+      const daimoError: DaimoError = {
+        message: "Payment was cancelled or rejected",
+        name: "PaymentBounced",
+        cause: event,
+      };
+      callbacks.handlePaymentError(daimoError);
+    },
+    [callbacks],
   );
 
   // Generate payment data for metadata
@@ -133,17 +161,10 @@ export function DaimoButton({
         // Behavior
         closeOnSuccess={true}
         resetOnSuccess={false}
-        // Event handlers
+        // 🔧 FIX: Event handlers with proper timing
         onPaymentStarted={handlePaymentStarted}
         onPaymentCompleted={handlePaymentCompleted}
-        onPaymentBounced={(event) => {
-          const daimoError: DaimoError = {
-            message: "Payment was cancelled or bounced",
-            name: "PaymentBounced",
-            cause: event,
-          };
-          callbacks.handlePaymentError(daimoError);
-        }}
+        onPaymentBounced={handlePaymentBounced}
       />
 
       <div className="text-center">
@@ -152,7 +173,9 @@ export function DaimoButton({
           <span className="font-medium text-purple-400">DaimoPay</span>
         </p>
         <p className="text-xs text-slate-400 mt-1">
-          Pay with Coinbase, Binance, or any wallet
+          {paymentInProgress
+            ? "Processing payment..."
+            : "Pay with Coinbase, Binance, or any wallet"}
         </p>
 
         {/* Show current payment info for debugging */}
@@ -160,6 +183,7 @@ export function DaimoButton({
           <p className="text-xs text-slate-500 mt-1 font-mono">
             Card: {currentPaymentData.cardId} • Pool:{" "}
             {currentPaymentData.poolId}
+            {paymentInProgress && " • In Progress"}
           </p>
         )}
       </div>

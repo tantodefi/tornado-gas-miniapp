@@ -2,44 +2,29 @@
 "use client";
 
 import { PaymentManager } from "@/components/features/payment/payment-manager";
-import { PaymentPool, PoolCard, PaymentDetails } from "@/types";
+import { PaymentPool, PoolCard, PaymentDetails, PaymentData } from "@/types";
 import React from "react";
 import { formatEther } from "viem";
 
 /**
  * Props for PaymentModal component - UPDATED to include PaymentDetails
  */
-interface PaymentModalProps {
-  /** Whether the modal is visible */
+export interface PaymentModalProps {
   isVisible: boolean;
-  /** Pool data for payment processing */
   paymentPool: PaymentPool;
-  /** Generated card to be activated */
   generatedCard: PoolCard;
-  /** Pool ID for display */
   poolId: string;
-  /** Handler for successful payment completion - UPDATED to include PaymentDetails */
   onPaymentSuccess: (
     activatedCard: PoolCard,
     paymentDetails: PaymentDetails,
   ) => void;
-  /** Handler for payment errors */
   onPaymentError: (error: string) => void;
-  /** Handler for canceling the payment */
-  onCancel: () => void;
+  onCancel?: () => void;
+  onPaymentStarted: (paymentData: PaymentData) => void;
 }
 
 /**
  * PaymentModal Component
- *
- * Single Responsibility: Handle payment processing modal UI and interactions
- *
- * Features:
- * - Modal overlay with backdrop blur
- * - Payment amount display
- * - Integration with PaymentManager
- * - Payment callback handling
- * - Cancel functionality
  */
 const PaymentModal: React.FC<PaymentModalProps> = ({
   isVisible,
@@ -47,6 +32,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   generatedCard,
   poolId,
   onPaymentSuccess,
+  onPaymentStarted,
   onPaymentError,
   onCancel,
 }) => {
@@ -80,9 +66,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     onPaymentError(error.message);
   };
 
-  const handlePaymentStarted = (paymentData: any) => {
-    console.log("Payment started:", paymentData);
-  };
+  // 🔧 FIX: Determine if cancel is allowed
+  const canCancel = !!onCancel;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -101,16 +86,26 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           pool={paymentPool}
           card={generatedCard}
           callbacks={{
-            onPaymentStarted: handlePaymentStarted,
+            onPaymentStarted: onPaymentStarted,
             onPaymentCompleted: handlePaymentCompleted,
             onPaymentError: handlePaymentError,
           }}
         />
 
         <div className="text-center mt-6">
-          <button onClick={onCancel} className="btn-prepaid-outline btn-sm">
-            Cancel
-          </button>
+          {/* 🔧 FIX: Only show cancel button when cancellation is allowed */}
+          {canCancel ? (
+            <button onClick={onCancel} className="btn-prepaid-outline btn-sm">
+              Cancel
+            </button>
+          ) : (
+            <button
+              disabled
+              className="btn-prepaid-outline btn-sm opacity-50 cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          )}
         </div>
       </div>
     </div>
