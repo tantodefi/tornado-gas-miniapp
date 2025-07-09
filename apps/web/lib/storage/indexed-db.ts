@@ -26,9 +26,9 @@ async function initDB(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
-        store.createIndex("poolId", "poolId", { unique: false });
+        store.createIndex("poolId", "poolInfo.poolId", { unique: false });
         store.createIndex("status", "status", { unique: false });
-        store.createIndex("createdAt", "createdAt", { unique: false });
+        store.createIndex("purchasedAt", "purchasedAt", { unique: false });
       }
     };
   });

@@ -51,8 +51,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   if (!isVisible) return null;
 
   const handlePaymentCompleted = (details: PaymentDetails) => {
-    console.log("Payment completed:", details);
-
+    console.log("Payment completed in modal:", {
+      transactionHash: details.transactionHash,
+      network: details.network,
+      cardId: details.card.id,
+    });
+  
     // Update card status and save
     const activatedCard: PoolCard = {
       ...generatedCard,
@@ -60,7 +64,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       balance: formatEther(BigInt(paymentPool.joiningFee)),
       purchasedAt: new Date().toISOString(),
     };
-
+  
+    console.log("Calling onPaymentSuccess with:", {
+      activatedCardId: activatedCard.id,
+      detailsTransactionHash: details.transactionHash,
+    });
+  
     // UPDATED: Pass both activatedCard AND PaymentDetails
     onPaymentSuccess(activatedCard, details);
   };

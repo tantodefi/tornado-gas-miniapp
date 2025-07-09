@@ -4,13 +4,13 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { GenerateIdentityResult, PaymentDetails, PaymentPool, PoolCard } from "@/types";
+import { PaymentDetails, PaymentPool, PoolCard } from "@/types";
 import { usePoolDetails } from "@/hooks/pools/use-pool-details";
 import {
   generateCompleteIdentity,
   IdentitySecurity,
 } from "@/lib/identity/generator";
-import { saveCardToIndexedDB } from "@/lib/storage/indexed-db";
+import { saveCardToIndexedDB, updateCardInIndexedDB } from "@/lib/storage/indexed-db";
 import { encodePaymasterContext } from "@workspace/core";
 import LoadingSkeleton from "@/components/shared/loading-skeleton";
 import ErrorState from "@/components/shared/error-state";
@@ -122,26 +122,65 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
   };
 
   // Payment handlers
-  const handlePaymentSuccess = (activatedCard: PoolCard, details: PaymentDetails) => {
+  const handlePaymentSuccess = async (activatedCard: PoolCard, details: PaymentDetails) => {
     console.log("✅ Payment successful:", {
       cardId: activatedCard.id,
       transactionHash: details.transactionHash,
       network: details.network,
     });
-
-    // Update the card with transaction details
-    const updatedCard: PoolCard = {
-      ...activatedCard,
-      transactionHash: details.transactionHash,
-      chainId: details.network.chainId,
-      blockNumber: details.blockNumber,
-      gasUsed: details.gasUsed,
-      balance: (parseFloat(details.pool.joiningFee) / 1e18).toString(), // Convert wei to ETH
-    };
-
-    setActivatedCard(updatedCard);
-    setShowPayment(false);
-    setShowSuccessScreen(true);
+  
+    try {
+      // 🔧 FIX: Update the card in IndexedDB with transaction details
+      const updatedCard = await updateCardInIndexedDB(activatedCard.id, {
+        transactionHash: details.transactionHash,
+        chainId: details.network.chainId,
+        blockNumber: details.blockNumber,
+        gasUsed: details.gasUsed,
+        balance: (parseFloat(details.pool.joiningFee) / 1e18).toString(),
+        status: "active" as const,
+        purchasedAt: new Date().toISOString(),
+      });
+  
+      if (updatedCard) {
+        console.log("✅ Card updated in IndexedDB:", {
+          cardId: updatedCard.id,
+          transactionHash: updatedCard.transactionHash,
+          chainId: updatedCard.chainId,
+        });
+        setActivatedCard(updatedCard);
+      } else {
+        console.error("❌ Failed to update card in IndexedDB - card not found");
+        // Create updated card for UI even if DB update failed
+        const fallbackCard: PoolCard = {
+          ...activatedCard,
+          transactionHash: details.transactionHash,
+          chainId: details.network.chainId,
+          blockNumber: details.blockNumber,
+          gasUsed: details.gasUsed,
+          balance: (parseFloat(details.pool.joiningFee) / 1e18).toString(),
+        };
+        setActivatedCard(fallbackCard);
+      }
+  
+      setShowPayment(false);
+      setShowSuccessScreen(true);
+    } catch (error) {
+      console.error("❌ Failed to update card in IndexedDB:", error);
+      
+      // Still show success screen even if DB update fails
+      const fallbackCard: PoolCard = {
+        ...activatedCard,
+        transactionHash: details.transactionHash,
+        chainId: details.network.chainId,
+        blockNumber: details.blockNumber,
+        gasUsed: details.gasUsed,
+        balance: (parseFloat(details.pool.joiningFee) / 1e18).toString(),
+      };
+      
+      setActivatedCard(fallbackCard);
+      setShowPayment(false);
+      setShowSuccessScreen(true);
+    }
   };
 
   
@@ -157,7 +196,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ poolId }) => {
 
   const handleSuccessComplete = () => {
     setShowSuccessScreen(false);
-    router.push("/cards/my-cards"); // UPDATED: Navigate to my-cards
   };
 
 

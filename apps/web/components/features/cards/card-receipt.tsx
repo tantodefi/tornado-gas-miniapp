@@ -208,7 +208,7 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
                   className="text-lg font-semibold text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 group"
                   title="View transaction on explorer"
                 >
-                  <span>{formatTransactionHash(card.transactionHash)} ↗</span>
+                  <span>{formatTransactionHash(card.transactionHash)}</span>
                   <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 </button>
               </div>

@@ -95,10 +95,10 @@ export function PaymentManager({
         cardId: card.id,
         provider: actualProvider,
       });
-
+  
       // Get stored payment data
       const paymentData = currentPaymentDataRef.current;
-
+  
       if (!paymentData) {
         console.error("No payment data found for success callback");
         const error: PaymentError = {
@@ -111,12 +111,12 @@ export function PaymentManager({
         callbacks.onPaymentError(error);
         return;
       }
-
+  
       // Extract transaction hash from different event types
       let transactionHash: string | undefined;
       let blockNumber: number | undefined;
       let gasUsed: string | undefined;
-
+  
       // Type guard for Rainbow event
       if ("hash" in event && typeof event.hash === "string") {
         // Rainbow/Wagmi event
@@ -138,10 +138,10 @@ export function PaymentManager({
           transactionHash = event.txHash;
         }
       }
-
+  
       // Validate that we have a transaction hash
       if (!transactionHash) {
-        console.error("No transaction hash found in payment event");
+        console.error("No transaction hash found in payment event:", event);
         const error: PaymentError = {
           message: "Payment completed but no transaction hash received",
           provider: actualProvider,
@@ -153,8 +153,10 @@ export function PaymentManager({
         callbacks.onPaymentError(error);
         return;
       }
-
-      // Create complete payment details for card activation
+  
+      console.log("✅ Transaction hash extracted:", transactionHash);
+  
+      // 🔧 FIX: Create PaymentDetails with correct network structure
       const paymentDetails: PaymentDetails = {
         transactionHash,
         pool,
@@ -167,7 +169,13 @@ export function PaymentManager({
         blockNumber,
         gasUsed,
       };
-
+  
+      console.log("✅ PaymentDetails created:", {
+        transactionHash: paymentDetails.transactionHash,
+        network: paymentDetails.network,
+        cardId: paymentDetails.card.id,
+      });
+  
       // Call success callback with complete details
       callbacks.onPaymentCompleted(paymentDetails);
     },
