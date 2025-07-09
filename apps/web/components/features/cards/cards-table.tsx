@@ -14,19 +14,20 @@ interface CardsTableProps {
 
 /**
  * Cards Table Component - UPDATED for new PoolCard structure
- * 
+ *
  * Displays all active cards in a clean table format
  * Click any row to view card details in receipt modal
  */
-const CardsTable: React.FC<CardsTableProps> = ({ 
-  cards, 
-  isLoading, 
-  onCardClick 
+const CardsTable: React.FC<CardsTableProps> = ({
+  cards,
+  isLoading,
+  onCardClick,
 }) => {
-  const filteredCards = cards.filter(card => {
-    if(card.poolInfo?.poolId){
-      return card
-  }})
+  const filteredCards = cards.filter((card) => {
+    if (card.poolInfo?.poolId) {
+      return card;
+    }
+  });
   // Helper function to format card ID for display
   const formatCardId = (cardId: string) => {
     return `${cardId.slice(0, 8)}...${cardId.slice(-4)}`;
@@ -68,7 +69,8 @@ const CardsTable: React.FC<CardsTableProps> = ({
         <div className="text-6xl mb-6">💳</div>
         <h3 className="text-xl font-bold text-white mb-4">No Gas Cards Yet</h3>
         <p className="text-slate-400 mb-6">
-          You haven't purchased any gas cards yet. Browse pools and join one to purchase your first card.
+          You haven't purchased any gas cards yet. Browse pools and join one to
+          purchase your first card.
         </p>
       </motion.div>
     );
@@ -84,7 +86,9 @@ const CardsTable: React.FC<CardsTableProps> = ({
       {/* Table Header */}
       <div className="bg-slate-700/50 px-6 py-4 border-b border-slate-600/30">
         <h3 className="text-lg font-semibold text-white">Your Gas Cards</h3>
-        <p className="text-sm text-slate-400">Click any card to view receipt details</p>
+        <p className="text-sm text-slate-400">
+          Click any card to view receipt details
+        </p>
       </div>
 
       {/* Table Content */}
@@ -138,7 +142,9 @@ const CardsTable: React.FC<CardsTableProps> = ({
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-slate-300">
-                    {card.poolInfo.paymasterType === "GasLimited" ? "Multi-Use" : "One-Time"}
+                    {card.poolInfo.paymasterType === "GasLimited"
+                      ? "Multi-Use"
+                      : "One-Time"}
                   </span>
                 </td>
                 <td className="px-6 py-4">
@@ -175,7 +181,7 @@ const CardsTable: React.FC<CardsTableProps> = ({
       {/* Table Footer */}
       <div className="bg-slate-700/30 px-6 py-3 text-center">
         <span className="text-xs text-slate-400">
-          {cards.length} card{cards.length !== 1 ? 's' : ''} total
+          {cards.length} card{cards.length !== 1 ? "s" : ""} total
         </span>
       </div>
     </motion.div>

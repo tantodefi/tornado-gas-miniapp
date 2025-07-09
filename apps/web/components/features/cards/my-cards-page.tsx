@@ -16,20 +16,20 @@ interface MyCardsPageProps {
 
 /**
  * My Cards Page - RENAMED from PendingCardsPage
- * 
+ *
  * Shows all purchased cards in a table format
  * Click any card to view receipt details
  */
 const MyCardsPage: React.FC<MyCardsPageProps> = () => {
   const router = useRouter();
-  
+
   // Use existing card issuance hook for all cards
   const { allCards, isLoading, getCardStats } = useCardIssuance();
-  
+
   // Modal state for card receipt
   const [selectedCard, setSelectedCard] = useState<PoolCard | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
-  
+
   // Card statistics - UPDATED for new structure
   const [cardStats, setCardStats] = useState({
     total: 0,
@@ -75,10 +75,7 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
     return (
       <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <PageHeader
-            backText="← Back to Pools"
-            onBack={handleBack}
-          />
+          <PageHeader backText="← Back to Pools" onBack={handleBack} />
 
           <div className="text-center py-16">
             <div className="text-4xl mb-4">⏳</div>
@@ -95,10 +92,7 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <PageHeader
-          backText="← Back to Pools"
-          onBack={handleBack}
-        />
+        <PageHeader backText="← Back to Pools" onBack={handleBack} />
 
         {/* Page Title */}
         <motion.div
@@ -112,7 +106,8 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
             <span className="text-prepaid-gradient-brand">Gas Cards</span>
           </h1>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            View and manage your purchased gas cards. Click any card to view receipt details.
+            View and manage your purchased gas cards. Click any card to view
+            receipt details.
           </p>
         </motion.div>
 
@@ -141,7 +136,7 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <CardsTable 
+          <CardsTable
             cards={allCards}
             isLoading={isLoading}
             onCardClick={handleCardClick}

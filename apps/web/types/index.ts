@@ -30,10 +30,6 @@ export type {
   CreateCardParams,
   UpdateCardParams,
   CardFilterOptions,
-  CardBackupData,
-  CardSecurityCheck,
-  CardTransaction,
-  CardUsageStats,
 } from "./card";
 
 // Payment-related types
@@ -52,10 +48,6 @@ export type {
   WagmiError,
   DaimoError,
   PaymentProviderConfig,
-  PaymentTransaction,
-  PaymentAnalytics,
-  PaymentFeeEstimate,
-  PaymentMethod,
 } from "./payment";
 
 // Component prop types - UPDATED: Removed old, added new
@@ -80,10 +72,6 @@ export type {
   ProcessStepProps,
   StatItemProps,
   IdentityGenerationFlowProps,
-  ToastProps,
-  FormFieldProps,
-  SearchInputProps,
-  PaginationProps,
   CardDashboardProps,
   PaymentStateDisplayProps,
   ButtonVariant,
@@ -95,23 +83,10 @@ export type {
 
 // Storage-related types
 export type {
-  StorageCard,
   IndexedDBConfig,
   StorageResult,
   StorageStats,
   BackupData,
   ImportValidationResult,
-  MigrationConfig,
-  EncryptionConfig,
   StorageQueryOptions,
-  StorageTransaction,
-  CleanupConfig,
-  StorageMonitoring,
-  SyncStatus as StorageSyncStatus,
-  StorageEventType,
-  StorageEvent,
-  CacheConfig as StorageCacheConfig,
-  ValidationRules,
-  SecurityConfig,
-  RecoveryOptions,
 } from "./storage";

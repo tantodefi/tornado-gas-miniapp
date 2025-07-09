@@ -246,55 +246,6 @@ export interface IdentityGenerationFlowProps {
 }
 
 /**
- * Toast notification props
- */
-export interface ToastProps {
-  id: string;
-  type: "success" | "error" | "warning" | "info";
-  title: string;
-  message?: string;
-  duration?: number;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
-
-/**
- * Form field props
- */
-export interface FormFieldProps {
-  label: string;
-  name: string;
-  type?: "text" | "email" | "password" | "number" | "textarea";
-  placeholder?: string;
-  required?: boolean;
-  disabled?: boolean;
-  error?: string;
-  helperText?: string;
-}
-
-/**
- * Search input props
- */
-export interface SearchInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-}
-
-/**
- * Pagination component props
- */
-export interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  showInfo?: boolean;
-}
-
-/**
  * Card dashboard props - UPDATED: Simplified stats
  */
 export interface CardDashboardProps {

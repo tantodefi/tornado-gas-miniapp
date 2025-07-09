@@ -16,7 +16,7 @@ interface CardReceiptProps {
 
 /**
  * CardReceipt Component
- * 
+ *
  * Reusable receipt-like component for displaying card details
  * Used for both payment success and viewing existing cards
  */
@@ -65,7 +65,6 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
       <div className="max-w-md w-full max-h-[85vh] overflow-y-auto">
-        
         {/* Header */}
         <motion.div
           className="text-center mb-8"
@@ -157,14 +156,15 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
           >
             {/* Card Details Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
-              
               {/* Card Type */}
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
                   Card Type
                 </p>
                 <p className="text-lg font-semibold text-white">
-                  {card.poolInfo.paymasterType === "GasLimited" ? "Multi-Use" : "One-Time-Use"}
+                  {card.poolInfo.paymasterType === "GasLimited"
+                    ? "Multi-Use"
+                    : "One-Time-Use"}
                 </p>
               </div>
 
@@ -244,13 +244,15 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
                   <div className="grid grid-cols-3 gap-3 text-sm">
                     {card.identity.mnemonic.split(" ").map((word, index) => (
                       <div key={index} className="flex items-center gap-2">
-                        <span className="text-slate-500 text-xs w-6">{index + 1}.</span>
+                        <span className="text-slate-500 text-xs w-6">
+                          {index + 1}.
+                        </span>
                         <span className="text-white font-mono">{word}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-                
+
                 {/* Recovery Phrase Confirmation */}
                 <div className="mb-4">
                   <label className="flex items-start gap-3 cursor-pointer group">
@@ -288,13 +290,11 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
                     : "btn-prepaid-primary hover:scale-[1.02]"
                 }`}
               >
-                {showRecoveryPhrase && !recoveryPhraseSaved 
-                  ? "Save Recovery Phrase First" 
-                  : "Close"
-                }
+                {showRecoveryPhrase && !recoveryPhraseSaved
+                  ? "Save Recovery Phrase First"
+                  : "Close"}
               </button>
             </motion.div>
-
           </motion.div>
         </motion.div>
       </div>

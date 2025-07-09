@@ -19,13 +19,15 @@ interface PaymentModalProps {
   /** Pool ID for display */
   poolId: string;
   /** Handler for successful payment completion - UPDATED to include PaymentDetails */
-  onPaymentSuccess: (activatedCard: PoolCard, paymentDetails: PaymentDetails) => void;
+  onPaymentSuccess: (
+    activatedCard: PoolCard,
+    paymentDetails: PaymentDetails,
+  ) => void;
   /** Handler for payment errors */
   onPaymentError: (error: string) => void;
   /** Handler for canceling the payment */
   onCancel: () => void;
 }
-
 
 /**
  * PaymentModal Component
@@ -56,7 +58,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       network: details.network,
       cardId: details.card.id,
     });
-  
+
     // Update card status and save
     const activatedCard: PoolCard = {
       ...generatedCard,
@@ -64,12 +66,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       balance: formatEther(BigInt(paymentPool.joiningFee)),
       purchasedAt: new Date().toISOString(),
     };
-  
+
     console.log("Calling onPaymentSuccess with:", {
       activatedCardId: activatedCard.id,
       detailsTransactionHash: details.transactionHash,
     });
-  
+
     // UPDATED: Pass both activatedCard AND PaymentDetails
     onPaymentSuccess(activatedCard, details);
   };
@@ -90,8 +92,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             Complete Payment
           </h2>
           <p className="text-slate-400">
-            Join Pool {poolId} with {formatEther(BigInt(paymentPool.joiningFee))}{" "}
-            ETH
+            Join Pool {poolId} with{" "}
+            {formatEther(BigInt(paymentPool.joiningFee))} ETH
           </p>
         </div>
 
