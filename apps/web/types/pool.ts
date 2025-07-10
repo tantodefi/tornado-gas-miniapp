@@ -6,27 +6,21 @@
 
 import type { SerializedPool, SerializedPoolMember } from "@workspace/data";
 
-/**
- * ========================================
- * CORE TYPES - Direct from Data Package
- * ========================================
- */
-
 export type Pool = SerializedPool;
 
 /**
- * Pool member type for web app - directly uses serialized data package type
+ * Pool member type for web app
  */
 export type PoolMember = SerializedPoolMember;
 
 /**
  * ========================================
- * ACTIVITY TYPES - New for unified activity feed
+ * ACTIVITY TYPES
  * ========================================
  */
 
 /**
- * Activity item type - represents different types of pool activities
+ * Activity item type
  */
 export type ActivityType = "member_added" | "transaction";
 
@@ -88,22 +82,6 @@ export type ActivityItem = MemberAddedActivity | TransactionActivity;
 export interface PoolWithActivity extends Pool {
   /** Combined activity feed (members + transactions) ordered by timestamp */
   activity?: ActivityItem[];
-}
-
-/**
- * ========================================
- * UI/DISPLAY HELPER TYPES
- * ========================================
- */
-
-/**
- * Filter state for pool filtering and sorting
- */
-export interface FilterState {
-  network: string;
-  amountRange: string;
-  memberRange: string;
-  sortBy: string;
 }
 
 /**

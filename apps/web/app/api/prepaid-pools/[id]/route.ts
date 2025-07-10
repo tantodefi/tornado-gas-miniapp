@@ -7,19 +7,25 @@ import {
   handleApiError,
   setCacheHeaders,
 } from "@/lib/api/response";
-import { SubgraphClient } from "@workspace/data";
+import {
+  SerializedPoolMember,
+  SerializedUserOperation,
+  SubgraphClient,
+} from "@workspace/data";
 import type {
   ActivityItem,
   MemberAddedActivity,
   TransactionActivity,
-} from "@/types";
+} from "@/types/pool";
 
 const CACHE_TTL = parseInt(process.env.POOLS_CACHE_TTL || "300", 10);
 
 /**
  * Transform pool members into activity items
  */
-function transformMembersToActivity(members: any[]): MemberAddedActivity[] {
+function transformMembersToActivity(
+  members: SerializedPoolMember[],
+): MemberAddedActivity[] {
   return members.map((member) => ({
     id: `member-${member.id}`,
     type: "member_added" as const,
@@ -40,7 +46,7 @@ function transformMembersToActivity(members: any[]): MemberAddedActivity[] {
  * Transform user operations into activity items
  */
 function transformTransactionsToActivity(
-  userOperations: any[],
+  userOperations: SerializedUserOperation[],
 ): TransactionActivity[] {
   return userOperations.map((op) => ({
     id: `transaction-${op.id}`,
@@ -63,8 +69,8 @@ function transformTransactionsToActivity(
  * Combine and sort activities by timestamp (newest first)
  */
 function createUnifiedActivity(
-  members: any[],
-  userOperations: any[],
+  members: SerializedPoolMember[],
+  userOperations: SerializedUserOperation[],
   limit: number = 50,
 ): ActivityItem[] {
   const memberActivities = transformMembersToActivity(members);
@@ -80,7 +86,7 @@ function createUnifiedActivity(
   allActivities.sort((a, b) => {
     const timestampA = parseInt(a.timestamp);
     const timestampB = parseInt(b.timestamp);
-    return timestampB - timestampA; // Descending order (newest first)
+    return timestampB - timestampA;
   });
 
   // Limit the results
@@ -149,7 +155,6 @@ export async function GET(
       );
     }
 
-    // 🆕 CREATE UNIFIED ACTIVITY FEED
     const members = poolData.members || [];
     const userOperations = poolData.userOperations || [];
 

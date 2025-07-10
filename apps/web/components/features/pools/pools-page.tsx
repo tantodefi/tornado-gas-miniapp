@@ -6,13 +6,12 @@ import { motion } from "framer-motion";
 import { usePoolsData } from "@/hooks/pools/use-pools-data";
 import { usePoolsFilter } from "@/hooks/pools/use-pools-filter";
 import { useApiError } from "@/hooks/shared/use-api-error";
-import PrepaidPoolCard from "./multi-use-pool-card";
+import PrepaidPoolCard from "../../shared/multi-use-pool-card";
 import FilterBar from "./pool-filters";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { PoolsPageHeader } from "@/components/layout/page-header";
 
-// Card Skeleton Loader Component (unchanged)
+// Card Skeleton Loader Component
 const CardSkeleton: React.FC = () => (
   <div className="w-[250px] h-[150px] sm:w-[280px] sm:h-[168px] lg:w-[320px] lg:h-[192px] mx-auto bg-slate-800/50 rounded-xl lg:rounded-2xl border border-slate-600/30 relative animate-pulse">
     <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between">
@@ -35,11 +34,9 @@ const CardSkeleton: React.FC = () => (
 );
 
 /**
- * Prepaid Pools Page Component - UPDATED with navigation links
- * Single responsibility: Present pools data with filtering UI
- * Uses Next.js useRouter for navigation
+ * Pools Page Component
  */
-const PrepaidPoolsPage = () => {
+const PoolsPage = () => {
   const router = useRouter();
 
   // Data fetching (pure data concern)
@@ -49,7 +46,7 @@ const PrepaidPoolsPage = () => {
   const { filteredPools, filters, setFilter, resetFilters, poolCount } =
     usePoolsFilter(pools);
 
-  // Error handling (standardized error management)
+  // Error handling
   const { displayError, retry, isRetrying } = useApiError(error, refetch);
 
   // Navigation handlers using Next.js router
@@ -73,10 +70,8 @@ const PrepaidPoolsPage = () => {
   return (
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* UPDATED Header with Navigation */}
         <PoolsPageHeader />
 
-        {/* Filter Bar (unchanged) */}
         <FilterBar
           filters={filters}
           onFilterChange={setFilter}
@@ -84,7 +79,6 @@ const PrepaidPoolsPage = () => {
           isLoading={isLoading}
         />
 
-        {/* Error State (unchanged) */}
         {displayError && (
           <motion.div
             className="text-center py-12"
@@ -117,7 +111,6 @@ const PrepaidPoolsPage = () => {
           </motion.div>
         )}
 
-        {/* Loading State (unchanged) */}
         {isLoading && !displayError && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
             {[...Array(6)].map((_, index) => (
@@ -133,7 +126,6 @@ const PrepaidPoolsPage = () => {
           </div>
         )}
 
-        {/* Cards Grid (unchanged) */}
         {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
             {filteredPools.map((pool, index) => (
@@ -149,7 +141,6 @@ const PrepaidPoolsPage = () => {
           </div>
         )}
 
-        {/* No Results State (unchanged) */}
         {!isLoading &&
           !displayError &&
           filteredPools.length === 0 &&
@@ -176,10 +167,8 @@ const PrepaidPoolsPage = () => {
             </motion.div>
           )}
 
-        {/* Footer Info (unchanged) */}
         {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="text-center mt-16 text-slate-400 text-sm">
-            <p>🔒 All transactions are private and unlinkable</p>
             {lastFetchTime && (
               <p className="mt-2 text-xs">
                 Data refreshed at {new Date(lastFetchTime).toLocaleTimeString()}
@@ -192,4 +181,4 @@ const PrepaidPoolsPage = () => {
   );
 };
 
-export default PrepaidPoolsPage;
+export default PoolsPage;

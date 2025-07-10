@@ -1,6 +1,6 @@
 //file:prepaid-gas-website/apps/web/app/pools/page.tsx
 import { Metadata } from "next";
-import PrepaidPoolsPage from "@/components/features/pools/pools-page";
+import PoolsPage from "@/components/features/pools/pools-page";
 
 export const metadata: Metadata = {
   title: "Prepaid Gas Pools",
@@ -10,13 +10,5 @@ export const metadata: Metadata = {
 
 /**
  * Pools listing page - /pools
- * Pure Server Component - no event handlers needed
  */
-export default function PoolsPage() {
-  return (
-    <>
-      {/* Remove the event handler props - component will handle navigation internally */}
-      <PrepaidPoolsPage />
-    </>
-  );
-}
+export default PoolsPage;

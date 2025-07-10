@@ -1,6 +1,16 @@
 //file:prepaid-gas-website/apps/web/hooks/pools/use-pools-filter.ts
 import { useState, useMemo } from "react";
-import type { Pool, FilterState } from "@/types";
+import type { Pool } from "@/types/pool";
+import { PaymasterType } from "@workspace/data";
+
+/**
+ * Filter state for pool filtering and sorting
+ */
+export interface FilterState {
+  network: string;
+  poolType: PaymasterType | "all";
+  sortBy: string;
+}
 
 /**
  * Custom hook for filtering and sorting pools
@@ -9,8 +19,7 @@ import type { Pool, FilterState } from "@/types";
 export const usePoolsFilter = (pools: Pool[]) => {
   const [filters, setFilters] = useState<FilterState>({
     network: "all",
-    amountRange: "all",
-    memberRange: "all",
+    poolType: "all",
     sortBy: "newest",
   });
 
@@ -24,8 +33,7 @@ export const usePoolsFilter = (pools: Pool[]) => {
   const resetFilters = () => {
     setFilters({
       network: "all",
-      amountRange: "all",
-      memberRange: "all",
+      poolType: "all",
       sortBy: "newest",
     });
   };
@@ -38,62 +46,25 @@ export const usePoolsFilter = (pools: Pool[]) => {
       filtered = filtered.filter((pool) => pool.network === filters.network);
     }
 
-    // Apply amount range filter
-    if (filters.amountRange !== "all") {
-      filtered = filtered.filter((pool) => {
-        const amount = parseFloat(pool.joiningFee);
-        switch (filters.amountRange) {
-          case "0-0.1":
-            return amount >= 0 && amount <= 0.1;
-          case "0.1-0.5":
-            return amount > 0.1 && amount <= 0.5;
-          case "0.5-1":
-            return amount > 0.5 && amount <= 1;
-          case "1+":
-            return amount > 1;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply member range filter
-    if (filters.memberRange !== "all") {
-      filtered = filtered.filter((pool) => {
-        const memberCount = parseInt(pool.memberCount); // Updated from membersCount
-        switch (filters.memberRange) {
-          case "small":
-            return memberCount < 100;
-          case "medium":
-            return memberCount >= 100 && memberCount < 500;
-          case "large":
-            return memberCount >= 500;
-          default:
-            return true;
-        }
-      });
-    }
-
     // Apply sorting
     filtered.sort((a, b) => {
       switch (filters.sortBy) {
         case "newest":
           return (
-            new Date(b.createdAtTimestamp).getTime() - // Updated from createdAt
-            new Date(a.createdAtTimestamp).getTime() // Updated from createdAt
+            new Date(b.createdAtTimestamp).getTime() -
+            new Date(a.createdAtTimestamp).getTime()
           );
-        case "amount-high":
-          return parseFloat(b.joiningFee) - parseFloat(a.joiningFee);
-        case "amount-low":
-          return parseFloat(a.joiningFee) - parseFloat(b.joiningFee);
-        case "members-high":
-          return parseInt(b.memberCount) - parseInt(a.memberCount); // Updated from membersCount
-        case "members-low":
-          return parseInt(a.memberCount) - parseInt(b.memberCount); // Updated from membersCount
+
         default:
           return 0;
       }
     });
+
+    if (filters.poolType !== "all") {
+      filtered = filtered.filter(
+        (pool) => pool.paymaster.contractType === filters.poolType,
+      );
+    }
 
     return filtered;
   }, [pools, filters]);

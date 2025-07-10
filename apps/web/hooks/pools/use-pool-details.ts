@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/hooks/pools/use-pool-details.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { prepaidPoolsApi } from "@/lib/api/api-client";
-import type { PoolWithActivity } from "@/types";
+import type { PoolWithActivity } from "@/types/pool";
 import { ApiError } from "@/lib/api/type";
 
 // Custom hook for managing pool details state

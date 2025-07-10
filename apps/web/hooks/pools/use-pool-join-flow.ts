@@ -1,134 +1,98 @@
-//file: hooks/pools/use-pool-join-flow.ts
+//file:prepaid-gas-website/apps/web/hooks/pools/use-pool-join-flow.ts
+
 import { useState, useCallback } from "react";
-import { Pool, PoolCard, PaymentDetails, PaymentPool } from "@/types";
+import { generateCompleteIdentity } from "@/lib/identity/generator";
 import {
-  generateCompleteIdentity,
-  IdentitySecurity,
-} from "@/lib/identity/generator";
-import {
-  saveCardToIndexedDB,
-  updateCardInIndexedDB,
-  deleteCardFromIndexedDB,
+  saveCard,
+  markCardAsCompleted,
+  deleteCard,
+  PoolCard,
 } from "@/lib/storage/indexed-db";
 import { encodePaymasterContext } from "@workspace/core";
+import { Pool } from "@/types/pool";
+import { PaymentSuccessDetails } from "@/components/features/payment/payment-manager";
 
-/**
- * Simple state machine for pool joining flow
- */
+// Join flow states - simple state machine
 type JoinFlowState =
-  | "idle" // Ready to join
-  | "joining" // Generating identity and card
-  | "payment" // Payment modal open
-  | "paying" // Payment in progress (disable cancel)
-  | "success" // Success screen showing
-  | "completed" // Flow completed
-  | "cancelled" // Flow cancelled
-  | "error"; // Error occurred
+  | "idle"
+  | "preparing"
+  | "ready-for-payment"
+  | "payment-in-progress"
+  | "success"
+  | "error";
 
-/**
- * Return type for usePoolJoinFlow hook
- */
 interface UsePoolJoinFlowResult {
   // State
   state: JoinFlowState;
   generatedCard: PoolCard | null;
-  activatedCard: PoolCard | null;
+  completedCard: PoolCard | null;
   error: string | null;
-  paymentPool: PaymentPool | null;
 
-  // Computed state for UI
-  isJoining: boolean;
-  showPayment: boolean;
-  showSuccess: boolean;
-  canCancel: boolean; // NEW: Disable cancel during payment
+  // Computed state
+  canCancel: boolean;
+  showPaymentModal: boolean;
+  showSuccessModal: boolean;
 
   // Actions
-  startJoin: () => Promise<void>;
-  setPaymentInProgress: () => void;
-  handlePaymentSuccess: (details: PaymentDetails) => Promise<void>;
-  handlePaymentError: (error: string) => Promise<void>;
-  handlePaymentCancel: () => Promise<void>;
-  handleSuccessComplete: () => void;
+  startJoinFlow: () => Promise<void>;
+  onPaymentStarted: () => void;
+  onPaymentSuccess: (details: PaymentSuccessDetails) => Promise<void>;
+  onPaymentError: (error: string) => Promise<void>;
+  onPaymentCancelled: () => Promise<void>;
+  onSuccessComplete: () => void;
   reset: () => void;
 }
 
 /**
- * Simplified hook for managing the entire pool joining flow
- *
- * Single Responsibility: Manage the complete join flow with a simple state machine
- *
- * State Flow:
- * idle → joining → payment → paying → success → completed
- *   ↓      ↓         ↓        ↓
- * error  error    cancelled  error
- *
- * @param pool - Pool to join
- * @returns Simplified state and actions
+ * Hook for managing pool join flow state
+ * Single responsibility: Coordinate the join flow from start to finish
  */
-export function usePoolJoinFlow(pool: Pool | null): UsePoolJoinFlowResult {
-  // Single state machine instead of multiple boolean states
+function usePoolJoinFlow(pool: Pool | null): UsePoolJoinFlowResult {
   const [state, setState] = useState<JoinFlowState>("idle");
   const [generatedCard, setGeneratedCard] = useState<PoolCard | null>(null);
-  const [activatedCard, setActivatedCard] = useState<PoolCard | null>(null);
+  const [completedCard, setCompletedCard] = useState<PoolCard | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * 🔧 ENHANCED: Comprehensive card cleanup function
+   * Clean up pending card from storage
    */
-  const cleanupGeneratedCard = useCallback(
-    async (reason: string): Promise<boolean> => {
-      if (!generatedCard) {
-        console.log("🔍 No generated card to cleanup");
-        return true;
-      }
-
+  const cleanupPendingCard = useCallback(
+    async (cardId: string): Promise<void> => {
       try {
-        console.log(
-          `🗑️ Cleaning up generated card (${reason}):`,
-          generatedCard.id,
-        );
-        await deleteCardFromIndexedDB(generatedCard.id);
-        setGeneratedCard(null);
-        console.log("✅ Card cleanup successful");
-        return true;
-      } catch (cleanupError) {
-        console.error("❌ Failed to cleanup generated card:", cleanupError);
-        // Don't let cleanup errors break the flow
-        return false;
+        await deleteCard(cardId);
+        console.log(`✅ Cleaned up pending card: ${cardId}`);
+      } catch (error) {
+        console.error(`❌ Failed to cleanup card ${cardId}:`, error);
       }
     },
-    [generatedCard],
+    [],
   );
 
   /**
-   * Start the join process - generate identity and card
+   * Start the join flow - generate identity and prepare payment
    */
-  const startJoin = useCallback(async () => {
-    if (!pool || state === "joining") return;
+  const startJoinFlow = useCallback(async () => {
+    if (!pool || (state !== "idle" && state !== "error")) return;
 
     try {
-      setState("joining");
+      setState("preparing");
       setError(null);
-      setGeneratedCard(null); // 🔧 ADDED: Clear any existing card
+      console.log(`🚀 Starting join flow for pool: ${pool.poolId}`);
 
-      console.log("🔐 Starting pool join process for pool:", pool.poolId);
-
-      // Validate secure environment
-      IdentitySecurity.validateSecureContext();
-
-      // Generate complete identity
-      const identity = generateCompleteIdentity();
+      // Generate identity
+      const { cardId, identity, mnemonic, privateKey } =
+        generateCompleteIdentity();
 
       // Generate paymaster context
       const paymasterContext = encodePaymasterContext(
         pool.paymaster.address as `0x${string}`,
         pool.poolId,
-        identity.identity.export(),
+        identity.export(),
       );
 
-      // Create complete card
+      // Create pending card
       const newCard: PoolCard = {
-        id: identity.cardId,
+        id: cardId,
         poolInfo: {
           poolId: pool.poolId,
           joiningFee: pool.joiningFee,
@@ -136,210 +100,165 @@ export function usePoolJoinFlow(pool: Pool | null): UsePoolJoinFlowResult {
           paymasterType: pool.paymaster.contractType,
         },
         identity: {
-          mnemonic: identity.mnemonic,
-          privateKey: identity.privateKey,
-          commitment: identity.commitment,
+          mnemonic,
+          privateKey,
         },
         paymasterContract: pool.paymaster.address,
         paymasterContext,
-        transactionHash: "", // Will be updated after payment
+        transactionHash: "",
         chainId: pool.chainId,
         purchasedAt: new Date().toISOString(),
-        expiresAt: identity.expiresAt,
-        status: "active" as const,
-        balance: "0",
+        paymentStatus: "pending",
       };
 
-      // Save to IndexedDB
-      await saveCardToIndexedDB(newCard);
+      // Save pending card
+      await saveCard(newCard);
       setGeneratedCard(newCard);
+      setState("ready-for-payment");
 
-      // Automatically proceed to payment
-      setState("payment");
-
-      console.log("✅ Join preparation completed, opening payment modal");
+      console.log(`✅ Join flow prepared, card ID: ${cardId}`);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      console.error("❌ Pool join failed:", error);
-
-      // 🔧 ENHANCED: Cleanup any partial card creation
-      await cleanupGeneratedCard("join_error");
-
-      setError(`Failed to join pool: ${errorMessage}`);
+        error instanceof Error ? error.message : "Unknown error";
+      console.error(`❌ Join flow preparation failed:`, error);
+      setError(`Failed to prepare join: ${errorMessage}`);
       setState("error");
     }
-  }, [pool, state, cleanupGeneratedCard]);
+  }, [pool, state]);
 
   /**
-   * Mark payment as in progress (disables cancel button)
-   * Called when wallet confirmation dialog appears
+   * Mark payment as started (wallet confirmation dialog appeared)
    */
-  const setPaymentInProgress = useCallback(() => {
-    console.log("💳 Payment in progress - disabling cancel button");
-    if (state === "payment") {
-      setState("paying");
+  const onPaymentStarted = useCallback(() => {
+    if (state === "ready-for-payment") {
+      setState("payment-in-progress");
+      console.log(`🔐 Payment started for card: ${generatedCard?.id}`);
     }
-  }, [state]);
-
-  /**
-   * Handle payment cancellation with card cleanup
-   */
-  const handlePaymentCancel = useCallback(async () => {
-    console.log("🚫 Payment cancelled by user");
-
-    // Clean up generated card from IndexedDB since payment was cancelled
-    await cleanupGeneratedCard("user_cancellation");
-
-    setState("cancelled");
-  }, [cleanupGeneratedCard]);
+  }, [state, generatedCard?.id]);
 
   /**
    * Handle successful payment
    */
-  const handlePaymentSuccess = useCallback(
-    async (details: PaymentDetails) => {
+  const onPaymentSuccess = useCallback(
+    async (details: PaymentSuccessDetails) => {
       if (!generatedCard) {
-        console.error("❌ No generated card for payment success");
-        setError(
-          "Payment succeeded but card is missing. Please contact support.",
-        );
+        console.error(`❌ No generated card for payment success`);
+        setError("Payment succeeded but card is missing");
         setState("error");
         return;
       }
 
-      console.log("✅ Payment successful:", details.transactionHash);
-
       try {
-        // Update card with payment details
-        const updates = {
-          transactionHash: details.transactionHash,
-          chainId: details.network.chainId,
-          blockNumber: details.blockNumber,
-          gasUsed: details.gasUsed,
-          balance: (parseFloat(details.pool.joiningFee) / 1e18).toString(),
-        };
+        console.log(`✅ Payment successful: ${details.transactionHash}`);
 
-        // Update in IndexedDB
-        const updatedCard = await updateCardInIndexedDB(
+        // Mark card as completed in storage
+        const updatedCard = await markCardAsCompleted(
           generatedCard.id,
-          updates,
+          details.transactionHash,
         );
 
-        // Create final card for UI (use updated card from DB if available)
-        const finalCard: PoolCard = updatedCard || {
-          ...generatedCard,
-          ...updates,
-        };
+        if (!updatedCard) {
+          throw new Error("Failed to update card status");
+        }
 
-        setActivatedCard(finalCard);
+        setCompletedCard(updatedCard);
         setState("success");
-
-        console.log("🎉 Payment completed successfully");
+        console.log(`🎉 Card completed: ${updatedCard.id}`);
       } catch (error) {
-        console.error("❌ Failed to update card:", error);
-
-        // Still show success with fallback card
-        const fallbackCard: PoolCard = {
-          ...generatedCard,
-          transactionHash: details.transactionHash,
-          chainId: details.network.chainId,
-          blockNumber: details.blockNumber,
-          gasUsed: details.gasUsed,
-          balance: (parseFloat(details.pool.joiningFee) / 1e18).toString(),
-        };
-
-        setActivatedCard(fallbackCard);
-        setState("success");
+        console.error(`❌ Failed to complete card:`, error);
+        setError("Payment succeeded but failed to save card");
+        setState("error");
       }
     },
     [generatedCard],
   );
 
   /**
-   * 🔧 ENHANCED: Handle payment error with proper cleanup
+   * Handle payment error
    */
-  const handlePaymentError = useCallback(
+  const onPaymentError = useCallback(
     async (errorMessage: string) => {
-      console.log("❌ Payment error received:", errorMessage);
+      console.log(`❌ Payment error: ${errorMessage}`);
 
-      // Check if it's a user rejection (treat as cancellation, not error)
-      const isUserRejection =
-        errorMessage.toLowerCase().includes("user rejected") ||
-        errorMessage.toLowerCase().includes("user denied") ||
-        errorMessage.toLowerCase().includes("rejected the request") ||
-        errorMessage.toLowerCase().includes("user cancelled") ||
-        errorMessage.toLowerCase().includes("cancelled by user") ||
-        errorMessage.toLowerCase().includes("rejected by user");
-
-      if (isUserRejection) {
-        console.log("🚫 User rejected transaction - treating as cancellation");
-        await handlePaymentCancel();
-        return;
+      // Clean up pending card
+      if (generatedCard) {
+        await cleanupPendingCard(generatedCard.id);
       }
 
-      // Real payment error - clean up generated card
-      await cleanupGeneratedCard("payment_error");
-
-      setError(`Payment failed: ${errorMessage}`);
+      setError(errorMessage);
       setState("error");
     },
-    [cleanupGeneratedCard, handlePaymentCancel],
+    [generatedCard, cleanupPendingCard],
   );
 
   /**
-   * Handle success screen completion
+   * Handle payment cancellation
    */
-  const handleSuccessComplete = useCallback(() => {
-    console.log("✅ Success screen completed");
-    setState("completed");
+  const onPaymentCancelled = useCallback(async () => {
+    console.log(`🚫 Payment cancelled`);
+
+    // Clean up pending card
+    if (generatedCard) {
+      await cleanupPendingCard(generatedCard.id);
+    }
+
+    setState("idle");
+  }, [generatedCard, cleanupPendingCard]);
+
+  /**
+   * Complete success flow
+   */
+  const onSuccessComplete = useCallback(() => {
+    console.log(`✅ Success flow completed`);
+    setState("idle");
+    setGeneratedCard(null);
+    setCompletedCard(null);
   }, []);
 
   /**
-   * 🔧 ENHANCED: Reset entire flow with comprehensive cleanup
+   * Reset entire flow
    */
   const reset = useCallback(async () => {
-    console.log("🔄 Resetting join flow");
+    console.log(`🔄 Resetting join flow`);
 
-    // Clean up any existing cards
-    await cleanupGeneratedCard("flow_reset");
+    // Clean up any pending card
+    if (generatedCard) {
+      await cleanupPendingCard(generatedCard.id);
+    }
 
     setState("idle");
     setGeneratedCard(null);
-    setActivatedCard(null);
+    setCompletedCard(null);
     setError(null);
+  }, [generatedCard, cleanupPendingCard]);
 
-    console.log("✅ Flow reset completed");
-  }, [cleanupGeneratedCard]);
-
-  // Computed state for UI
-  const isJoining = state === "joining";
-  const showPayment = state === "payment" || state === "paying";
-  const showSuccess = state === "success";
-  const canCancel = state === "payment"; // Can only cancel before payment starts
-  const paymentPool: PaymentPool | null = pool;
+  // Computed state
+  const canCancel = state === "ready-for-payment";
+  const showPaymentModal =
+    state === "ready-for-payment" || state === "payment-in-progress";
+  const showSuccessModal = state === "success";
 
   return {
     // State
     state,
     generatedCard,
-    activatedCard,
+    completedCard,
     error,
-    paymentPool,
 
-    // Computed state for UI
-    isJoining,
-    showPayment,
-    showSuccess,
+    // Computed state
     canCancel,
+    showPaymentModal,
+    showSuccessModal,
 
     // Actions
-    startJoin,
-    setPaymentInProgress,
-    handlePaymentSuccess,
-    handlePaymentError,
-    handlePaymentCancel,
-    handleSuccessComplete,
+    startJoinFlow,
+    onPaymentStarted,
+    onPaymentSuccess,
+    onPaymentError,
+    onPaymentCancelled,
+    onSuccessComplete,
     reset,
   };
 }
+
+export default usePoolJoinFlow;

@@ -1,9 +1,9 @@
-//file: prepaid-gas-website/apps/web/components/features/pools/multi-use-pool-card.tsx
+//file: prepaid-gas-website/apps/web/components/shared/multi-use-pool-card.tsx
 "use client";
 
 import React from "react";
 import { motion } from "framer-motion";
-import type { Pool } from "@/types";
+import type { Pool } from "@/types/pool";
 import { formatJoiningFee, formatMembersCount } from "@/utils";
 
 const MultiUsePoolCard: React.FC<{

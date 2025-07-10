@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/app/pools/[id]/page.tsx
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import PoolDetailsPage from "@/components/features/pools/pool-details-page";
+import PoolDetailsPage from "@/components/features/pool/pool-details-page";
 
 interface PoolPageProps {
   params: Promise<{ id: string }>;
@@ -14,7 +14,7 @@ export async function generateMetadata({
 
   return {
     title: `Pool ${id} - Prepaid Gas`,
-    description: `View details and join gas credit pool ${id} for anonymous transactions`,
+    description: `View pool details and join gas pool ${id} for anonymous transactions`,
   };
 }
 
@@ -25,15 +25,11 @@ export async function generateMetadata({
 export default async function PoolPage({ params }: PoolPageProps) {
   const { id } = await params;
 
-  console.log(`🔍 Pool page accessed with ID: ${id}`);
-
   // Simple validation - just check if ID exists
   if (!id) {
-    console.log(`❌ No ID provided, redirecting to 404`);
+    console.error(`❌ No ID provided, redirecting to 404`);
     notFound();
   }
-
-  console.log(`✅ Rendering pool page for ID: ${id}`);
 
   return <PoolDetailsPage poolId={id} />;
 }

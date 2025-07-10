@@ -1,27 +1,18 @@
-//file:prepaid-gas-website/apps/web/components/shared/loading-skeleton.tsx
+//file:prepaid-gas-website/apps/web/components/features/pool/pool-page-loading-skeleton.tsx
 "use client";
 
 import React from "react";
-import { PoolPageHeader } from "../layout/page-header";
+import { PoolPageHeader } from "../../layout/page-header";
 
 /**
  * Props for LoadingSkeleton component
  */
 interface LoadingSkeletonProps {
-  /** Handler for back button click */
   onBack: () => void;
 }
 
 /**
  * LoadingSkeleton Component
- *
- * Single Responsibility: Display loading state for pool details page
- *
- * Features:
- * - Consistent header with back navigation
- * - Skeleton layout matching the actual content structure
- * - Animated pulse effects
- * - Responsive grid layout
  */
 const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ onBack }) => (
   <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
@@ -41,7 +32,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ onBack }) => (
 
         {/* Right Column Skeleton */}
         <div className="lg:col-span-7">
-          <div className="w-full h-[400px] bg-slate-800/50 rounded-2xl animate-pulse"></div>
+          <div className="w-full h-[650px] bg-slate-800/50 rounded-2xl animate-pulse"></div>
         </div>
       </div>
     </div>

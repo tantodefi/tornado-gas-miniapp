@@ -52,7 +52,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     }
   };
 
-  console.log({ isConnected });
   return (
     <div className={`flex justify-between items-center mb-8 ${className}`}>
       <button

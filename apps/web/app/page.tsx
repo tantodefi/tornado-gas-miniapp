@@ -6,8 +6,8 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { GasCardsShowcase } from "@/components/features/landing/gas-cards";
+import Stats from "@/components/features/landing/stats";
 
-// Types (keeping existing ones)
 interface FeatureCardProps {
   icon: string;
   title: string;
@@ -15,19 +15,7 @@ interface FeatureCardProps {
   iconVariant: "blue" | "purple" | "pink";
 }
 
-interface ProcessStepProps {
-  stepNumber: number;
-  icon: string;
-  title: string;
-  description: string;
-}
-
-interface StatItemProps {
-  number: string;
-  label: string;
-}
-
-// Floating Background Component (unchanged)
+// Floating Background Component
 const FloatingBackground: React.FC = () => {
   const positions = [
     { top: "20%", left: "10%", delay: 0 },
@@ -66,7 +54,7 @@ const FloatingBackground: React.FC = () => {
   );
 };
 
-// Header Component (unchanged)
+// Header Component
 const Header: React.FC = () => (
   <header className="sticky top-0 z-50 p-4 sm:p-6 lg:p-8 flex justify-between items-center bg-prepaid-gradient bg-opacity-90 backdrop-blur-md">
     <div className="font-semibold text-slate-200 font-mono text-sm sm:text-base">
@@ -76,7 +64,7 @@ const Header: React.FC = () => (
   </header>
 );
 
-// Feature Card Component (unchanged)
+// Feature Card Component
 const FeatureCard: React.FC<FeatureCardProps> = ({
   icon,
   title,
@@ -113,20 +101,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   );
 };
 
-// Stat Item Component (unchanged)
-const StatItem: React.FC<StatItemProps> = ({ number, label }) => (
-  <motion.div
-    className="stat-prepaid"
-    initial={{ opacity: 0, scale: 0.8 }}
-    whileInView={{ opacity: 1, scale: 1 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.5 }}
-  >
-    <div className="stat-prepaid-number">{number}</div>
-    <div className="stat-prepaid-label">{label}</div>
-  </motion.div>
-);
-
+// Hero Section
 const Hero: React.FC = () => (
   <section className="section-prepaid text-center relative z-10">
     <motion.div
@@ -237,26 +212,6 @@ const Features: React.FC = () => {
   );
 };
 
-// Stats Section
-const Stats: React.FC = () => {
-  const stats = [
-    { number: "0", label: "Gas Credit Users" },
-    { number: "0", label: "ETH Deposited Across Pools" },
-    { number: "0", label: "Anonymous Transactions" },
-    { number: "0", label: "Available Pools" },
-  ];
-
-  return (
-    <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-slate-800/30 border-t border-b border-slate-600/30 backdrop-blur-sm">
-      <div className="grid-prepaid-stats max-w-7xl mx-auto text-center">
-        {stats.map((stat, index) => (
-          <StatItem key={index} {...stat} />
-        ))}
-      </div>
-    </section>
-  );
-};
-
 // CTA Section
 const CTA: React.FC = () => (
   <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 text-center bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-t border-purple-500/20">
@@ -284,8 +239,8 @@ const CTA: React.FC = () => (
   </section>
 );
 
-// Main Page Component - UPDATED to use Next.js routing
-const PrepaidGasLanding: React.FC = () => (
+// Main Page Component
+const LandingPage: React.FC = () => (
   <div className="h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth bg-prepaid-gradient text-white">
     <FloatingBackground />
     <Header />
@@ -309,4 +264,4 @@ const PrepaidGasLanding: React.FC = () => (
   </div>
 );
 
-export default PrepaidGasLanding;
+export default LandingPage;

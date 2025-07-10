@@ -1,70 +1,26 @@
 //file:prepaid-gas-website/apps/web/components/features/pools/pool-overview.tsx
 "use client";
 
-import { Pool } from "@/types";
 import React from "react";
+import { Pool } from "@/types/pool";
+import { formatEther } from "viem";
 
 /**
  * Props for PoolOverview component
  */
 interface PoolOverviewProps {
-  /** Pool data to display in overview */
   pool: Pool;
 }
 
 /**
- * Format wei amount to ETH display
- */
-const formatEthAmount = (weiString: string): string => {
-  try {
-    const wei = BigInt(weiString);
-    const eth = Number(wei) / 1e18;
-
-    if (eth === 0) return "0.00";
-    if (eth < 0.0001) return "< 0.0001";
-    if (eth < 1) return eth.toFixed(6).replace(/\.?0+$/, "");
-    return eth.toFixed(4).replace(/\.?0+$/, "");
-  } catch {
-    return "0.00";
-  }
-};
-
-/**
- * Format large numbers with K/M suffixes
- */
-const formatNumber = (num: string | number): string => {
-  try {
-    const n = typeof num === "string" ? parseInt(num) : num;
-    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-    return n.toString();
-  } catch {
-    return "0";
-  }
-};
-
-/**
- * Format address for display
- */
-const formatAddress = (address: string): string => {
-  if (!address) return "N/A";
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-};
-/**
  * PoolOverview Component
- *
- * Single Responsibility: Display key pool metrics and overview information
- *
- * Features:
- * - Key metrics grid (fee, value, members, year)
- * - Network and privacy information
- * - Formatted ETH amounts and member counts
- * - Clean card layout with proper spacing
  */
-const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
-  const joiningFeeEth = formatEthAmount(pool.joiningFee);
-  const totalDepositsEth = formatEthAmount(pool.totalDeposits || "0");
-  const createdDate = new Date(parseInt(pool.createdAtTimestamp) * 1000); // Updated field name
+const PoolOverviewSection: React.FC<PoolOverviewProps> = ({ pool }) => {
+  const joiningFeeEth = formatEther(BigInt(pool.joiningFee || "0"));
+  const totalDepositsEth = parseFloat(
+    formatEther(BigInt(pool.totalDeposits || "0")),
+  ).toFixed(6);
+  const createdDate = new Date(parseInt(pool.createdAtTimestamp) * 1000);
 
   return (
     <div className="card-prepaid-glass card-content-md">
@@ -93,7 +49,7 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
         </div>
         <div className="bg-slate-800/30 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-400">
-            {formatNumber(pool.memberCount)}
+            {pool.memberCount}
           </div>
           <div className="text-xs text-slate-400">Members</div>
         </div>
@@ -119,7 +75,7 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
         <div className="flex justify-between">
           <span className="text-slate-400">Paymaster Address</span>
           <span className="text-blue-400">
-            {formatAddress(pool.paymaster.address)}
+            {`${pool.paymaster.address.slice(0, 6)}...${pool.paymaster.address.slice(-4)}`}
           </span>
         </div>
       </div>
@@ -127,4 +83,4 @@ const PoolOverview: React.FC<PoolOverviewProps> = ({ pool }) => {
   );
 };
 
-export default PoolOverview;
+export default PoolOverviewSection;

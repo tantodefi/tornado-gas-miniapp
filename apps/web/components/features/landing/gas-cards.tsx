@@ -4,8 +4,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { CreditCard, Shield, Zap, Clock } from "lucide-react";
-import MultiUsePoolCard from "../pools/multi-use-pool-card";
-import SingleUsePoolCard from "../pools/single-use-pool-card";
+import MultiUsePoolCard from "../../shared/multi-use-pool-card";
+import SingleUsePoolCard from "../../shared/single-use-pool-card";
 
 // Enhanced Cards Section for Landing Page
 export const GasCardsShowcase: React.FC = () => (

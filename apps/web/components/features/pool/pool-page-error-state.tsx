@@ -1,4 +1,4 @@
-//file:prepaid-gas-website/apps/web/components/shared/error-state.tsx
+//file:prepaid-gas-website/apps/web/components/features/pool/pool-page-error-state.tsx
 "use client";
 
 import React from "react";
@@ -18,14 +18,6 @@ interface ErrorStateProps {
 
 /**
  * ErrorState Component
- *
- * Single Responsibility: Display error state for pool details page
- *
- * Features:
- * - Animated error display with motion
- * - Clear error messaging
- * - Action buttons for retry and navigation
- * - Consistent styling with app theme
  */
 const ErrorState: React.FC<ErrorStateProps> = ({ error, onBack, onRetry }) => (
   <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">

@@ -1,69 +1,68 @@
 //file:prepaid-gas-website/apps/web/hooks/cards/use-card-issuance.ts
+
 import { useState, useEffect, useCallback } from "react";
 import {
-  loadCardsFromIndexedDB,
-  getCardStatsFromIndexedDB,
+  loadCompletedCards,
+  getCardStats,
+  PoolCard,
 } from "@/lib/storage/indexed-db";
-import type { PoolCard, CardStats } from "@/types";
+
+type CardStats = {
+  total: number;
+  completed: number;
+};
+
 interface UseCardIssuanceResult {
-  allCards: PoolCard[];
+  completedCards: PoolCard[];
   isLoading: boolean;
-
-  getCardStats: () => Promise<CardStats>;
-
+  error: string | null;
+  stats: CardStats;
   refreshCards: () => Promise<void>;
 }
-/**
- * Updated hook for card management using IndexedDB
- * Handles both pending and active cards
- */
-export function useCardIssuance(): UseCardIssuanceResult {
-  const [allCards, setAllCards] = useState<PoolCard[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load cards from IndexedDB on mount
-  useEffect(() => {
-    loadCards();
-  }, []);
+/**
+ * Hook for managing completed cards
+ * Single responsibility: Load and manage completed cards for My Cards page
+ */
+function useCardIssuance(): UseCardIssuanceResult {
+  const [completedCards, setCompletedCards] = useState<PoolCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<CardStats>({ total: 0, completed: 0 });
 
   const loadCards = useCallback(async () => {
     try {
       setIsLoading(true);
-      const cards = await loadCardsFromIndexedDB();
-      setAllCards(cards);
+      setError(null);
+
+      // Load only completed cards
+      const cards = await loadCompletedCards();
+      const cardStats = await getCardStats();
+
+      setCompletedCards(cards);
+      setStats(cardStats);
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load cards";
       console.error("Failed to load cards:", error);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Get card statistics - ✅ Fixed implementation
-  const getCardStats = useCallback(async () => {
-    try {
-      return await getCardStatsFromIndexedDB();
-    } catch (error) {
-      console.error("Failed to get card stats:", error);
-      return {
-        total: 0,
-        active: 0,
-        pending: 0,
-        totalValue: 0,
-      };
-    }
-  }, []);
-
-  // Refresh cards (for manual refresh)
-  const refreshCards = useCallback(async () => {
-    await loadCards();
+  // Load cards on mount
+  useEffect(() => {
+    loadCards();
   }, [loadCards]);
 
   return {
-    // State
-    allCards,
+    completedCards,
     isLoading,
-
-    getCardStats,
-    refreshCards,
+    error,
+    stats,
+    refreshCards: loadCards,
   };
 }
+
+export { useCardIssuance };

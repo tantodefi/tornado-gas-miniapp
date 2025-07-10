@@ -1,54 +1,30 @@
 //file:prepaid-gas-website/apps/web/components/features/cards/my-cards-page.tsx
+
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCardIssuance } from "@/hooks/cards/use-card-issuance";
 import { PageHeader } from "../../layout/page-header";
-import { PoolCard } from "@/types";
 import CardsTable from "./cards-table";
 import CardReceipt from "./card-receipt";
-
-interface MyCardsPageProps {
-  // No props needed
-}
+import { PoolCard } from "@/lib/storage/indexed-db";
 
 /**
- * My Cards Page - RENAMED from PendingCardsPage
- *
- * Shows all purchased cards in a table format
- * Click any card to view receipt details
+ * My Cards Page Component
+ * Single responsibility: Display and manage completed cards
  */
-const MyCardsPage: React.FC<MyCardsPageProps> = () => {
+function MyCardsPage() {
   const router = useRouter();
 
-  // Use existing card issuance hook for all cards
-  const { allCards, isLoading, getCardStats } = useCardIssuance();
+  // Load completed cards only
+  const { completedCards, isLoading, error, stats, refreshCards } =
+    useCardIssuance();
 
   // Modal state for card receipt
   const [selectedCard, setSelectedCard] = useState<PoolCard | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
-
-  // Card statistics - UPDATED for new structure
-  const [cardStats, setCardStats] = useState({
-    total: 0,
-    totalValue: 0,
-  });
-
-  // Load card stats on mount and when cards change
-  useEffect(() => {
-    loadCardStats();
-  }, [allCards]);
-
-  const loadCardStats = async () => {
-    try {
-      const stats = await getCardStats();
-      setCardStats(stats);
-    } catch (error) {
-      console.error("Failed to load card stats:", error);
-    }
-  };
 
   // Handle card click - open receipt modal
   const handleCardClick = (card: PoolCard) => {
@@ -71,6 +47,7 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
     router.push("/pools");
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
@@ -82,6 +59,31 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
             <div className="text-lg text-white animate-pulse">
               Loading your cards...
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <PageHeader backText="← Back to Pools" onBack={handleBack} />
+
+          <div className="text-center py-16">
+            <div className="text-4xl mb-4">❌</div>
+            <h3 className="text-xl font-semibold text-red-400 mb-2">
+              Error Loading Cards
+            </h3>
+            <p className="text-slate-400 mb-6">{error}</p>
+            <button
+              onClick={refreshCards}
+              className="btn-prepaid-primary btn-md"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -111,7 +113,7 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
           </p>
         </motion.div>
 
-        {/* Card Statistics - UPDATED: Simplified */}
+        {/* Card Statistics */}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-md mx-auto"
           initial={{ opacity: 0, y: 30 }}
@@ -119,14 +121,12 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
           transition={{ duration: 0.7, delay: 0.1 }}
         >
           <div className="stat-prepaid">
-            <div className="stat-prepaid-number">{cardStats.total}</div>
-            <div className="stat-prepaid-label">Total Cards</div>
+            <div className="stat-prepaid-number">{stats.completed}</div>
+            <div className="stat-prepaid-label">Completed Cards</div>
           </div>
           <div className="stat-prepaid">
-            <div className="stat-prepaid-number">
-              {cardStats.totalValue.toFixed(3)}
-            </div>
-            <div className="stat-prepaid-label">ETH Value</div>
+            <div className="stat-prepaid-number">{stats.total}</div>
+            <div className="stat-prepaid-label">Total Cards</div>
           </div>
         </motion.div>
 
@@ -137,14 +137,14 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
           transition={{ duration: 0.7, delay: 0.2 }}
         >
           <CardsTable
-            cards={allCards}
+            cards={completedCards}
             isLoading={isLoading}
             onCardClick={handleCardClick}
           />
         </motion.div>
 
         {/* Create New Card Button */}
-        {allCards.length > 0 && (
+        {completedCards.length > 0 && (
           <motion.div
             className="text-center mt-12"
             initial={{ opacity: 0, y: 30 }}
@@ -171,6 +171,6 @@ const MyCardsPage: React.FC<MyCardsPageProps> = () => {
       )}
     </div>
   );
-};
+}
 
 export default MyCardsPage;

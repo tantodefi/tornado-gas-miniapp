@@ -1,10 +1,19 @@
 //file:prepaid-gas-website/apps/web/components/features/cards/cards-table.tsx
+
 "use client";
 
 import React from "react";
 import { motion } from "framer-motion";
-import { PoolCard } from "@/types";
 import { formatJoiningFee } from "@/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table";
+import { PoolCard } from "@/lib/storage/indexed-db";
 
 interface CardsTableProps {
   cards: PoolCard[];
@@ -13,27 +22,15 @@ interface CardsTableProps {
 }
 
 /**
- * Cards Table Component - UPDATED for new PoolCard structure
- *
- * Displays all active cards in a clean table format
- * Click any row to view card details in receipt modal
+ * Cards Table Component
+ * Single responsibility: Display completed cards in table format
  */
-const CardsTable: React.FC<CardsTableProps> = ({
-  cards,
-  isLoading,
-  onCardClick,
-}) => {
-  const filteredCards = cards.filter((card) => {
-    if (card.poolInfo?.poolId) {
-      return card;
-    }
-  });
-  // Helper function to format card ID for display
+function CardsTable({ cards, isLoading, onCardClick }: CardsTableProps) {
+  // Helper functions
   const formatCardId = (cardId: string) => {
     return `${cardId.slice(0, 8)}...${cardId.slice(-4)}`;
   };
 
-  // Helper function to format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
@@ -42,11 +39,11 @@ const CardsTable: React.FC<CardsTableProps> = ({
     });
   };
 
-  // Helper function to format transaction hash
   const formatTxHash = (hash: string) => {
     return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="bg-slate-800/30 rounded-xl p-8">
@@ -58,6 +55,7 @@ const CardsTable: React.FC<CardsTableProps> = ({
     );
   }
 
+  // Empty state
   if (cards.length === 0) {
     return (
       <motion.div
@@ -76,6 +74,7 @@ const CardsTable: React.FC<CardsTableProps> = ({
     );
   }
 
+  // Table with data
   return (
     <motion.div
       className="bg-slate-800/30 rounded-xl overflow-hidden"
@@ -93,99 +92,97 @@ const CardsTable: React.FC<CardsTableProps> = ({
 
       {/* Table Content */}
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-600/30 bg-slate-700/30">
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-slate-600/30 bg-slate-700/30 hover:bg-slate-700/30">
+              <TableHead className="text-slate-300 font-semibold">
                 Card ID
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-slate-300 font-semibold">
                 Pool
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-slate-300 font-semibold">
                 Type
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Balance
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-slate-300 font-semibold">
+                Amount
+              </TableHead>
+              <TableHead className="text-slate-300 font-semibold">
                 Network
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-slate-300 font-semibold">
                 Transaction
-              </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-slate-300 font-semibold">
                 Purchased
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCards.map((card, index) => (
-              <motion.tr
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {cards.map((card, index) => (
+              <motion.div
                 key={card.id}
-                className="border-b border-slate-600/20 hover:bg-slate-700/20 cursor-pointer transition-colors duration-200"
-                onClick={() => onCardClick(card)}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                whileHover={{ scale: 1.002 }}
+                style={{ display: "contents" }}
               >
-                <td className="px-6 py-4">
-                  <span className="text-sm font-mono text-purple-400">
-                    {formatCardId(card.id)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-white font-medium">
-                    {card.poolInfo.poolId}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-slate-300">
-                    {card.poolInfo.paymasterType === "GasLimited"
-                      ? "Multi-Use"
-                      : "One-Time"}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-col">
+                <TableRow
+                  className="border-slate-600/20 hover:bg-slate-700/20 cursor-pointer transition-colors duration-200"
+                  onClick={() => onCardClick(card)}
+                >
+                  <TableCell>
+                    <span className="text-sm font-mono text-purple-400">
+                      {formatCardId(card.id)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-white font-medium">
+                      {card.poolInfo.poolId}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-slate-300">
+                      {card.poolInfo.paymasterType === "GasLimited"
+                        ? "Multi-Use"
+                        : "One-Time"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
                     <span className="text-sm text-green-400 font-medium">
-                      {parseFloat(card.balance).toFixed(4)} ETH
+                      {formatJoiningFee(card.poolInfo.joiningFee)} ETH
                     </span>
-                    <span className="text-xs text-slate-500">
-                      Paid: {formatJoiningFee(card.poolInfo.joiningFee)} ETH
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-slate-300 capitalize">
+                      {card.poolInfo.network}
                     </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-slate-300 capitalize">
-                    {card.poolInfo.network}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-blue-400 font-mono">
-                    {formatTxHash(card.transactionHash)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-slate-300">
-                    {formatDate(card.purchasedAt)}
-                  </span>
-                </td>
-              </motion.tr>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-blue-400 font-mono">
+                      {formatTxHash(card.transactionHash)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-slate-300">
+                      {formatDate(card.purchasedAt)}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              </motion.div>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Table Footer */}
-      <div className="bg-slate-700/30 px-6 py-3 text-center">
+      <div className="bg-slate-700/30 px-6 py-3 text-center border-t border-slate-600/30">
         <span className="text-xs text-slate-400">
-          {cards.length} card{cards.length !== 1 ? "s" : ""} total
+          {cards.length} completed card{cards.length !== 1 ? "s" : ""}
         </span>
       </div>
     </motion.div>
   );
-};
+}
 
 export default CardsTable;

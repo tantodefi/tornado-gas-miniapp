@@ -1,12 +1,13 @@
 //file:prepaid-gas-website/apps/web/components/features/cards/card-receipt.tsx
+
 "use client";
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Copy, Check, ExternalLink, X } from "lucide-react";
-import { PoolCard } from "@/types";
 import { formatJoiningFee, getExplorerUrl } from "@/utils";
 import QRCode from "react-qr-code";
+import { PoolCard } from "@/lib/storage/indexed-db";
 
 interface CardReceiptProps {
   card: PoolCard;
@@ -15,16 +16,14 @@ interface CardReceiptProps {
 }
 
 /**
- * CardReceipt Component
- *
- * Reusable receipt-like component for displaying card details
- * Used for both payment success and viewing existing cards
+ * Card Receipt Component
+ * Single responsibility: Display card details in receipt format
  */
-const CardReceipt: React.FC<CardReceiptProps> = ({
+function CardReceipt({
   card,
   showRecoveryPhrase = false,
   onClose,
-}) => {
+}: CardReceiptProps) {
   const [contextCopied, setContextCopied] = useState(false);
   const [recoveryPhraseSaved, setRecoveryPhraseSaved] = useState(false);
 
@@ -188,6 +187,22 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
                 </p>
               </div>
 
+              {/* Status */}
+              <div>
+                <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
+                  Status
+                </p>
+                <p
+                  className={`text-lg font-semibold ${
+                    card.paymentStatus === "completed"
+                      ? "text-green-400"
+                      : "text-yellow-400"
+                  }`}
+                >
+                  {card.paymentStatus === "completed" ? "Completed" : "Pending"}
+                </p>
+              </div>
+
               {/* Purchased Date */}
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
@@ -199,37 +214,29 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
               </div>
 
               {/* Transaction */}
-              <div>
-                <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
-                  Transaction
-                </p>
-                <button
-                  onClick={handleExplorerClick}
-                  className="text-lg font-semibold text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 group"
-                  title="View transaction on explorer"
-                >
-                  <span>{formatTransactionHash(card.transactionHash)}</span>
-                  <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                </button>
-              </div>
+              {card.transactionHash && (
+                <div>
+                  <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
+                    Transaction
+                  </p>
+                  <button
+                    onClick={handleExplorerClick}
+                    className="text-lg font-semibold text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 group"
+                    title="View transaction on explorer"
+                  >
+                    <span>{formatTransactionHash(card.transactionHash)}</span>
+                    <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </button>
+                </div>
+              )}
 
               {/* Network */}
-              <div>
+              <div className={card.transactionHash ? "" : "sm:col-span-2"}>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
                   Network
                 </p>
                 <p className="text-lg font-semibold text-white capitalize">
                   {card.poolInfo.network}
-                </p>
-              </div>
-
-              {/* Balance */}
-              <div className="sm:col-span-2">
-                <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
-                  Current Balance
-                </p>
-                <p className="text-lg font-semibold text-green-400">
-                  {parseFloat(card.balance).toFixed(6)} ETH
                 </p>
               </div>
             </div>
@@ -300,6 +307,6 @@ const CardReceipt: React.FC<CardReceiptProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default CardReceipt;

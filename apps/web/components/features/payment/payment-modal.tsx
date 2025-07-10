@@ -1,100 +1,69 @@
 //file:prepaid-gas-website/apps/web/components/features/payment/payment-modal.tsx
+
 "use client";
 
-import { PaymentManager } from "@/components/features/payment/payment-manager";
-import { PaymentPool, PoolCard, PaymentDetails, PaymentData } from "@/types";
 import React from "react";
+import { PaymentManager, PaymentSuccessDetails } from "./payment-manager";
 import { formatEther } from "viem";
+import { PoolCard } from "@/lib/storage/indexed-db";
+import { Pool } from "@/types/pool";
 
-/**
- * Props for PaymentModal component - UPDATED to include PaymentDetails
- */
-export interface PaymentModalProps {
+interface PaymentModalProps {
   isVisible: boolean;
-  paymentPool: PaymentPool;
-  generatedCard: PoolCard;
-  poolId: string;
-  onPaymentSuccess: (
-    activatedCard: PoolCard,
-    paymentDetails: PaymentDetails,
-  ) => void;
+  pool: Pool;
+  card: PoolCard;
+  canCancel: boolean;
+  onPaymentStarted: () => void;
+  onPaymentSuccess: (details: PaymentSuccessDetails) => void;
   onPaymentError: (error: string) => void;
   onCancel?: () => void;
-  onPaymentStarted: (paymentData: PaymentData) => void;
 }
 
 /**
- * PaymentModal Component
+ * Payment Modal Component
+ * Single responsibility: Display payment UI and coordinate with PaymentManager
  */
-const PaymentModal: React.FC<PaymentModalProps> = ({
+function PaymentModal({
   isVisible,
-  paymentPool,
-  generatedCard,
-  poolId,
-  onPaymentSuccess,
+  pool,
+  card,
+  canCancel,
   onPaymentStarted,
+  onPaymentSuccess,
   onPaymentError,
   onCancel,
-}) => {
+}: PaymentModalProps) {
   if (!isVisible) return null;
 
-  const handlePaymentCompleted = (details: PaymentDetails) => {
-    console.log("Payment completed in modal:", {
-      transactionHash: details.transactionHash,
-      network: details.network,
-      cardId: details.card.id,
-    });
-
-    // Update card status and save
-    const activatedCard: PoolCard = {
-      ...generatedCard,
-      status: "active",
-      balance: formatEther(BigInt(paymentPool.joiningFee)),
-      purchasedAt: new Date().toISOString(),
-    };
-
-    console.log("Calling onPaymentSuccess with:", {
-      activatedCardId: activatedCard.id,
-      detailsTransactionHash: details.transactionHash,
-    });
-
-    // UPDATED: Pass both activatedCard AND PaymentDetails
-    onPaymentSuccess(activatedCard, details);
-  };
-
-  const handlePaymentError = (error: any) => {
-    onPaymentError(error.message);
-  };
-
-  // 🔧 FIX: Determine if cancel is allowed
-  const canCancel = !!onCancel;
+  const joiningFeeEth = formatEther(BigInt(pool.joiningFee));
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-600/50 rounded-2xl p-6 max-w-md w-full">
+        {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-white mb-2">
             Complete Payment
           </h2>
           <p className="text-slate-400">
-            Join Pool {poolId} with{" "}
-            {formatEther(BigInt(paymentPool.joiningFee))} ETH
+            Join Pool {pool.poolId} with {joiningFeeEth} ETH
           </p>
         </div>
 
+        {/* Payment Manager */}
         <PaymentManager
-          pool={paymentPool}
-          card={generatedCard}
+          pool={pool}
+          card={card}
           callbacks={{
-            onPaymentStarted: onPaymentStarted,
-            onPaymentCompleted: handlePaymentCompleted,
-            onPaymentError: handlePaymentError,
+            onPaymentStarted,
+            onPaymentSuccess,
+            onPaymentError,
           }}
         />
 
+        {/* Cancel Button */}
         <div className="text-center mt-6">
-          {/* 🔧 FIX: Only show cancel button when cancellation is allowed */}
-          {canCancel ? (
+          {canCancel && onCancel ? (
             <button onClick={onCancel} className="btn-prepaid-outline btn-sm">
               Cancel
             </button>
@@ -110,6 +79,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       </div>
     </div>
   );
-};
+}
 
-export default PaymentModal;
+export { PaymentModal };
