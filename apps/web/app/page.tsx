@@ -186,7 +186,7 @@ const Features: React.FC = () => {
         transition={{ duration: 0.6 }}
       >
         <h2 className="heading-prepaid-section mb-3 sm:mb-4 text-prepaid-gradient-white">
-          How Prepaid Gas Credits Work
+          How Prepaid Gas Work
         </h2>
         <p className="text-base sm:text-lg lg:text-xl text-slate-400 max-w-xl lg:max-w-2xl mx-auto px-4">
           Think prepaid SIMs — buy upfront, spend anonymously. But for gas on

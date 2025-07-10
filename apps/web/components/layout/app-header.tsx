@@ -32,7 +32,7 @@ export const AppHeader: React.FC = () => {
         href="/"
         className="font-semibold text-slate-200 font-mono text-sm sm:text-base hover:text-purple-400 transition-colors"
       >
-        Prepaid Gas Credits
+        Prepaid Gas
       </Link>
 
       {/* Right side - Navigation and Wallet */}
