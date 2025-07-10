@@ -29,8 +29,19 @@ function useCardIssuance(): UseCardIssuanceResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<CardStats>({ total: 0, completed: 0 });
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Track if component is mounted to avoid SSR issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const loadCards = useCallback(async () => {
+    // Don't run on server side
+    if (!isMounted || typeof window === "undefined") {
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -49,16 +60,18 @@ function useCardIssuance(): UseCardIssuanceResult {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
-  // Load cards on mount
+  // Load cards on mount (only after hydration)
   useEffect(() => {
-    loadCards();
-  }, [loadCards]);
+    if (isMounted) {
+      loadCards();
+    }
+  }, [loadCards, isMounted]);
 
   return {
     completedCards,
-    isLoading,
+    isLoading: !isMounted || isLoading,
     error,
     stats,
     refreshCards: loadCards,

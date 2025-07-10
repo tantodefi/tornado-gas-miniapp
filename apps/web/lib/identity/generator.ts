@@ -11,9 +11,19 @@ import { HDKey } from "@scure/bip32";
 import { bytesToHex } from "viem";
 
 /**
+ * Check if we're in a browser environment
+ */
+function isBrowser(): boolean {
+  return typeof window !== "undefined" && typeof crypto !== "undefined";
+}
+
+/**
  * Generate a secure BIP39 12-word mnemonic
  */
 function generateSecureMnemonic(): string {
+  if (!isBrowser()) {
+    throw new Error("Mnemonic generation requires browser environment");
+  }
   return generateMnemonic(wordlist, 128);
 }
 
@@ -107,7 +117,7 @@ function restoreIdentityFromMnemonic(mnemonic: string): {
  * Validate secure environment before generating sensitive data
  */
 function validateSecureContext(): void {
-  if (typeof window === "undefined") {
+  if (!isBrowser()) {
     throw new Error("Identity generation requires browser environment");
   }
 

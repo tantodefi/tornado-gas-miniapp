@@ -31,9 +31,20 @@ const DB_VERSION = 2;
 const STORE_NAME = "cards";
 
 /**
- * Initialize IndexedDB database
+ * Check if we're in a browser environment
+ */
+function isBrowser(): boolean {
+  return typeof window !== "undefined" && typeof indexedDB !== "undefined";
+}
+
+/**
+ * Initialize IndexedDB database with browser check
  */
 async function initDB(): Promise<IDBDatabase> {
+  if (!isBrowser()) {
+    throw new Error("IndexedDB is not available in this environment");
+  }
+
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -61,6 +72,11 @@ async function initDB(): Promise<IDBDatabase> {
  * Get all completed cards from IndexedDB
  */
 async function loadCompletedCards(): Promise<PoolCard[]> {
+  if (!isBrowser()) {
+    console.warn("IndexedDB not available, returning empty array");
+    return [];
+  }
+
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readonly");
@@ -82,6 +98,10 @@ async function loadCompletedCards(): Promise<PoolCard[]> {
  * Save a card to IndexedDB
  */
 async function saveCard(card: PoolCard): Promise<void> {
+  if (!isBrowser()) {
+    throw new Error("IndexedDB is not available in this environment");
+  }
+
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readwrite");
@@ -105,6 +125,11 @@ async function markCardAsCompleted(
   cardId: string,
   transactionHash: string,
 ): Promise<PoolCard | null> {
+  if (!isBrowser()) {
+    console.warn("IndexedDB not available, cannot mark card as completed");
+    return null;
+  }
+
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readwrite");
@@ -143,6 +168,11 @@ async function markCardAsCompleted(
  * Delete a card from IndexedDB
  */
 async function deleteCard(cardId: string): Promise<void> {
+  if (!isBrowser()) {
+    console.warn("IndexedDB not available, cannot delete card");
+    return;
+  }
+
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readwrite");
@@ -163,6 +193,11 @@ async function deleteCard(cardId: string): Promise<void> {
  * Find a specific card by ID
  */
 async function findCard(cardId: string): Promise<PoolCard | null> {
+  if (!isBrowser()) {
+    console.warn("IndexedDB not available, cannot find card");
+    return null;
+  }
+
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readonly");
@@ -183,6 +218,11 @@ async function findCard(cardId: string): Promise<PoolCard | null> {
  * Get card statistics
  */
 async function getCardStats(): Promise<CardStats> {
+  if (!isBrowser()) {
+    console.warn("IndexedDB not available, returning default stats");
+    return { total: 0, completed: 0 };
+  }
+
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readonly");

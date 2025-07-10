@@ -23,7 +23,8 @@ export default async function PoolsSSRPage() {
       `${baseUrl}/api/prepaid-pools?page=0&limit=100&paginated=false`,
       {
         method: "GET",
-        cache: "no-store", // optional: skip caching if needed
+        // Add timeout to prevent hanging during build
+        signal: AbortSignal.timeout(5000),
       },
     );
 
