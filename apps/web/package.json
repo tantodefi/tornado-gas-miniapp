@@ -32,6 +32,8 @@
     "permissionless": "^0.2.47",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-qr-code": "^2.0.18",
+    "sonner": "^2.0.5",
     "viem": "2.31.3",
     "wagmi": "2.15.6"
   },

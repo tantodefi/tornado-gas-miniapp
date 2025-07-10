@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/components/features/pools/pool-filters.tsx
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import type { FilterState } from "@/types";
+import { FilterState } from "@/hooks/pools/use-pools-filter";
 
 const FilterBar: React.FC<{
   filters: FilterState;
@@ -74,60 +74,6 @@ const FilterBar: React.FC<{
             <div className="grid grid-cols-1 gap-3">
               <div className="space-y-1">
                 <label className="text-xs text-slate-400 font-medium">
-                  Network
-                </label>
-                <select
-                  value={filters.network}
-                  onChange={(e) => onFilterChange("network", e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
-                >
-                  <option value="">All Networks</option>
-                  <option value="ethereum">Ethereum</option>
-                  <option value="base">Base Sepolia</option>
-                  <option value="polygon">Polygon</option>
-                  <option value="arbitrum">Arbitrum</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-medium">
-                  Amount
-                </label>
-                <select
-                  value={filters.amountRange}
-                  onChange={(e) =>
-                    onFilterChange("amountRange", e.target.value)
-                  }
-                  className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
-                >
-                  <option value="">All Amounts</option>
-                  <option value="0-0.01">0-0.01 ETH</option>
-                  <option value="0.01-0.05">0.01-0.05 ETH</option>
-                  <option value="0.05-0.1">0.05-0.1 ETH</option>
-                  <option value="0.1+">0.1+ ETH</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-medium">
-                  Pool Size
-                </label>
-                <select
-                  value={filters.memberRange}
-                  onChange={(e) =>
-                    onFilterChange("memberRange", e.target.value)
-                  }
-                  className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
-                >
-                  <option value="">All Sizes</option>
-                  <option value="small">Small</option>
-                  <option value="medium">Medium</option>
-                  <option value="large">Large</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-medium">
                   Sort By
                 </label>
                 <select
@@ -136,19 +82,14 @@ const FilterBar: React.FC<{
                   className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
                 >
                   <option value="newest">Newest</option>
-                  <option value="amount-high">High Amount</option>
-                  <option value="amount-low">Low Amount</option>
-                  <option value="members-high">Most Members</option>
-                  <option value="members-low">Least Members</option>
                 </select>
               </div>
 
               <div className="flex gap-2 pt-2 border-t border-slate-600/30">
                 <button
                   onClick={() => {
-                    onFilterChange("network", "");
-                    onFilterChange("amountRange", "");
-                    onFilterChange("memberRange", "");
+                    onFilterChange("network", "all");
+                    onFilterChange("poolType", "all");
                     onFilterChange("sortBy", "newest");
                   }}
                   className="flex-1 px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors font-mono"
@@ -188,48 +129,6 @@ const FilterBar: React.FC<{
             className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="newest">Newest</option>
-            <option value="amount-high">High Amount</option>
-            <option value="amount-low">Low Amount</option>
-            <option value="members-high">Most Members</option>
-            <option value="members-low">Least Members</option>
-          </select>
-
-          <select
-            value={filters.memberRange}
-            onChange={(e) => onFilterChange("memberRange", e.target.value)}
-            disabled={isLoading}
-            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">All Sizes</option>
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="large">Large</option>
-          </select>
-
-          <select
-            value={filters.amountRange}
-            onChange={(e) => onFilterChange("amountRange", e.target.value)}
-            disabled={isLoading}
-            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">All Amounts</option>
-            <option value="0-0.01">0-0.01 ETH</option>
-            <option value="0.01-0.05">0.01-0.05 ETH</option>
-            <option value="0.05-0.1">0.05-0.1 ETH</option>
-            <option value="0.1+">0.1+ ETH</option>
-          </select>
-
-          <select
-            value={filters.network}
-            onChange={(e) => onFilterChange("network", e.target.value)}
-            disabled={isLoading}
-            className="px-2 py-1 text-slate-200 text-sm focus:outline-none focus:text-purple-400 font-mono cursor-pointer hover:text-purple-400 transition-colors bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">All Networks</option>
-            <option value="ethereum">Ethereum</option>
-            <option value="base">Base Sepolia</option>
-            <option value="polygon">Polygon</option>
-            <option value="arbitrum">Arbitrum</option>
           </select>
         </div>
       </div>

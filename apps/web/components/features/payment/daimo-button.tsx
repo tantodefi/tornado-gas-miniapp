@@ -2,104 +2,85 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { DaimoPayButton } from "@daimo/pay";
 import { base } from "viem/chains";
 import { zeroAddress } from "viem";
-import { formatJoiningFee } from "./payment-manager";
-import type {
-  PaymentPool,
-  PaymentData,
-  PaymentButtonProps,
-  DaimoPaymentEvent,
-  DaimoError,
-  PoolCard,
-} from "@/types";
+import { formatJoiningFee } from "@/utils";
+import { PoolCard } from "@/lib/storage/indexed-db";
+import { PaymentData } from "./payment-manager";
+import { Pool } from "@/types/pool";
+
+// Daimo payment event
+interface DaimoPaymentEvent {
+  transactionHash?: string;
+  hash?: string;
+  txHash?: string;
+  success?: boolean;
+}
+
+interface DaimoButtonProps {
+  pool: Pool;
+  card: PoolCard;
+  getPaymentData: () => PaymentData;
+  onPaymentStarted: () => void;
+  onPaymentSuccess: (transactionHash: string) => void;
+  onPaymentError: (error: string) => void;
+}
 
 /**
- * DaimoButton component for seamless crypto payments
- * Adapted for current pool/card system
+ * Daimo payment button
  */
-export function DaimoButton({
+function DaimoButton({
   pool,
   card,
   getPaymentData,
-  callbacks,
-}: PaymentButtonProps) {
-  const [currentPaymentData, setCurrentPaymentData] =
-    useState<PaymentData | null>(null);
+  onPaymentStarted,
+  onPaymentSuccess,
+  onPaymentError,
+}: DaimoButtonProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Handle payment started - store payment data and call callback
-  const handlePaymentStarted = useCallback(
-    (event: unknown) => {
-      console.log("Daimo payment started:", event);
+  // Handle payment started
+  const handlePaymentStarted = () => {
+    setIsProcessing(true);
+    onPaymentStarted();
+  };
 
-      try {
-        const paymentData = getPaymentData();
-        setCurrentPaymentData(paymentData);
-        callbacks.handlePaymentStarted(paymentData);
-      } catch (error) {
-        const daimoError: DaimoError = {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Payment data generation failed",
-          name: error instanceof Error ? error.name : "UnknownError",
-          cause: error,
-        };
-        callbacks.handlePaymentError(daimoError);
-      }
-    },
-    [getPaymentData, callbacks],
-  );
+  // Handle payment completed
+  const handlePaymentCompleted = (event: DaimoPaymentEvent) => {
+    setIsProcessing(false);
 
-  // Handle payment completed - pass through with payment data context
-  const handlePaymentCompleted = useCallback(
-    (event: DaimoPaymentEvent) => {
-      console.log("Daimo payment completed:", event);
+    // Extract transaction hash from event
+    const transactionHash = event.transactionHash || event.hash || event.txHash;
 
-      // Daimo might pass different event structure
-      // Extract transaction hash from various possible locations
-      let transactionHash = "";
-      if (event?.transactionHash) {
-        transactionHash = event.transactionHash;
-      } else if (event?.hash) {
-        transactionHash = event.hash;
-      } else if (event?.txHash) {
-        transactionHash = event.txHash;
-      }
+    if (!transactionHash) {
+      onPaymentError("Payment completed but no transaction hash received");
+      return;
+    }
 
-      const enhancedEvent: DaimoPaymentEvent = {
-        ...event,
-        hash: transactionHash,
-        transactionHash: transactionHash,
-        paymentData: currentPaymentData,
-      };
+    onPaymentSuccess(transactionHash);
+  };
 
-      callbacks.handlePaymentCompleted(enhancedEvent);
-    },
-    [callbacks, currentPaymentData],
-  );
+  // Handle payment error/cancelled
+  const handlePaymentBounced = () => {
+    setIsProcessing(false);
+    onPaymentError("Payment was cancelled or rejected");
+  };
 
   // Generate payment data for metadata
-  const handleGetPaymentData = () => {
+  const paymentData = (() => {
     try {
       return getPaymentData();
     } catch (error) {
-      const daimoError: DaimoError = {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Payment data generation failed",
-        name: error instanceof Error ? error.name : "UnknownError",
-        cause: error,
-      };
-      callbacks.handlePaymentError(daimoError);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Payment data generation failed";
+      onPaymentError(errorMessage);
       return null;
     }
-  };
-
-  const paymentData = handleGetPaymentData();
+  })();
 
   if (!paymentData) {
     return (
@@ -120,32 +101,21 @@ export function DaimoButton({
         toAddress={pool.paymaster.address as `0x${string}`}
         toChain={base.id}
         toUnits={formatJoiningFee(pool.joiningFee)}
-        toToken={zeroAddress} // ETH
-        // toCallData={paymentData.calldata} // Uncomment if Daimo supports calldata
-
+        toToken={zeroAddress}
         // Tracking & Metadata
         metadata={{
           poolId: pool.poolId,
           cardId: card.id,
           purchaseTimestamp: Date.now().toString(),
-          identityCommitment: paymentData.identity.commitment.toString(),
         }}
         // Optional customization
         intent="Join Gas Pool"
-        // Behavior
         closeOnSuccess={true}
         resetOnSuccess={false}
         // Event handlers
         onPaymentStarted={handlePaymentStarted}
         onPaymentCompleted={handlePaymentCompleted}
-        onPaymentBounced={(event) => {
-          const daimoError: DaimoError = {
-            message: "Payment was cancelled or bounced",
-            name: "PaymentBounced",
-            cause: event,
-          };
-          callbacks.handlePaymentError(daimoError);
-        }}
+        onPaymentBounced={handlePaymentBounced}
       />
 
       <div className="text-center">
@@ -154,17 +124,13 @@ export function DaimoButton({
           <span className="font-medium text-purple-400">DaimoPay</span>
         </p>
         <p className="text-xs text-slate-400 mt-1">
-          Pay with Coinbase, Binance, or any wallet
+          {isProcessing
+            ? "Processing payment..."
+            : "Pay with Coinbase, Binance, or any wallet"}
         </p>
-
-        {/* Show current payment info for debugging */}
-        {currentPaymentData && (
-          <p className="text-xs text-slate-500 mt-1 font-mono">
-            Card: {currentPaymentData.cardId} • Pool:{" "}
-            {currentPaymentData.poolId}
-          </p>
-        )}
       </div>
     </div>
   );
 }
+
+export { DaimoButton };

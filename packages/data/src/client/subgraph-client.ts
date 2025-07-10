@@ -1,5 +1,5 @@
 import { GraphQLClient } from "graphql-request";
-import type { ChainId, NetworkMetadata } from "../types/subgraph.js";
+import type { ChainId } from "../types/subgraph.js";
 import {
   getValidatedNetworkPreset,
   NETWORK_PRESETS,
@@ -11,27 +11,10 @@ import { QueryBuilder } from "../query/query-builder.js";
  * Configuration for the subgraph client
  * Updated to support multiple paymaster contracts
  */
-export interface SubgraphClientConfig {
-  /** Subgraph endpoint URL */
-  subgraphUrl: string;
-  /** Network information */
-  network: {
-    name: string;
-    chainId: number;
-    chainName: string;
-    networkName: string;
-    contracts: {
-      /** Map of paymaster contracts by type */
-      paymasters: {
-        gasLimited?: string;
-        oneTimeUse?: string;
-      };
-      verifier?: string;
-    };
-  };
-  /** Request timeout in milliseconds (default: 30000) */
+export type ClientOptions = {
+  subgraphUrl?: string;
   timeout?: number;
-}
+};
 
 /**
  * Pagination options for queries
@@ -96,18 +79,65 @@ export interface AnalyticsQueryOptions extends PaginationOptions {
  */
 export class SubgraphClient {
   private client: GraphQLClient;
-  private networkMetadata: NetworkMetadata;
+  private chainId: ChainId;
+  private requestMap: Map<string, Promise<any>> = new Map();
+  private readonly maxPendingRequests = 100;
 
-  constructor(config: SubgraphClientConfig) {
-    this.client = new GraphQLClient(config.subgraphUrl);
+  constructor(chainId: ChainId, options: ClientOptions = {}) {
+    const preset = getValidatedNetworkPreset(chainId);
+    this.client = new GraphQLClient(
+      options.subgraphUrl || preset.defaultSubgraphUrl,
+    );
+    this.chainId = chainId;
+  }
 
-    this.networkMetadata = {
-      network: config.network.name,
-      chainId: config.network.chainId,
-      chainName: config.network.chainName,
-      networkName: config.network.networkName,
-      contracts: config.network.contracts,
-    };
+  /**
+   * Generate a unique key for a query/variables combination
+   *
+   * @param query - GraphQL query string
+   * @param variables - Query variables
+   * @returns Unique key for the request
+   */
+  private generateRequestKey(
+    query: string,
+    variables: Record<string, any>,
+  ): string {
+    // Create a consistent key from query and variables
+    const normalizedQuery = query.replace(/\s+/g, " ").trim();
+    const sortedVariables = Object.keys(variables)
+      .sort()
+      .reduce(
+        (sorted, key) => {
+          sorted[key] = variables[key];
+          return sorted;
+        },
+        {} as Record<string, any>,
+      );
+
+    return `${normalizedQuery}|${JSON.stringify(sortedVariables)}`;
+  }
+
+  /**
+   * Clean up completed request from the map
+   *
+   * @param requestKey - Key of the request to clean up
+   */
+  private cleanupRequest(requestKey: string): void {
+    this.requestMap.delete(requestKey);
+  }
+
+  /**
+   * Clean up old requests if map gets too large
+   */
+  private cleanupOldRequests(): void {
+    if (this.requestMap.size > this.maxPendingRequests) {
+      // Clear half of the oldest requests
+      const keysToDelete = Array.from(this.requestMap.keys()).slice(
+        0,
+        this.maxPendingRequests / 2,
+      );
+      keysToDelete.forEach((key) => this.requestMap.delete(key));
+    }
   }
 
   /**
@@ -130,7 +160,7 @@ export class SubgraphClient {
    * ```
    */
   static createForNetwork(
-    chainId: number,
+    chainId: ChainId,
     options: {
       /** Custom subgraph URL (optional, uses preset default if not provided) */
       subgraphUrl?: string;
@@ -138,25 +168,7 @@ export class SubgraphClient {
       timeout?: number;
     } = {},
   ): SubgraphClient {
-    const preset = getValidatedNetworkPreset(chainId);
-
-    return new SubgraphClient({
-      subgraphUrl: options.subgraphUrl || preset.defaultSubgraphUrl,
-      network: {
-        name: preset.network.name,
-        chainId: preset.network.chainId,
-        chainName: preset.network.chainName,
-        networkName: preset.network.networkName,
-        contracts: {
-          paymasters: {
-            gasLimited: preset.network.contracts.paymasters.gasLimited?.address,
-            oneTimeUse: preset.network.contracts.paymasters.oneTimeUse?.address,
-          },
-          verifier: preset.network.contracts.verifier,
-        },
-      },
-      timeout: options.timeout,
-    });
+    return new SubgraphClient(chainId, options);
   }
 
   /**
@@ -172,6 +184,21 @@ export class SubgraphClient {
    */
   static getSupportedNetworks(): NetworkPreset[] {
     return Object.values(NETWORK_PRESETS);
+  }
+  /**
+   * Get supported network preset
+   *
+   * @returns Supported network preset
+   *
+   * @example
+   * ```typescript
+   * const networkPreset = SubgraphClient.getNetworkPreset(84532);
+   * console.log(networkPreset.chainName); // "Base Sepolia"
+   * ```
+   */
+  static getNetworkPreset(chainId: ChainId): NetworkPreset {
+    const preset = getValidatedNetworkPreset(chainId);
+    return preset;
   }
 
   /**
@@ -189,47 +216,6 @@ export class SubgraphClient {
    */
   static isNetworkSupported(chainId: number): boolean {
     return chainId in NETWORK_PRESETS;
-  }
-
-  /**
-   * Get available paymaster contracts for a network
-   *
-   * @param chainId - The chain ID to get paymasters for
-   * @returns Array of paymaster contract information
-   *
-   * @example
-   * ```typescript
-   * const paymasters = SubgraphClient.getPaymasterContracts(84532);
-   * console.log(paymasters); // [{ address: "0x...", type: "GasLimited" }, ...]
-   * ```
-   */
-  static getPaymasterContracts(chainId: ChainId): Array<{
-    address: string;
-    type: "GasLimited" | "OneTimeUse";
-    startBlock: number;
-  }> {
-    const preset = NETWORK_PRESETS[chainId];
-    if (!preset) return [];
-
-    const contracts = [];
-
-    if (preset.network.contracts.paymasters.gasLimited) {
-      contracts.push({
-        address: preset.network.contracts.paymasters.gasLimited.address,
-        type: "GasLimited" as const,
-        startBlock: preset.network.contracts.paymasters.gasLimited.startBlock,
-      });
-    }
-
-    if (preset.network.contracts.paymasters.oneTimeUse) {
-      contracts.push({
-        address: preset.network.contracts.paymasters.oneTimeUse.address,
-        type: "OneTimeUse" as const,
-        startBlock: preset.network.contracts.paymasters.oneTimeUse.startBlock,
-      });
-    }
-
-    return contracts;
   }
 
   /**
@@ -278,106 +264,10 @@ export class SubgraphClient {
   }
 
   /**
-   * Get current network metadata
-   *
-   * @returns Network metadata including contract addresses
-   *
-   * @example
-   * ```typescript
-   * const metadata = client.getNetworkMetadata();
-   * console.log(metadata.contracts.paymasters.gasLimited); // "0x..."
-   * ```
-   */
-  getNetworkMetadata(): NetworkMetadata {
-    return this.networkMetadata;
-  }
-
-  /**
-   * Get paymaster contract addresses for current network
-   *
-   * @returns Object containing paymaster contract addresses
-   *
-   * @example
-   * ```typescript
-   * const paymasters = client.getPaymasterAddresses();
-   * console.log(paymasters.gasLimited); // "0x..."
-   * console.log(paymasters.oneTimeUse); // "0x..."
-   * ```
-   */
-  getPaymasterAddresses(): {
-    gasLimited?: string;
-    oneTimeUse?: string;
-  } {
-    return this.networkMetadata.contracts.paymasters;
-  }
-
-  /**
-   * Get specific paymaster address by type
-   *
-   * @param type - Paymaster type ("GasLimited" or "OneTimeUse")
-   * @returns Paymaster address or undefined if not available
-   *
-   * @example
-   * ```typescript
-   * const gasLimitedAddress = client.getPaymasterAddress("GasLimited");
-   * if (gasLimitedAddress) {
-   *   // Use the address
-   * }
-   * ```
-   */
-  getPaymasterAddress(type: "GasLimited" | "OneTimeUse"): string | undefined {
-    const paymasters = this.getPaymasterAddresses();
-    return type === "GasLimited"
-      ? paymasters.gasLimited
-      : paymasters.oneTimeUse;
-  }
-
-  /**
-   * Check if network supports a specific paymaster type
-   *
-   * @param type - Paymaster type to check
-   * @returns True if supported, false otherwise
-   *
-   * @example
-   * ```typescript
-   * if (client.supportsPaymasterType("GasLimited")) {
-   *   const gasLimitedPools = await client.query().pools()
-   *     .byPaymaster(client.getPaymasterAddress("GasLimited")!)
-   *     .execute();
-   * }
-   * ```
-   */
-  supportsPaymasterType(type: "GasLimited" | "OneTimeUse"): boolean {
-    return this.getPaymasterAddress(type) !== undefined;
-  }
-
-  /**
-   * Get all supported paymaster types for current network
-   *
-   * @returns Array of supported paymaster types
-   *
-   * @example
-   * ```typescript
-   * const supportedTypes = client.getSupportedPaymasterTypes();
-   * console.log(supportedTypes); // ["GasLimited", "OneTimeUse"]
-   * ```
-   */
-  getSupportedPaymasterTypes(): Array<"GasLimited" | "OneTimeUse"> {
-    const types: Array<"GasLimited" | "OneTimeUse"> = [];
-    const paymasters = this.getPaymasterAddresses();
-
-    if (paymasters.gasLimited) types.push("GasLimited");
-    if (paymasters.oneTimeUse) types.push("OneTimeUse");
-
-    return types;
-  }
-
-  /**
-   * Execute a raw GraphQL query
+   * Execute a raw GraphQL query with request deduplication
    *
    * This method provides a generic interface for executing any GraphQL query,
-   * allowing query builders to construct their own queries while still
-   * benefiting from the client's network and error handling.
+   * with built-in deduplication to prevent duplicate requests for identical queries.
    *
    * @template T - The expected response type
    * @param query - GraphQL query string
@@ -397,23 +287,49 @@ export class SubgraphClient {
     query: string,
     variables: Record<string, any> = {},
   ): Promise<T> {
-    try {
-      const response = await this.client.request<T>(query, variables);
-      return response;
-    } catch (error) {
-      // Enhanced error handling with context
-      console.error("GraphQL query failed:", {
-        error,
-        query: query.substring(0, 200) + "...", // Log first 200 chars
-        variables,
-        network: this.networkMetadata.chainName,
-      });
-      throw error;
+    // Generate unique key for this request
+    const requestKey = this.generateRequestKey(query, variables);
+
+    // Check if identical request is already in progress
+    const existingRequest = this.requestMap.get(requestKey);
+    if (existingRequest) {
+      return existingRequest;
     }
+
+    // Clean up old requests if needed
+    this.cleanupOldRequests();
+
+    // Create new request promise
+    const requestPromise = this.client
+      .request<T>(query, variables)
+      .then((response) => {
+        // Clean up this request from the map
+        this.cleanupRequest(requestKey);
+        return response;
+      })
+      .catch((error) => {
+        // Clean up this request from the map even on error
+        this.cleanupRequest(requestKey);
+
+        // Enhanced error handling with context
+        console.error("GraphQL query failed:", {
+          error,
+          query: query.substring(0, 200) + "...", // Log first 200 chars
+          variables,
+          chainId: this.chainId,
+        });
+
+        throw error;
+      });
+
+    // Store the promise in the map
+    this.requestMap.set(requestKey, requestPromise);
+
+    return requestPromise;
   }
 
   /**
-   * Execute multiple queries in parallel
+   * Execute multiple queries in parallel with deduplication
    *
    * @param queries - Array of query objects with query string and variables
    * @returns Promise resolving to array of query responses
@@ -556,7 +472,7 @@ export class SubgraphClient {
    * ```
    */
   switchNetwork(
-    chainId: number,
+    chainId: ChainId,
     options: {
       subgraphUrl?: string;
       timeout?: number;

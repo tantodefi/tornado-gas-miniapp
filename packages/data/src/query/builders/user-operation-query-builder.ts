@@ -8,10 +8,12 @@ import type {
   UserOperation,
   NetworkName,
   PaymasterType,
+  SerializedUserOperation,
 } from "../../types/subgraph.js";
 
 import { UserOperationFields, UserOperationWhereInput } from "../types.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
+import { serializeUserOperation } from "../../transformers/index.js";
 
 // Define specific types for UserOperationQueryBuilder
 export type UserOperationOrderBy =
@@ -30,6 +32,7 @@ export type UserOperationOrderBy =
  */
 export class UserOperationQueryBuilder extends BaseQueryBuilder<
   UserOperation,
+  SerializedUserOperation,
   UserOperationFields,
   UserOperationWhereInput,
   UserOperationOrderBy
@@ -37,6 +40,281 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   constructor(private subgraphClient: SubgraphClient) {
     super(subgraphClient, "userOperations", "executedAtTimestamp", "desc");
   }
+
+  protected buildDynamicQuery(): string {
+    const fields =
+      this.config.selectedFields?.join("\n        ") || this.getDefaultFields();
+    const variables = this.getVariableDeclarations();
+    const whereClause = this.buildWhereClauseString();
+    const orderByClause = this.config.orderBy
+      ? `orderBy: ${this.config.orderBy}`
+      : "";
+    const orderDirectionClause = this.config.orderDirection
+      ? `orderDirection: ${this.config.orderDirection}`
+      : "";
+
+    const args = [
+      whereClause,
+      orderByClause,
+      orderDirectionClause,
+      "first: $first",
+      "skip: $skip",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const queryName = `GetUserOperations`;
+
+    return `
+      query ${queryName}(${variables}) {
+        userOperations(${args}) {
+          ${fields}
+        }
+      }
+    `;
+  }
+
+  protected buildVariables(): Record<string, any> {
+    const variables: Record<string, any> = {
+      first: this.config.first || 100,
+      skip: this.config.skip || 0,
+    };
+
+    if (this.config.where) {
+      this.addWhereVariables(this.config.where, variables);
+    }
+
+    return variables;
+  }
+
+  protected buildWhereClauseString(): string {
+    if (!this.config.where || Object.keys(this.config.where).length === 0) {
+      return "";
+    }
+
+    const conditions = this.buildWhereConditions(this.config.where);
+    return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
+  }
+
+  protected getSerializer(): (
+    entity: UserOperation,
+  ) => SerializedUserOperation {
+    return serializeUserOperation;
+  }
+
+  private getVariableDeclarations(): string {
+    const declarations = ["$first: Int!", "$skip: Int!"];
+
+    if (this.config.where) {
+      this.addVariableDeclarations(this.config.where, declarations);
+    }
+
+    return declarations.join(", ");
+  }
+
+  private addVariableDeclarations(
+    where: Partial<UserOperationWhereInput>,
+    declarations: string[],
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          declarations.push("$network: String");
+          break;
+        case "id":
+          declarations.push("$id: ID");
+          break;
+        case "userOpHash":
+          declarations.push("$userOpHash: String");
+          break;
+        case "sender":
+          declarations.push("$sender: String");
+          break;
+        case "nullifier":
+          declarations.push("$nullifier: String");
+          break;
+        case "actualGasCost_gte":
+          declarations.push("$actualGasCost_gte: String");
+          break;
+        case "actualGasCost_lte":
+          declarations.push("$actualGasCost_lte: String");
+          break;
+        case "gasPrice_gte":
+          declarations.push("$gasPrice_gte: String");
+          break;
+        case "gasPrice_lte":
+          declarations.push("$gasPrice_lte: String");
+          break;
+        case "executedAtTimestamp_gte":
+          declarations.push("$executedAtTimestamp_gte: String");
+          break;
+        case "executedAtTimestamp_lte":
+          declarations.push("$executedAtTimestamp_lte: String");
+          break;
+        case "executedAtBlock":
+          declarations.push("$executedAtBlock: String");
+          break;
+        case "transactionHash":
+          declarations.push("$transactionHash: String");
+          break;
+        case "paymaster_":
+          if (typeof value === "object" && value) {
+            if ("address" in value) {
+              declarations.push("$paymasterAddress: String");
+            }
+            if ("contractType" in value) {
+              declarations.push("$paymasterType: String");
+            }
+          }
+          break;
+        case "pool_":
+          if (typeof value === "object" && value) {
+            if ("poolId" in value) {
+              declarations.push("$poolId: String");
+            }
+          }
+          break;
+      }
+    }
+  }
+
+  private addWhereVariables(
+    where: Partial<UserOperationWhereInput>,
+    variables: Record<string, any>,
+  ): void {
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          variables.network = value;
+          break;
+        case "id":
+          variables.id = value;
+          break;
+        case "userOpHash":
+          variables.userOpHash = value;
+          break;
+        case "sender":
+          variables.sender = value;
+          break;
+        case "nullifier":
+          variables.nullifier = value;
+          break;
+        case "actualGasCost_gte":
+        case "actualGasCost_lte":
+          variables[key] = value;
+          break;
+        case "gasPrice_gte":
+        case "gasPrice_lte":
+          variables[key] = value;
+          break;
+        case "executedAtTimestamp_gte":
+        case "executedAtTimestamp_lte":
+          variables[key] = value;
+          break;
+        case "executedAtBlock":
+          variables.executedAtBlock = value;
+          break;
+        case "transactionHash":
+          variables.transactionHash = value;
+          break;
+        case "paymaster_":
+          if (typeof value === "object" && value) {
+            if ("address" in value) {
+              variables.paymasterAddress = value.address;
+            }
+            if ("contractType" in value) {
+              variables.paymasterType = value.contractType;
+            }
+          }
+          break;
+        case "pool_":
+          if (typeof value === "object" && value) {
+            if ("poolId" in value) {
+              variables.poolId = value.poolId;
+            }
+          }
+          break;
+      }
+    }
+  }
+
+  private buildWhereConditions(
+    where: Partial<UserOperationWhereInput>,
+  ): string[] {
+    const conditions: string[] = [];
+
+    for (const [key, value] of Object.entries(where)) {
+      switch (key) {
+        case "network":
+          conditions.push("network: $network");
+          break;
+        case "id":
+          conditions.push("id: $id");
+          break;
+        case "userOpHash":
+          conditions.push("userOpHash: $userOpHash");
+          break;
+        case "sender":
+          conditions.push("sender: $sender");
+          break;
+        case "nullifier":
+          conditions.push("nullifier: $nullifier");
+          break;
+        case "actualGasCost_gte":
+          conditions.push("actualGasCost_gte: $actualGasCost_gte");
+          break;
+        case "actualGasCost_lte":
+          conditions.push("actualGasCost_lte: $actualGasCost_lte");
+          break;
+        case "gasPrice_gte":
+          conditions.push("gasPrice_gte: $gasPrice_gte");
+          break;
+        case "gasPrice_lte":
+          conditions.push("gasPrice_lte: $gasPrice_lte");
+          break;
+        case "executedAtTimestamp_gte":
+          conditions.push("executedAtTimestamp_gte: $executedAtTimestamp_gte");
+          break;
+        case "executedAtTimestamp_lte":
+          conditions.push("executedAtTimestamp_lte: $executedAtTimestamp_lte");
+          break;
+        case "executedAtBlock":
+          conditions.push("executedAtBlock: $executedAtBlock");
+          break;
+        case "transactionHash":
+          conditions.push("transactionHash: $transactionHash");
+          break;
+        case "paymaster_":
+          if (typeof value === "object" && value) {
+            const nestedConditions: string[] = [];
+            if ("address" in value) {
+              nestedConditions.push("address: $paymasterAddress");
+            }
+            if ("contractType" in value) {
+              nestedConditions.push("contractType: $paymasterType");
+            }
+            if (nestedConditions.length > 0) {
+              conditions.push(`paymaster_: { ${nestedConditions.join(", ")} }`);
+            }
+          }
+          break;
+        case "pool_":
+          if (typeof value === "object" && value) {
+            const nestedConditions: string[] = [];
+            if ("poolId" in value) {
+              nestedConditions.push("poolId: $poolId");
+            }
+            if (nestedConditions.length > 0) {
+              conditions.push(`pool_: { ${nestedConditions.join(", ")} }`);
+            }
+          }
+          break;
+      }
+    }
+
+    return conditions;
+  }
+
   /**
    * Override default fields for UserOperation entity.
    */
@@ -80,6 +358,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
       }
     `;
   }
+
   /**
    * ========================================
    * FILTERING METHODS

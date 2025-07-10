@@ -8,7 +8,7 @@ export const CONTRACTS = {
     "0x18B5EF94Bd6212d4764853142215F917c353011e") as Address,
   // ✨ NEW: Use preset instead of hardcoded value
   paymaster: (process.env.NEXT_PUBLIC_PAYMASTER_ADDRESS ||
-    BASE_SEPOLIA_PRESET.network.contracts.paymaster) as Address,
+    BASE_SEPOLIA_PRESET.network.contracts.paymasters.gasLimited) as Address,
 } as const;
 
 // ✨ NEW: Network configuration from preset instead of hardcoded values

@@ -4,17 +4,13 @@
  */
 
 import {
-  DailyGlobalStats,
-  DailyPoolStats,
   MerkleRoot,
   NetworkInfo,
   NetworkName,
-  NullifierUsage,
   PaymasterContract,
   PaymasterType,
   Pool,
   PoolMember,
-  RevenueWithdrawal,
   UserOperation,
 } from "../types/subgraph";
 
@@ -60,7 +56,8 @@ export type PaymasterContractFields =
 export type PoolFields =
   | keyof Pool
   | "paymaster { id contractType address }"
-  | "members { id memberIndex }"
+  | "members { id memberIndex addedAtTimestamp identityCommitment }"
+  | "userOperations { id userOpHash sender actualGasCost executedAtTimestamp nullifier }"
   | "merkleRoots { id root }";
 
 /**
@@ -87,31 +84,9 @@ export type UserOperationFields =
   | "pool { id poolId }";
 
 /**
- * Available fields for RevenueWithdrawal entity queries
- */
-export type RevenueWithdrawalFields =
-  | keyof RevenueWithdrawal
-  | "paymaster { id address contractType }"; // Example of nested fields
-
-/**
- * Available fields for NullifierUsage entity queries
- */
-export type NullifierUsageFields = keyof NullifierUsage;
-
-/**
  * Available fields for NetworkInfo entity queries
  */
 export type NetworkInfoFields = keyof NetworkInfo;
-
-/**
- * Available fields for DailyPoolStats entity queries
- */
-export type DailyPoolStatsFields = keyof DailyPoolStats;
-
-/**
- * Available fields for DailyGlobalStats entity queries
- */
-export type DailyGlobalStatsFields = keyof DailyGlobalStats;
 
 /**
  * ========================================

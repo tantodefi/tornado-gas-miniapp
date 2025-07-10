@@ -1,14 +1,33 @@
 //file:prepaid-gas-website/apps/web/lib/storage/indexed-db.ts
 
-/**
- * IndexedDB storage utilities for prepaid gas cards
- * Replaces localStorage with more robust browser storage
- */
+// Import types from card.ts
+export type PoolCard = {
+  id: string;
+  poolInfo: {
+    poolId: string;
+    joiningFee: string;
+    network: string;
+    paymasterType: "GasLimited" | "OneTimeUse";
+  };
+  identity: {
+    mnemonic: string;
+    privateKey: string;
+  };
+  paymasterContract: string;
+  paymasterContext: string;
+  transactionHash: string;
+  chainId: string;
+  purchasedAt: string;
+  paymentStatus: "pending" | "completed";
+};
 
-import type { PoolCard } from "@/types";
+type CardStats = {
+  total: number;
+  completed: number;
+};
 
 const DB_NAME = "prepaid-gas-cards";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "cards";
 
 /**
@@ -24,32 +43,37 @@ async function initDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
 
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
-        store.createIndex("poolId", "poolId", { unique: false });
-        store.createIndex("status", "status", { unique: false });
-        store.createIndex("createdAt", "createdAt", { unique: false });
+      // Clear old stores if they exist
+      if (db.objectStoreNames.contains(STORE_NAME)) {
+        db.deleteObjectStore(STORE_NAME);
       }
+
+      // Create new store with proper structure
+      const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
+      store.createIndex("poolId", "poolInfo.poolId", { unique: false });
+      store.createIndex("paymentStatus", "paymentStatus", { unique: false });
+      store.createIndex("purchasedAt", "purchasedAt", { unique: false });
     };
   });
 }
 
 /**
- * Get all cards from IndexedDB
+ * Get all completed cards from IndexedDB
  */
-export async function loadCardsFromIndexedDB(): Promise<PoolCard[]> {
+async function loadCompletedCards(): Promise<PoolCard[]> {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readonly");
     const store = transaction.objectStore(STORE_NAME);
+    const index = store.index("paymentStatus");
 
     return new Promise((resolve, reject) => {
-      const request = store.getAll();
+      const request = index.getAll("completed");
       request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("Failed to load cards from IndexedDB:", error);
+    console.error("Failed to load completed cards:", error);
     return [];
   }
 }
@@ -57,7 +81,7 @@ export async function loadCardsFromIndexedDB(): Promise<PoolCard[]> {
 /**
  * Save a card to IndexedDB
  */
-export async function saveCardToIndexedDB(card: PoolCard): Promise<void> {
+async function saveCard(card: PoolCard): Promise<void> {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readwrite");
@@ -69,24 +93,23 @@ export async function saveCardToIndexedDB(card: PoolCard): Promise<void> {
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("Failed to save card to IndexedDB:", error);
+    console.error("Failed to save card:", error);
     throw error;
   }
 }
 
 /**
- * Update a card in IndexedDB
+ * Update card payment status to completed
  */
-export async function updateCardInIndexedDB(
+async function markCardAsCompleted(
   cardId: string,
-  updates: Partial<PoolCard>,
+  transactionHash: string,
 ): Promise<PoolCard | null> {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readwrite");
     const store = transaction.objectStore(STORE_NAME);
 
-    // Get existing card
     const getRequest = store.get(cardId);
 
     return new Promise((resolve, reject) => {
@@ -97,9 +120,13 @@ export async function updateCardInIndexedDB(
           return;
         }
 
-        const updatedCard = { ...existingCard, ...updates };
-        const putRequest = store.put(updatedCard);
+        const updatedCard: PoolCard = {
+          ...existingCard,
+          transactionHash,
+          paymentStatus: "completed",
+        };
 
+        const putRequest = store.put(updatedCard);
         putRequest.onsuccess = () => resolve(updatedCard);
         putRequest.onerror = () => reject(putRequest.error);
       };
@@ -107,7 +134,7 @@ export async function updateCardInIndexedDB(
       getRequest.onerror = () => reject(getRequest.error);
     });
   } catch (error) {
-    console.error("Failed to update card in IndexedDB:", error);
+    console.error("Failed to mark card as completed:", error);
     throw error;
   }
 }
@@ -115,7 +142,7 @@ export async function updateCardInIndexedDB(
 /**
  * Delete a card from IndexedDB
  */
-export async function deleteCardFromIndexedDB(cardId: string): Promise<void> {
+async function deleteCard(cardId: string): Promise<void> {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readwrite");
@@ -127,61 +154,15 @@ export async function deleteCardFromIndexedDB(cardId: string): Promise<void> {
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("Failed to delete card from IndexedDB:", error);
+    console.error("Failed to delete card:", error);
     throw error;
-  }
-}
-
-/**
- * Get cards by status
- */
-export async function getCardsByStatus(
-  status: PoolCard["status"],
-): Promise<PoolCard[]> {
-  try {
-    const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], "readonly");
-    const store = transaction.objectStore(STORE_NAME);
-    const index = store.index("status");
-
-    return new Promise((resolve, reject) => {
-      const request = index.getAll(status);
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  } catch (error) {
-    console.error("Failed to get cards by status:", error);
-    return [];
-  }
-}
-
-/**
- * Get cards by pool ID
- */
-export async function getCardsByPoolId(poolId: string): Promise<PoolCard[]> {
-  try {
-    const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], "readonly");
-    const store = transaction.objectStore(STORE_NAME);
-    const index = store.index("poolId");
-
-    return new Promise((resolve, reject) => {
-      const request = index.getAll(poolId);
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  } catch (error) {
-    console.error("Failed to get cards by pool ID:", error);
-    return [];
   }
 }
 
 /**
  * Find a specific card by ID
  */
-export async function findCardInIndexedDB(
-  cardId: string,
-): Promise<PoolCard | null> {
+async function findCard(cardId: string): Promise<PoolCard | null> {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME], "readonly");
@@ -193,60 +174,48 @@ export async function findCardInIndexedDB(
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("Failed to find card in IndexedDB:", error);
+    console.error("Failed to find card:", error);
     return null;
-  }
-}
-
-/**
- * Clear all cards from IndexedDB
- */
-export async function clearAllCardsFromIndexedDB(): Promise<void> {
-  try {
-    const db = await initDB();
-    const transaction = db.transaction([STORE_NAME], "readwrite");
-    const store = transaction.objectStore(STORE_NAME);
-
-    return new Promise((resolve, reject) => {
-      const request = store.clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  } catch (error) {
-    console.error("Failed to clear cards from IndexedDB:", error);
-    throw error;
   }
 }
 
 /**
  * Get card statistics
  */
-export async function getCardStatsFromIndexedDB() {
+async function getCardStats(): Promise<CardStats> {
   try {
-    const cards = await loadCardsFromIndexedDB();
+    const db = await initDB();
+    const transaction = db.transaction([STORE_NAME], "readonly");
+    const store = transaction.objectStore(STORE_NAME);
 
-    const total = cards.length;
-    const active = cards.filter((card) => card.status === "active").length;
-    const pending = cards.filter(
-      (card) => card.status === "pending-topup",
-    ).length;
-    const totalValue = cards
-      .filter((card) => card.status === "active" && card.balance)
-      .reduce((sum, card) => sum + parseFloat(card.balance || "0"), 0);
+    return new Promise((resolve, reject) => {
+      const allRequest = store.getAll();
 
-    return {
-      total,
-      active,
-      pending,
-      totalValue,
-    };
+      allRequest.onsuccess = () => {
+        const allCards = allRequest.result || [];
+        const completed = allCards.filter(
+          (card) => card.paymentStatus === "completed",
+        ).length;
+
+        resolve({
+          total: allCards.length,
+          completed,
+        });
+      };
+
+      allRequest.onerror = () => reject(allRequest.error);
+    });
   } catch (error) {
     console.error("Failed to get card stats:", error);
-    return {
-      total: 0,
-      active: 0,
-      pending: 0,
-      totalValue: 0,
-    };
+    return { total: 0, completed: 0 };
   }
 }
+
+export {
+  saveCard,
+  loadCompletedCards,
+  markCardAsCompleted,
+  deleteCard,
+  findCard,
+  getCardStats,
+};

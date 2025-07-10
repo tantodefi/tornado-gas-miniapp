@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/hooks/pools/use-pools-data.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { prepaidPoolsApi } from "@/lib/api/api-client";
-import type { Pool } from "@/types";
+import type { Pool } from "@/types/pool";
 import { ApiError } from "@/lib/api/type";
 
 interface UsePoolsDataResult {
@@ -12,29 +12,22 @@ interface UsePoolsDataResult {
   refetch: () => Promise<void>;
 }
 
-export function usePoolsData(): UsePoolsDataResult {
-  const [pools, setPools] = useState<Pool[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function usePoolsData(initialData?: Pool[]): UsePoolsDataResult {
+  const [pools, setPools] = useState<Pool[]>(initialData || []);
+  const [isLoading, setIsLoading] = useState(initialData ? false : true);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<string>("");
 
-  // Add request deduplication
   const isRequestInProgress = useRef(false);
-  const hasInitialLoad = useRef(false);
+  const hasInitialLoad = useRef(!!initialData);
 
   const loadPools = useCallback(async () => {
-    // Prevent duplicate requests
-    if (isRequestInProgress.current) {
-      console.log("🔄 Request already in progress, skipping...");
-      return;
-    }
+    if (isRequestInProgress.current) return;
 
     try {
       isRequestInProgress.current = true;
       setIsLoading(true);
       setError(null);
-
-      console.log("🔍 Fetching pools data...");
 
       const response = await prepaidPoolsApi.getPools({
         page: 0,
@@ -49,8 +42,6 @@ export function usePoolsData(): UsePoolsDataResult {
       const poolsData = (response.data as Pool[]) || [];
       setPools(poolsData);
       setLastFetchTime(response.meta?.timestamp || new Date().toISOString());
-
-      console.log(`✅ Loaded ${poolsData.length} pools`);
     } catch (err) {
       let errorMessage = "Failed to load cards. Please try again.";
 
@@ -74,20 +65,18 @@ export function usePoolsData(): UsePoolsDataResult {
       }
 
       setError(errorMessage);
-      console.error("❌ Error fetching pools:", err);
     } finally {
       setIsLoading(false);
       isRequestInProgress.current = false;
     }
-  }, []); // ✅ No dependencies - only changes when manually called
+  }, []);
 
-  // Load data only once on mount
   useEffect(() => {
     if (!hasInitialLoad.current) {
       hasInitialLoad.current = true;
       loadPools();
     }
-  }, []); // ✅ Empty dependency array - runs only once
+  }, [loadPools]);
 
   return {
     pools,

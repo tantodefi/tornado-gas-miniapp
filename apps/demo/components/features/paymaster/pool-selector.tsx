@@ -26,7 +26,7 @@ interface CouponOption {
 
 interface GasData {
   gasUsed: bigint;
-  lastMerkleRoot: bigint;
+  // lastMerkleRoot: bigint;
   joiningFee: string;
   remainingGas: bigint;
   nullifier: bigint;

@@ -1,13 +1,18 @@
-//file:prepaid-gas-website/apps/web/hooks/pools/use-pool-details.ts
+//file: apps/web/hooks/pools/use-pool-details.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { prepaidPoolsApi } from "@/lib/api/api-client";
-import type { DetailedPool, PoolMember, MerkleRootHistory } from "@/types";
+import type { PoolWithActivity } from "@/types/pool";
 import { ApiError } from "@/lib/api/type";
 
-// Custom hook for managing pool details state
-export const usePoolDetails = (poolId: string) => {
-  const [pool, setPool] = useState<DetailedPool | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+// Add initialData parameter to the hook
+export const usePoolDetails = (
+  poolId: string,
+  initialData?: PoolWithActivity,
+) => {
+  const [pool, setPool] = useState<PoolWithActivity | null>(
+    initialData || null,
+  );
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
 
   // Add request deduplication
@@ -40,7 +45,7 @@ export const usePoolDetails = (poolId: string) => {
       }
 
       console.log(`✅ Pool details loaded for ${poolId}`);
-      setPool(response.data as DetailedPool);
+      setPool(response.data as PoolWithActivity);
     } catch (err) {
       let errorMessage = "Failed to load pool details. Please try again.";
 
@@ -71,27 +76,26 @@ export const usePoolDetails = (poolId: string) => {
     }
   }, [poolId]);
 
-  // Load data when parameters change
+  // Only load if we don't have initial data
   useEffect(() => {
-    if (poolId) {
+    if (poolId && !initialData) {
       currentRequest.current = null; // Reset to allow new request
       loadPoolDetails();
     }
-  }, [poolId, loadPoolDetails]);
+  }, [poolId, loadPoolDetails, initialData]);
 
   // Refetch function for retry functionality
   const refetch = useCallback(() => {
     loadPoolDetails();
   }, [loadPoolDetails]);
 
-  // ✅ Helper functions for working with BigInt strings
-  // Updated to use new field names from data package
+  // Helper functions for working with BigInt strings
   const getJoiningFeeAsNumber = useCallback(() => {
     return pool ? parseInt(pool.joiningFee) : 0;
   }, [pool]);
 
   const getMembersCountAsNumber = useCallback(() => {
-    return pool ? parseInt(pool.memberCount) : 0; // Updated from membersCount
+    return pool ? parseInt(pool.memberCount) : 0;
   }, [pool]);
 
   const getTotalDepositsAsNumber = useCallback(() => {
@@ -111,7 +115,9 @@ export const usePoolDetails = (poolId: string) => {
     members: pool?.members || [],
     hasMembers: (pool?.members?.length || 0) > 0,
     memberCount: pool?.members?.length || 0,
+    // Direct access to activity
+    activity: pool?.activity || [],
+    hasActivity: (pool?.activity?.length || 0) > 0,
+    activityCount: pool?.activity?.length || 0,
   };
 };
-
-export type { DetailedPool, PoolMember, MerkleRootHistory };

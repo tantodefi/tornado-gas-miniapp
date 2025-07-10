@@ -4,132 +4,94 @@
  * Simplified to directly use @workspace/data package types
  */
 
-import type {
-  SerializedPool,
-  SerializedPoolMember,
-  SerializedMerkleRoot,
-  NetworkMetadata,
-} from "@workspace/data";
+import type { SerializedPool, SerializedPoolMember } from "@workspace/data";
 
-/**
- * ========================================
- * CORE TYPES - Direct from Data Package
- * ========================================
- */
-
-/**
- * Pool type for web app - directly uses serialized data package type
- * Network info is already included in the data package
- */
 export type Pool = SerializedPool;
 
 /**
- * Pool member type for web app - directly uses serialized data package type
+ * Pool member type for web app
  */
 export type PoolMember = SerializedPoolMember;
 
 /**
- * Merkle root history - directly uses serialized data package type
- */
-export type MerkleRootHistory = SerializedMerkleRoot;
-
-/**
- * DetailedPool is just an alias for Pool since SerializedPool
- * already includes members and merkleRoots
- */
-export type DetailedPool = Pool;
-
-/**
- * Network configuration - directly uses data package type
- */
-export type PoolNetwork = string;
-
-/**
  * ========================================
- * UI/DISPLAY HELPER TYPES
+ * ACTIVITY TYPES
  * ========================================
  */
 
 /**
- * Filter state for pool filtering and sorting
+ * Activity item type
  */
-export interface FilterState {
-  network: string;
-  amountRange: string;
-  memberRange: string;
-  sortBy: string;
-}
+export type ActivityType = "member_added" | "transaction";
 
 /**
- * Pool overview data for display components
- * Updated to use new field names from data package
+ * Base activity item interface
  */
-export interface PoolOverviewData {
-  joiningFee: string;
-  totalDeposits: string;
-  memberCount: string; // Updated from membersCount
-  createdAtTimestamp: string; // Updated from createdAt
-  network: string; // Simplified to just network name
-}
-
-/**
- * Pool technical specifications for display
- */
-export type PoolTechnicalData = Pool;
-
-/**
- * Simplified member data for components
- * Updated to use new field names from data package
- */
-export interface MemberData {
+export interface BaseActivityItem {
+  /** Unique identifier for the activity */
   id: string;
-  identityCommitment: string;
-  memberIndex: string;
-  addedAtTimestamp: string; // Updated from joinedAt
-  addedAtBlock: string; // Updated from joinedAtBlock
+  /** Type of activity */
+  type: ActivityType;
+  /** Timestamp of the activity (for sorting) */
+  timestamp: string;
+  /** Block number when activity occurred */
+  blockNumber: string;
+  /** Transaction hash */
+  transactionHash: string;
+  /** Network identifier */
+  network: string;
 }
 
 /**
- * Pool statistics for display
+ * Member addition activity item
  */
-export interface PoolStats {
-  totalPools: number;
-  totalMembers: number;
-  totalValue: string;
-  averagePoolSize: number;
+export interface MemberAddedActivity extends BaseActivityItem {
+  type: "member_added";
+  /** Member details */
+  member: {
+    memberIndex: string;
+    identityCommitment: string;
+    merkleRootWhenAdded: string;
+    rootIndexWhenAdded: number;
+  };
 }
 
 /**
- * ========================================
- * QUERY AND FILTER TYPES
- * ========================================
+ * Transaction activity item
  */
+export interface TransactionActivity extends BaseActivityItem {
+  type: "transaction";
+  /** Transaction details */
+  transaction: {
+    userOpHash: string;
+    sender: string;
+    actualGasCost: string;
+    nullifier: string;
+    gasPrice?: string;
+  };
+}
 
 /**
- * Pool query options
+ * Union type for all activity items
  */
-export interface PoolQueryOptions {
-  page?: number;
+export type ActivityItem = MemberAddedActivity | TransactionActivity;
+
+/**
+ * Enhanced pool type with activity feed
+ */
+export interface PoolWithActivity extends Pool {
+  /** Combined activity feed (members + transactions) ordered by timestamp */
+  activity?: ActivityItem[];
+}
+
+/**
+ * Activity display options
+ */
+export interface ActivityOptions {
+  /** Maximum number of activities to return */
   limit?: number;
-  maxResults?: number;
-  paginated?: boolean;
-  fields?: string[];
-}
-
-/**
- * Pool search and filter options
- */
-export interface PoolSearchOptions {
-  query?: string;
-  network?: string;
-  minFee?: string;
-  maxFee?: string;
-  minMembers?: number;
-  maxMembers?: number;
-  sortBy?:
-    | "newest"
-    | "amount-high"
-    | "amount-low"
-    | "members-high"
-    | "members-low";
+  /** Sort order for activities */
+  sortOrder?: "asc" | "desc";
+  /** Filter by activity type */
+  filterByType?: ActivityType[];
 }

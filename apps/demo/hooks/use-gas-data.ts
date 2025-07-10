@@ -4,12 +4,12 @@ import { Identity } from "@semaphore-protocol/core";
 import { poseidon2 } from "poseidon-lite/poseidon2";
 import { createPublicClient, http, keccak256, toHex } from "viem";
 import { CONTRACTS } from "@/constants/config";
-import { PREPAID_GAS_PAYMASTER_ABI } from "@workspace/core";
+import { GAS_LIMITED_PAYMASTER_ABI } from "@workspace/core";
 import { baseSepolia } from "viem/chains";
 
 interface GasData {
   gasUsed: bigint;
-  lastMerkleRoot: bigint;
+  // lastMerkleRoot: bigint;
   joiningFee: string;
   remainingGas: bigint;
   nullifier: bigint;
@@ -59,12 +59,12 @@ export function useGasData() {
           transport: http(),
         });
         // Call userGasData on the contract
-        const [gasUsed, lastMerkleRoot] = (await publicClient.readContract({
+        const gasUsed = await publicClient.readContract({
           address: CONTRACTS.paymaster,
-          abi: PREPAID_GAS_PAYMASTER_ABI,
+          abi: GAS_LIMITED_PAYMASTER_ABI,
           functionName: "poolMembersGasData",
           args: [nullifier],
-        })) as [bigint, bigint];
+        });
 
         // Calculate remaining gas
         const joiningFeeBigInt = BigInt(joiningFee);
@@ -72,7 +72,6 @@ export function useGasData() {
 
         return {
           gasUsed,
-          lastMerkleRoot,
           joiningFee,
           remainingGas,
           nullifier,

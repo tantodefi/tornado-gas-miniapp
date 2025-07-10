@@ -1,123 +1,84 @@
 //file:prepaid-gas-website/apps/web/components/features/payment/payment-modal.tsx
+
 "use client";
 
-import { PaymentManager } from "@/components/features/payment/payment-manager";
-import { PaymentPool, PoolCard } from "@/types";
 import React from "react";
+import { PaymentManager, PaymentSuccessDetails } from "./payment-manager";
+import { formatEther } from "viem";
+import { PoolCard } from "@/lib/storage/indexed-db";
+import { Pool } from "@/types/pool";
 
-/**
- * Props for PaymentModal component
- */
 interface PaymentModalProps {
-  /** Whether the modal is visible */
   isVisible: boolean;
-  /** Pool data for payment processing */
-  paymentPool: PaymentPool;
-  /** Generated card to be activated */
-  generatedCard: PoolCard;
-  /** Pool ID for display */
-  poolId: string;
-  /** Handler for successful payment completion */
-  onPaymentSuccess: (activatedCard: PoolCard) => void;
-  /** Handler for payment errors */
+  pool: Pool;
+  card: PoolCard;
+  canCancel: boolean;
+  onPaymentStarted: () => void;
+  onPaymentSuccess: (details: PaymentSuccessDetails) => void;
   onPaymentError: (error: string) => void;
-  /** Handler for canceling the payment */
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 /**
- * Format wei amount to ETH display
+ * Payment Modal Component
+ * Single responsibility: Display payment UI and coordinate with PaymentManager
  */
-const formatEthAmount = (weiString: string): string => {
-  try {
-    const wei = BigInt(weiString);
-    const eth = Number(wei) / 1e18;
-
-    if (eth === 0) return "0.00";
-    if (eth < 0.0001) return "< 0.0001";
-    if (eth < 1) return eth.toFixed(6).replace(/\.?0+$/, "");
-    return eth.toFixed(4).replace(/\.?0+$/, "");
-  } catch {
-    return "0.00";
-  }
-};
-
-/**
- * PaymentModal Component
- *
- * Single Responsibility: Handle payment processing modal UI and interactions
- *
- * Features:
- * - Modal overlay with backdrop blur
- * - Payment amount display
- * - Integration with PaymentManager
- * - Payment callback handling
- * - Cancel functionality
- */
-const PaymentModal: React.FC<PaymentModalProps> = ({
+function PaymentModal({
   isVisible,
-  paymentPool,
-  generatedCard,
-  poolId,
+  pool,
+  card,
+  canCancel,
+  onPaymentStarted,
   onPaymentSuccess,
   onPaymentError,
   onCancel,
-}) => {
+}: PaymentModalProps) {
   if (!isVisible) return null;
 
-  const handlePaymentCompleted = (details: any) => {
-    console.log("Payment completed:", details);
-
-    // Update card status and save
-    const activatedCard: PoolCard = {
-      ...generatedCard,
-      status: "active",
-      balance: formatEthAmount(paymentPool.joiningFee),
-      joinedAt: new Date().toISOString(),
-    };
-
-    onPaymentSuccess(activatedCard);
-  };
-
-  const handlePaymentError = (error: any) => {
-    onPaymentError(error.message);
-  };
-
-  const handlePaymentStarted = (paymentData: any) => {
-    console.log("Payment started:", paymentData);
-  };
+  const joiningFeeEth = formatEther(BigInt(pool.joiningFee));
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-600/50 rounded-2xl p-6 max-w-md w-full">
+        {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-white mb-2">
             Complete Payment
           </h2>
           <p className="text-slate-400">
-            Join Pool {poolId} with {formatEthAmount(paymentPool.joiningFee)}{" "}
-            ETH
+            Join Pool {pool.poolId} with {joiningFeeEth} ETH
           </p>
         </div>
 
+        {/* Payment Manager */}
         <PaymentManager
-          pool={paymentPool}
-          card={generatedCard}
+          pool={pool}
+          card={card}
           callbacks={{
-            onPaymentStarted: handlePaymentStarted,
-            onPaymentCompleted: handlePaymentCompleted,
-            onPaymentError: handlePaymentError,
+            onPaymentStarted,
+            onPaymentSuccess,
+            onPaymentError,
           }}
         />
 
+        {/* Cancel Button */}
         <div className="text-center mt-6">
-          <button onClick={onCancel} className="btn-prepaid-outline btn-sm">
-            Cancel
-          </button>
+          {canCancel && onCancel ? (
+            <button onClick={onCancel} className="btn-prepaid-outline btn-sm">
+              Cancel
+            </button>
+          ) : (
+            <button
+              disabled
+              className="btn-prepaid-outline btn-sm opacity-50 cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default PaymentModal;
+export { PaymentModal };

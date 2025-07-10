@@ -2,38 +2,42 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   useAccount,
   useSendTransaction,
   useWaitForTransactionReceipt,
 } from "wagmi";
-import { useEffect, useState } from "react";
-import { formatJoiningFee } from "./payment-manager";
-import type {
-  PaymentData,
-  PaymentButtonProps,
-  RainbowTransactionEvent,
-  WagmiError,
-} from "@/types";
+import { Button } from "@workspace/ui/components/button";
+import { formatJoiningFee } from "@/utils";
+import { PoolCard } from "@/lib/storage/indexed-db";
+import { Pool } from "@/types/pool";
+import { PaymentData } from "./payment-manager";
+
+interface RainbowButtonProps {
+  pool: Pool;
+  card: PoolCard;
+  getPaymentData: () => PaymentData;
+  onPaymentStarted: () => void;
+  onPaymentSuccess: (transactionHash: string) => void;
+  onPaymentError: (error: string) => void;
+}
 
 /**
- * RainbowButton component for traditional wallet connections
- * Adapted for current pool/card system
+ * Rainbow wallet payment button
  */
-export function RainbowButton({
+function RainbowButton({
   pool,
-  card,
   getPaymentData,
-  callbacks,
-}: PaymentButtonProps) {
+  onPaymentStarted,
+  onPaymentSuccess,
+  onPaymentError,
+}: RainbowButtonProps) {
   const { address, isConnected } = useAccount();
-  const [transactionStatus, setTransactionStatus] = useState<
-    "idle" | "pending"
-  >("idle");
-  const [currentPaymentData, setCurrentPaymentData] =
-    useState<PaymentData | null>(null);
+  const { openConnectModal } = useConnectModal();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const {
     sendTransaction,
@@ -46,77 +50,70 @@ export function RainbowButton({
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: receiptError,
-    data: receipt,
   } = useWaitForTransactionReceipt({
     hash,
   });
 
-  // Watch for transaction state changes
+  // Handle transaction state changes
   useEffect(() => {
-    if (isSendPending) {
-      setTransactionStatus("pending");
+    // Payment started when wallet confirmation appears
+    if (isSendPending && !isProcessing) {
+      setIsProcessing(true);
+      onPaymentStarted();
     }
 
+    // Handle send errors
     if (sendError) {
-      setTransactionStatus("idle");
-      const error: WagmiError = {
-        name: sendError.name,
-        message: sendError.message,
-        cause: sendError.cause,
-      };
-      callbacks.handlePaymentError(error);
-      return;
+      setIsProcessing(false);
+
+      // Check for user rejection
+      const isUserRejection =
+        sendError.message?.toLowerCase().includes("user rejected") ||
+        sendError.message?.toLowerCase().includes("user denied") ||
+        sendError.name?.includes("UserRejectedRequestError") ||
+        (sendError as unknown as { code?: number }).code === 4001;
+
+      if (isUserRejection) {
+        onPaymentError(
+          "Payment cancelled - you rejected the transaction in your wallet",
+        );
+      } else if (
+        sendError.message?.toLowerCase().includes("insufficient funds")
+      ) {
+        onPaymentError("Insufficient funds to complete the transaction");
+      } else {
+        onPaymentError(sendError.message || "Transaction failed");
+      }
     }
 
-    if (isConfirmed && hash && currentPaymentData) {
-      setTransactionStatus("idle");
-      // Pass transaction hash to completion callback
-      const event: RainbowTransactionEvent = {
-        hash,
-        transactionHash: hash,
-        success: true,
-        blockNumber: receipt?.blockNumber
-          ? Number(receipt.blockNumber)
-          : undefined,
-        gasUsed: receipt?.gasUsed?.toString(),
-      };
-      callbacks.handlePaymentCompleted(event);
+    // Handle success
+    if (isConfirmed && hash) {
+      setIsProcessing(false);
+      onPaymentSuccess(hash);
     }
 
+    // Handle receipt errors
     if (receiptError) {
-      setTransactionStatus("idle");
-      const error: WagmiError = {
-        name: receiptError.name,
-        message: receiptError.message,
-        cause: receiptError.cause,
-      };
-      callbacks.handlePaymentError(error);
+      setIsProcessing(false);
+      onPaymentError(receiptError.message || "Transaction confirmation failed");
     }
   }, [
     isSendPending,
-    isConfirming,
     isConfirmed,
     sendError,
     receiptError,
     hash,
-    callbacks,
-    currentPaymentData,
-    receipt?.blockNumber,
-    receipt?.gasUsed,
+    isProcessing,
+    onPaymentStarted,
+    onPaymentSuccess,
+    onPaymentError,
   ]);
 
-  const handlePurchase = async () => {
+  const handlePayment = async () => {
     if (!isConnected || !address) return;
 
     try {
-      setTransactionStatus("pending");
-
-      // Generate payment data when purchase is initiated
       const paymentData = getPaymentData();
-      setCurrentPaymentData(paymentData);
-
-      // Call payment started callback with payment data
-      callbacks.handlePaymentStarted(paymentData);
 
       sendTransaction({
         to: pool.paymaster.address as `0x${string}`,
@@ -124,21 +121,22 @@ export function RainbowButton({
         value: BigInt(pool.joiningFee),
       });
     } catch (error) {
-      setTransactionStatus("idle");
-      const wagmiError: WagmiError = {
-        name: error instanceof Error ? error.name : "UnknownError",
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
-        cause: error,
-      };
-      callbacks.handlePaymentError(wagmiError);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      onPaymentError(errorMessage);
     }
   };
 
+  // Show connect button if not connected
   if (!isConnected) {
     return (
       <div className="space-y-4">
-        <ConnectButton />
+        <Button
+          className="btn-prepaid-primary btn-md w-full"
+          onClick={openConnectModal}
+        >
+          Connect Wallet
+        </Button>
         <div className="text-center">
           <p className="text-xs text-slate-400">
             Connect your wallet to continue
@@ -151,22 +149,25 @@ export function RainbowButton({
     );
   }
 
+  // Payment button
   return (
     <div className="space-y-4">
       <motion.button
-        onClick={handlePurchase}
+        onClick={handlePayment}
         className={`w-full font-semibold py-3 px-6 rounded-lg transition-all duration-200 ${
-          transactionStatus === "idle"
-            ? "btn-prepaid-primary btn-lg w-full"
-            : "bg-yellow-500 hover:bg-yellow-600 text-white cursor-not-allowed"
+          isProcessing || isConfirming
+            ? "bg-yellow-500 hover:bg-yellow-600 text-white cursor-not-allowed"
+            : "btn-prepaid-primary btn-lg"
         }`}
-        whileHover={transactionStatus === "idle" ? { scale: 1.02 } : {}}
-        whileTap={transactionStatus === "idle" ? { scale: 0.98 } : {}}
-        disabled={transactionStatus !== "idle"}
+        whileHover={!isProcessing ? { scale: 1.02 } : {}}
+        whileTap={!isProcessing ? { scale: 0.98 } : {}}
+        disabled={isProcessing || isConfirming}
       >
-        {transactionStatus === "idle" &&
+        {isProcessing && !isConfirming && "Confirm in Wallet..."}
+        {isConfirming && "Confirming Transaction..."}
+        {!isProcessing &&
+          !isConfirming &&
           `Pay ${formatJoiningFee(pool.joiningFee)} ETH`}
-        {transactionStatus === "pending" && "Confirm in Wallet..."}
       </motion.button>
 
       <div className="text-center">
@@ -177,15 +178,9 @@ export function RainbowButton({
         <p className="text-xs text-slate-400 mt-1">
           Connect any Ethereum wallet
         </p>
-
-        {/* Show current payment info for debugging */}
-        {currentPaymentData && (
-          <p className="text-xs text-slate-500 mt-1 font-mono">
-            Card: {currentPaymentData.cardId} • Pool:{" "}
-            {currentPaymentData.poolId}
-          </p>
-        )}
       </div>
     </div>
   );
 }
+
+export { RainbowButton };
