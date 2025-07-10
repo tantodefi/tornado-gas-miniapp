@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { GasCardsShowcase } from "@/components/features/landing/gas-cards";
 import Stats from "@/components/features/landing/stats";
+import { AppHeader } from "@/components/layout/app-header";
 
 interface FeatureCardProps {
   icon: string;
@@ -53,16 +54,6 @@ const FloatingBackground: React.FC = () => {
     </div>
   );
 };
-
-// Header Component
-const Header: React.FC = () => (
-  <header className="sticky top-0 z-50 p-4 sm:p-6 lg:p-8 flex justify-between items-center bg-prepaid-gradient bg-opacity-90 backdrop-blur-md">
-    <div className="font-semibold text-slate-200 font-mono text-sm sm:text-base">
-      Prepaid Gas Credits
-    </div>
-    <div className="text-xs sm:text-sm text-slate-400 font-mono">v0.1</div>
-  </header>
-);
 
 // Feature Card Component
 const FeatureCard: React.FC<FeatureCardProps> = ({
@@ -243,7 +234,7 @@ const CTA: React.FC = () => (
 const LandingPage: React.FC = () => (
   <div className="h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth bg-prepaid-gradient text-white">
     <FloatingBackground />
-    <Header />
+    <AppHeader />
 
     {/* Hero */}
     <section className="min-h-screen snap-start flex flex-col justify-center">

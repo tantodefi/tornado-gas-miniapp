@@ -120,56 +120,49 @@ function CardsTable({ cards, isLoading, onCardClick }: CardsTableProps) {
           </TableHeader>
           <TableBody>
             {cards.map((card, index) => (
-              <motion.div
-                key={card.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                style={{ display: "contents" }}
+              <TableRow
+                key={index}
+                className="border-slate-600/20 hover:bg-slate-700/20 cursor-pointer transition-colors duration-200"
+                onClick={() => onCardClick(card)}
               >
-                <TableRow
-                  className="border-slate-600/20 hover:bg-slate-700/20 cursor-pointer transition-colors duration-200"
-                  onClick={() => onCardClick(card)}
-                >
-                  <TableCell>
-                    <span className="text-sm font-mono text-purple-400">
-                      {formatCardId(card.id)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-white font-medium">
-                      {card.poolInfo.poolId}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-slate-300">
-                      {card.poolInfo.paymasterType === "GasLimited"
-                        ? "Multi-Use"
-                        : "One-Time"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-green-400 font-medium">
-                      {formatJoiningFee(card.poolInfo.joiningFee)} ETH
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-slate-300 capitalize">
-                      {card.poolInfo.network}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-blue-400 font-mono">
-                      {formatTxHash(card.transactionHash)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-slate-300">
-                      {formatDate(card.purchasedAt)}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              </motion.div>
+                <TableCell>
+                  <span className="text-sm font-mono text-purple-400">
+                    {formatCardId(card.id)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-white font-medium">
+                    {card.poolInfo.poolId}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-slate-300">
+                    {card.poolInfo.paymasterType === "GasLimited"
+                      ? "Multi-Use"
+                      : "One-Time"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-green-400 font-medium">
+                    {formatJoiningFee(card.poolInfo.joiningFee)} ETH
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-slate-300 capitalize">
+                    {card.poolInfo.network}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-blue-400 font-mono">
+                    {formatTxHash(card.transactionHash)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-slate-300">
+                    {formatDate(card.purchasedAt)}
+                  </span>
+                </TableCell>
+              </TableRow>
             ))}
           </TableBody>
         </Table>

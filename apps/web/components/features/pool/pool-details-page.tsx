@@ -1,13 +1,16 @@
-//file:prepaid-gas-website/apps/web/components/features/pools/pool-details-page.tsx
+//file: prepaid-gas-website/apps/web/components/features/pools/pool-details-page.tsx
 
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
 import { usePoolDetails } from "@/hooks/pools/use-pool-details";
 import usePoolJoinFlow from "@/hooks/pools/use-pool-join-flow";
-import { PoolPageHeader } from "@/components/layout/page-header";
+import { AppHeader } from "@/components/layout/app-header";
+import { PageBreadcrumb } from "@/components/layout/page-breadcrumb";
+import { Button } from "@workspace/ui/components/button";
 import LoadingSkeleton from "@/components/features/pool/pool-page-loading-skeleton";
 import ErrorState from "@/components/features/pool/pool-page-error-state";
 import JoinPoolSection from "./join-pool-section";
@@ -15,20 +18,27 @@ import PoolOverviewSection from "./pool-overview-section";
 import PoolActivitySection from "./pool-activity-section";
 import { PaymentModal } from "../payment/payment-modal";
 import CardReceipt from "../cards/card-receipt";
+import type { PoolWithActivity } from "@/types/pool";
 
 interface PoolDetailsPageProps {
   poolId: string;
+  initialData?: PoolWithActivity;
 }
 
 /**
  * Pool Details Page Component
- * Single responsibility: Orchestrate pool details view and join flow
  */
-function PoolDetailsPage({ poolId }: PoolDetailsPageProps) {
+function PoolDetailsPage({ poolId, initialData }: PoolDetailsPageProps) {
   const router = useRouter();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Pool data fetching
-  const { pool, isLoading, error: poolError, refetch } = usePoolDetails(poolId);
+  // Pool data fetching with optional initial data
+  const {
+    pool,
+    isLoading,
+    error: poolError,
+    refetch,
+  } = usePoolDetails(poolId, initialData);
 
   // Join flow state management
   const {
@@ -47,18 +57,53 @@ function PoolDetailsPage({ poolId }: PoolDetailsPageProps) {
     onSuccessComplete,
   } = usePoolJoinFlow(pool);
 
-  // Navigation
+  // Navigation handlers
   const handleBack = () => router.push("/pools");
 
-  // Loading state
+  // Refresh handler
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+
+    try {
+      setIsRefreshing(true);
+      await refetch();
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Breadcrumb items
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "Pools", href: "/pools" },
+    { label: `Pool ${poolId}`, isCurrentPage: true },
+  ];
+
+  // Loading state (only shows if no initial data)
   if (isLoading) {
-    return <LoadingSkeleton onBack={handleBack} />;
+    return (
+      <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
+        <AppHeader />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <PageBreadcrumb items={breadcrumbItems} className="mb-8" />
+          <LoadingSkeleton />
+        </div>
+      </div>
+    );
   }
 
   // Error state
   if (poolError || !pool) {
     return (
-      <ErrorState error={poolError} onBack={handleBack} onRetry={refetch} />
+      <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
+        <AppHeader />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <PageBreadcrumb items={breadcrumbItems} className="mb-8" />
+          <ErrorState error={poolError} onBack={handleBack} onRetry={refetch} />
+        </div>
+      </div>
     );
   }
 
@@ -89,13 +134,30 @@ function PoolDetailsPage({ poolId }: PoolDetailsPageProps) {
 
   return (
     <div className="min-h-screen bg-prepaid-gradient text-white overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        {/* Header */}
-        <PoolPageHeader
-          backText="← Back to Pools"
-          onBack={handleBack}
-          label="Pool Details"
-        />
+      {/* App Header */}
+      <AppHeader />
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb and Refresh Section */}
+        <div className="flex justify-between items-center mb-8">
+          {/* Left side - Breadcrumb */}
+          <PageBreadcrumb items={breadcrumbItems} />
+
+          {/* Right side - Refresh button */}
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="ghost"
+            size="sm"
+            className="text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 transition-colors font-mono"
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            {isRefreshing ? "Refreshing..." : "Refresh"}
+          </Button>
+        </div>
 
         {/* Error Display */}
         {joinError && (
