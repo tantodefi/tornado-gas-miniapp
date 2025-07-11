@@ -53,7 +53,7 @@ function transformTransactionsToActivity(
     type: "transaction" as const,
     timestamp: op.executedAtTimestamp,
     blockNumber: op.executedAtBlock,
-    transactionHash: op.executedAtTransaction,
+    transactionHash: op.userOpHash,
     network: op.network,
     transaction: {
       userOpHash: op.userOpHash,
