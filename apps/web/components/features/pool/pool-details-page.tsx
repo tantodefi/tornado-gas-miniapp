@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
+import { toast } from "@workspace/ui/components/sonner";
 import { usePoolDetails } from "@/hooks/pools/use-pool-details";
 import usePoolJoinFlow from "@/hooks/pools/use-pool-join-flow";
 import { AppHeader } from "@/components/layout/app-header";
@@ -57,6 +58,16 @@ function PoolDetailsPage({ poolId, initialData }: PoolDetailsPageProps) {
     onSuccessComplete,
   } = usePoolJoinFlow(pool);
 
+  // Show toast notifications for join errors
+  React.useEffect(() => {
+    if (joinError) {
+      toast.error("Error Joining Pool", {
+        duration: 5000,
+        description: joinError,
+      });
+    }
+  }, [joinError]);
+
   // Navigation handlers
   const handleBack = () => router.push("/pools");
 
@@ -67,8 +78,10 @@ function PoolDetailsPage({ poolId, initialData }: PoolDetailsPageProps) {
     try {
       setIsRefreshing(true);
       await refetch();
+      toast.success("Pool data refreshed");
     } catch (error) {
       console.error("Refresh failed:", error);
+      toast.error("Failed to refresh pool data");
     } finally {
       setIsRefreshing(false);
     }
@@ -109,7 +122,6 @@ function PoolDetailsPage({ poolId, initialData }: PoolDetailsPageProps) {
 
   // Handle join button click
   const handleJoinClick = () => {
-    console.log({ state });
     if (state === "idle" || state === "error") {
       startJoinFlow();
     }
@@ -158,17 +170,6 @@ function PoolDetailsPage({ poolId, initialData }: PoolDetailsPageProps) {
             {isRefreshing ? "Refreshing..." : "Refresh"}
           </Button>
         </div>
-
-        {/* Error Display */}
-        {joinError && (
-          <motion.div
-            className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="text-red-400 text-sm">{joinError}</p>
-          </motion.div>
-        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 h-[calc(100vh-20rem)]">

@@ -93,7 +93,18 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 };
 
 // Hero Section
-const Hero: React.FC = () => (
+const Hero: React.FC = () => {
+  
+  const scrollToHowItWorks = () => {
+    const element = document.getElementById('how-it-works');
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
+  return (
   <section className="section-prepaid text-center relative z-10">
     <motion.div
       className="badge-prepaid mb-6 sm:mb-8"
@@ -101,7 +112,7 @@ const Hero: React.FC = () => (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      ✨ Anonymous Gas Payments • ERC-4337 + Semaphore • Prepaid Privacy
+      ✨ Anonymous Gas Payments • ERC-4337 + Semaphore Protocol
     </motion.div>
 
     <motion.h1
@@ -120,8 +131,8 @@ const Hero: React.FC = () => (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.4 }}
     >
-      Join a pool by paying upfront gas. Prove membership with zero-knowledge
-      proofs using Semaphore. Spend credits anonymously through an ERC-4337
+      Join a pool by paying upfront gas. Prove pool membership with zero-knowledge
+      proofs to spend gas credits anonymously through an ERC-4337 + Semaphore powered
       paymaster — unlinkable and private by design.
     </motion.p>
 
@@ -136,19 +147,10 @@ const Hero: React.FC = () => (
           Browse Gas Pools →
         </Button>
       </Link>
-      <Button className="btn-prepaid-outline btn-lg">How It Works</Button>
+      <Button className="btn-prepaid-outline btn-lg" onClick={scrollToHowItWorks} >How It Works</Button>
     </motion.div>
-
-    {/* <motion.div
-      className="mt-8 sm:mt-12"
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.8, delay: 0.8 }}
-    >
-      <GasCard />
-    </motion.div> */}
   </section>
-);
+)};
 
 // Features Section
 const Features: React.FC = () => {
@@ -157,21 +159,21 @@ const Features: React.FC = () => {
       icon: "💳",
       title: "Prepaid, Upfront Credit",
       description:
-        "Pay once to join a pool — your deposit becomes prepaid gas, like topping up a transit pass. This gas is used to sponsor your future transactions.",
+        "Pay once to join a pool — your deposit becomes prepaid gas. This gas is used to sponsor your future transactions.",
       iconVariant: "blue" as const,
     },
     {
       icon: "⚡",
       title: "Reusable or One-Time Credits",
       description:
-        "Choose ‘GasLimited’ credits for multiple uses within a gas limit, or ‘OneTimeUse’ vouchers for single, unlinkable transactions. Flexibility with privacy trade-offs.",
+        "Choose ‘MultiUse’ credits for multiple uses within a limit, or ‘OneTimeUse’ vouchers for single, unlinkable transactions. Flexibility with privacy trade-offs.",
       iconVariant: "purple" as const,
     },
     {
       icon: "🔒",
       title: "Private, Unlinkable Spending",
       description:
-        "Spend via zero-knowledge proofs. The paymaster verifies you're a pool member without revealing who you are. No link between credit and identity.",
+        "Spend via zero-knowledge proofs. The paymaster verifies you're a pool member without revealing who you are. No link between credit buyer and spender identity.",
       iconVariant: "pink" as const,
     },
   ];
@@ -189,7 +191,7 @@ const Features: React.FC = () => {
           How Prepaid Gas Work
         </h2>
         <p className="text-base sm:text-lg lg:text-xl text-slate-400 max-w-xl lg:max-w-2xl mx-auto px-4">
-          Think prepaid SIMs — buy upfront, spend anonymously. But for gas on
+          Think gift card — pay upfront, spend anonymously. But for gas on
           Ethereum.
         </p>
       </motion.div>
@@ -247,8 +249,8 @@ const LandingPage: React.FC = () => (
     </section>
 
     {/* Features */}
-    <section className="min-h-screen snap-start flex flex-col justify-center">
-      <Features />
+    <section id="how-it-works" className="min-h-screen snap-start flex flex-col justify-center">
+      <Features  />
       <Stats />
       <CTA />
     </section>

@@ -33,7 +33,7 @@ export default function RootLayout({
       >
         <PaymentProviderWrapper>
           <div className="relative z-10">{children}</div>
-          <Toaster />
+          <Toaster richColors />
         </PaymentProviderWrapper>
       </body>
     </html>

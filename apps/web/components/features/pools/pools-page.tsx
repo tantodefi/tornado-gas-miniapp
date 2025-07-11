@@ -1,12 +1,14 @@
 // file: components/features/pools/pools-page.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { usePoolsData } from "@/hooks/pools/use-pools-data";
 import { usePoolsFilter } from "@/hooks/pools/use-pools-filter";
 import { useApiError } from "@/hooks/shared/use-api-error";
 import { AppHeader } from "@/components/layout/app-header";
 import { PageBreadcrumb } from "@/components/layout/page-breadcrumb";
+import { Button } from "@workspace/ui/components/button";
+import { RefreshCw } from "lucide-react";
 import PrepaidPoolCard from "../../shared/multi-use-pool-card";
 import FilterBar from "./pool-filters";
 import { useRouter } from "next/navigation";
@@ -18,6 +20,7 @@ interface PoolsPageProps {
 
 const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
   const router = useRouter();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { pools, isLoading, error, lastFetchTime, refetch } =
     usePoolsData(initialPools);
@@ -31,6 +34,20 @@ const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
   const handleRetry = () => !isRetrying && retry();
   const handleResetFilters = () => resetFilters();
 
+  // Refresh handler
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+
+    try {
+      setIsRefreshing(true);
+      await refetch();
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const breadcrumbItems = [
     { label: "Home", href: "/" },
     { label: "Pools", isCurrentPage: true },
@@ -41,7 +58,25 @@ const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
       <AppHeader />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <PageBreadcrumb items={breadcrumbItems} className="mb-8" />
+        {/* Breadcrumb and Refresh Section */}
+        <div className="flex justify-between items-center mb-8">
+          {/* Left side - Breadcrumb */}
+          <PageBreadcrumb items={breadcrumbItems} />
+
+          {/* Right side - Refresh button */}
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoading}
+            variant="ghost"
+            size="sm"
+            className="text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 transition-colors font-mono"
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            {isRefreshing ? "Refreshing..." : "Refresh"}
+          </Button>
+        </div>
 
         <FilterBar
           filters={filters}

@@ -178,8 +178,6 @@ function usePoolJoinFlow(pool: Pool | null): UsePoolJoinFlowResult {
    */
   const onPaymentError = useCallback(
     async (errorMessage: string) => {
-      console.log(`❌ Payment error: ${errorMessage}`);
-
       // Clean up pending card
       if (generatedCard) {
         await cleanupPendingCard(generatedCard.id);

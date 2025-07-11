@@ -78,13 +78,11 @@ function PaymentManager({ pool, card, callbacks }: PaymentManagerProps) {
 
   // Unified callback handlers for provider buttons
   const handlePaymentStarted = useCallback(() => {
-    console.log(`🔐 Payment started for card: ${card.id}`);
     callbacks.onPaymentStarted();
   }, [card.id, callbacks]);
 
   const handlePaymentSuccess = useCallback(
     (transactionHash: string) => {
-      console.log(`✅ Payment completed: ${transactionHash}`);
 
       const successDetails: PaymentSuccessDetails = {
         transactionHash,
@@ -103,7 +101,6 @@ function PaymentManager({ pool, card, callbacks }: PaymentManagerProps) {
 
   const handlePaymentError = useCallback(
     (errorMessage: string) => {
-      console.log(`❌ Payment failed: ${errorMessage}`);
       callbacks.onPaymentError(errorMessage);
     },
     [callbacks],

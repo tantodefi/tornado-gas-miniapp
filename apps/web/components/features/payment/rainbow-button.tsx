@@ -65,25 +65,7 @@ function RainbowButton({
     // Handle send errors
     if (sendError) {
       setIsProcessing(false);
-
-      // Check for user rejection
-      const isUserRejection =
-        sendError.message?.toLowerCase().includes("user rejected") ||
-        sendError.message?.toLowerCase().includes("user denied") ||
-        sendError.name?.includes("UserRejectedRequestError") ||
-        (sendError as unknown as { code?: number }).code === 4001;
-
-      if (isUserRejection) {
-        onPaymentError(
-          "Payment cancelled - you rejected the transaction in your wallet",
-        );
-      } else if (
-        sendError.message?.toLowerCase().includes("insufficient funds")
-      ) {
-        onPaymentError("Insufficient funds to complete the transaction");
-      } else {
-        onPaymentError(sendError.message || "Transaction failed");
-      }
+      onPaymentError(sendError.message || "Transaction failed");
     }
 
     // Handle success
@@ -174,9 +156,6 @@ function RainbowButton({
         <p className="text-xs text-slate-400">
           Powered by{" "}
           <span className="font-medium text-purple-400">Rainbow Kit</span>
-        </p>
-        <p className="text-xs text-slate-400 mt-1">
-          Connect any Ethereum wallet
         </p>
       </div>
     </div>

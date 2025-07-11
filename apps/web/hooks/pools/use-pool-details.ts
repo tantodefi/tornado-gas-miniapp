@@ -36,15 +36,12 @@ export const usePoolDetails = (
       setIsLoading(true);
       setError(null);
 
-      console.log(`🔍 Loading pool details for ID: ${poolId}`);
-
       const response = await prepaidPoolsApi.getPoolDetails(poolId);
 
       if (!response.success || !response.data) {
         throw new Error(`Pool ${poolId} not found`);
       }
 
-      console.log(`✅ Pool details loaded for ${poolId}`);
       setPool(response.data as PoolWithActivity);
     } catch (err) {
       let errorMessage = "Failed to load pool details. Please try again.";

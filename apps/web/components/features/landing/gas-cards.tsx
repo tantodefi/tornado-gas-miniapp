@@ -39,8 +39,8 @@ export const GasCardsShowcase: React.FC = () => (
         <div className="mt-6 space-y-3">
           <h3 className="text-xl font-bold text-white">Multiuse Credits</h3>
           <p className="text-slate-400 text-sm max-w-sm mx-auto">
-            Like a rechargeable transit card - buy credits once, use for
-            multiple transactions until your balance runs out.
+            Like a gift card - buy credits once, use for multiple transactions
+            until your balance runs out.
           </p>
           <div className="flex justify-center gap-4 text-xs text-slate-500">
             <span className="flex items-center gap-1">
