@@ -47,13 +47,17 @@ export const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
                   <BreadcrumbPage className="text-purple-400 font-mono text-sm font-medium">
                     {item.label}
                   </BreadcrumbPage>
-                ) : (
+                ) : item.href ? (
                   <BreadcrumbLink
-                    onClick={() => item.href && handleNavigation(item.href)}
+                    onClick={() => handleNavigation(item.href!)}
                     className="text-slate-400 hover:text-purple-400 transition-colors cursor-pointer font-mono text-sm"
                   >
                     {item.label}
                   </BreadcrumbLink>
+                ) : (
+                  <span className="text-slate-500 font-mono text-sm font-medium">
+                    {item.label}
+                  </span>
                 )}
               </BreadcrumbItem>
               {index < items.length - 1 && (

@@ -1,4 +1,4 @@
-//file:prepaid-gas-website/apps/web/app/api/prepaid-pools/[id]/route.ts
+//file:prepaid-gas-website/apps/web/app/api/prepaid-pools/[paymasterAddress]/[poolId]/route.ts
 import { NextRequest } from "next/server";
 import {
   createSuccessResponse,
@@ -53,7 +53,7 @@ function transformTransactionsToActivity(
     type: "transaction" as const,
     timestamp: op.executedAtTimestamp,
     blockNumber: op.executedAtBlock,
-    transactionHash: op.userOpHash,
+    transactionHash: op.executedAtTransaction,
     network: op.network,
     transaction: {
       userOpHash: op.userOpHash,
@@ -95,18 +95,23 @@ function createUnifiedActivity(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ paymasterAddress: string; poolId: string }> },
 ) {
   const requestId = await getRequestId();
   const startTime = Date.now();
 
   try {
-    const { id } = await params;
+    const { paymasterAddress, poolId } = await params;
 
-    if (!id || typeof id !== "string") {
+    if (
+      !paymasterAddress ||
+      !poolId ||
+      typeof paymasterAddress !== "string" ||
+      typeof poolId !== "string"
+    ) {
       return createErrorResponse(
-        "Invalid pool ID",
-        "INVALID_POOL_ID",
+        "Invalid paymaster address or pool ID",
+        "INVALID_PARAMETERS",
         400,
         requestId,
       );
@@ -125,8 +130,12 @@ export async function GET(
       subgraphUrl: process.env.SUBGRAPH_URL,
     });
 
-    // Build query using the query builder pattern
-    let poolQuery = subgraphClient.query().pools().byPoolId(id);
+    // Build query using the query builder pattern with composite key
+    let poolQuery = subgraphClient
+      .query()
+      .pools()
+      .byPaymaster(paymasterAddress)
+      .byPoolId(poolId);
 
     // Include members and userOperations for activity
     poolQuery = poolQuery.withMembers(memberLimit);
@@ -137,7 +146,7 @@ export async function GET(
 
     if (!serializedPools || serializedPools.length === 0) {
       return createErrorResponse(
-        `Pool with ID ${id} not found`,
+        `Pool with paymaster ${paymasterAddress} and ID ${poolId} not found`,
         "POOL_NOT_FOUND",
         404,
         requestId,
@@ -148,7 +157,7 @@ export async function GET(
 
     if (!poolData) {
       return createErrorResponse(
-        `Pool with ID ${id} not found`,
+        `Pool with paymaster ${paymasterAddress} and ID ${poolId} not found`,
         "POOL_NOT_FOUND",
         404,
         requestId,
@@ -176,7 +185,8 @@ export async function GET(
       ...SubgraphClient.getNetworkPreset(84532),
       requestId,
       processingTime: Date.now() - startTime,
-      poolId: id,
+      paymasterAddress,
+      poolId,
       timestamp: new Date().toISOString(),
       activityCount: activity.length,
       memberCount: members.length,

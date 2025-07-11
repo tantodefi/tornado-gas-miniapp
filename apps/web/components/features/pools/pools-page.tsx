@@ -9,7 +9,8 @@ import { AppHeader } from "@/components/layout/app-header";
 import { PageBreadcrumb } from "@/components/layout/page-breadcrumb";
 import { Button } from "@workspace/ui/components/button";
 import { RefreshCw } from "lucide-react";
-import PrepaidPoolCard from "../../shared/multi-use-pool-card";
+import MultiUsePoolCard from "../../shared/multi-use-pool-card";
+import OneTimeUsePoolCard from "../../shared/single-use-pool-card";
 import FilterBar from "./pool-filters";
 import { useRouter } from "next/navigation";
 import type { Pool } from "@/types/pool";
@@ -30,7 +31,8 @@ const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
 
   const { displayError, retry, isRetrying } = useApiError(error, refetch);
 
-  const handleCardClick = (poolId: string) => router.push(`/pools/${poolId}`);
+  const handleCardClick = (poolId: string, paymasterAddress: string) => 
+    router.push(`/pools/${paymasterAddress}/${poolId}`);
   const handleRetry = () => !isRetrying && retry();
   const handleResetFilters = () => resetFilters();
 
@@ -119,11 +121,16 @@ const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
         {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
             {filteredPools.map((pool) => (
-              <PrepaidPoolCard
-                key={pool.poolId}
+              pool.paymaster.contractType === "GasLimited" ? <MultiUsePoolCard
+                key={`${pool.paymaster.address}-${pool.poolId}`}
                 pool={pool}
-                onCardClick={handleCardClick}
+                onCardClick={() => handleCardClick(pool.poolId, pool.paymaster.address)}
               />
+              : <OneTimeUsePoolCard
+              key={`${pool.paymaster.address}-${pool.poolId}`}
+              pool={pool}
+              onCardClick={() => handleCardClick(pool.poolId, pool.paymaster.address)}
+            />
             ))}
           </div>
         )}

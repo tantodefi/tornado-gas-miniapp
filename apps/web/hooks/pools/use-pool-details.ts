@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api/type";
 
 // Add initialData parameter to the hook
 export const usePoolDetails = (
+  paymasterAddress: string,
   poolId: string,
   initialData?: PoolWithActivity,
 ) => {
@@ -36,7 +37,10 @@ export const usePoolDetails = (
       setIsLoading(true);
       setError(null);
 
-      const response = await prepaidPoolsApi.getPoolDetails(poolId);
+      const response = await prepaidPoolsApi.getPoolDetails(
+        paymasterAddress,
+        poolId,
+      );
 
       if (!response.success || !response.data) {
         throw new Error(`Pool ${poolId} not found`);
@@ -71,15 +75,15 @@ export const usePoolDetails = (
       setIsLoading(false);
       isRequestInProgress.current = false;
     }
-  }, [poolId]);
+  }, [paymasterAddress, poolId]);
 
   // Only load if we don't have initial data
   useEffect(() => {
-    if (poolId && !initialData) {
+    if (paymasterAddress && poolId && !initialData) {
       currentRequest.current = null; // Reset to allow new request
       loadPoolDetails();
     }
-  }, [poolId, loadPoolDetails, initialData]);
+  }, [paymasterAddress, poolId, loadPoolDetails, initialData]);
 
   // Refetch function for retry functionality
   const refetch = useCallback(() => {
