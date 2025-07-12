@@ -10,14 +10,12 @@ import type {
   PaymasterContract,
   Pool,
   PoolMember,
-  MerkleRoot,
-  UserOperation,
+  Transaction,
   NetworkInfo,
   SerializedPaymasterContract,
   SerializedPool,
   SerializedPoolMember,
-  SerializedMerkleRoot,
-  SerializedUserOperation,
+  SerializedTransaction,
   SerializedNetworkInfo,
 } from "../types/subgraph.js";
 
@@ -167,7 +165,7 @@ const BIGINT_FIELDS = {
     "nullifier",
   ],
   merkleRoot: ["chainId", "root", "createdAtBlock", "createdAtTimestamp"],
-  userOperation: [
+  transaction: [
     "chainId",
     "actualGasCost",
     "nullifier",
@@ -189,33 +187,12 @@ const BIGINT_FIELDS = {
     "firstUsedAtBlock",
     "firstUsedAtTimestamp",
   ],
-  dailyPoolStats: [
-    "chainId",
-    "newMembers",
-    "userOperations",
-    "gasSpent",
-    "revenueGenerated",
-    "totalMembers",
-    "totalDeposits",
-    "createdAtBlock",
-    "createdAtTimestamp",
-  ],
-  dailyGlobalStats: [
-    "chainId",
-    "newPools",
-    "totalNewMembers",
-    "totalUserOperations",
-    "totalGasSpent",
-    "totalRevenueGenerated",
-    "totalActivePools",
-    "totalMembers",
-  ],
   networkInfo: [
     "chainId",
     "totalPaymasters",
     "totalPools",
     "totalMembers",
-    "totalUserOperations",
+    "totalSponsoredTransactions",
     "totalGasSpent",
     "totalRevenue",
     "firstDeploymentBlock",
@@ -245,13 +222,9 @@ export function serializePoolMember(entity: PoolMember): SerializedPoolMember {
   return convertBigIntsToStrings(entity);
 }
 
-export function serializeMerkleRoot(entity: MerkleRoot): SerializedMerkleRoot {
-  return convertBigIntsToStrings(entity);
-}
-
-export function serializeUserOperation(
-  entity: UserOperation,
-): SerializedUserOperation {
+export function serializeTransaction(
+  entity: Transaction,
+): SerializedTransaction {
   return convertBigIntsToStrings(entity);
 }
 
@@ -283,16 +256,10 @@ export function deserializePoolMember(
   return convertStringsToBigInts(entity, BIGINT_FIELDS.poolMember);
 }
 
-export function deserializeMerkleRoot(
-  entity: SerializedMerkleRoot,
-): MerkleRoot {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.merkleRoot);
-}
-
-export function deserializeUserOperation(
-  entity: SerializedUserOperation,
-): UserOperation {
-  return convertStringsToBigInts(entity, BIGINT_FIELDS.userOperation);
+export function deserializeTransaction(
+  entity: SerializedTransaction,
+): Transaction {
+  return convertStringsToBigInts(entity, BIGINT_FIELDS.transaction);
 }
 
 export function deserializeNetworkInfo(
@@ -314,8 +281,7 @@ export const serializers = {
   paymasterContract: serializePaymasterContract,
   pool: serializePool,
   poolMember: serializePoolMember,
-  merkleRoot: serializeMerkleRoot,
-  userOperation: serializeUserOperation,
+  transaction: serializeTransaction,
   networkInfo: serializeNetworkInfo,
 };
 
@@ -326,7 +292,6 @@ export const deserializers = {
   paymasterContract: deserializePaymasterContract,
   pool: deserializePool,
   poolMember: deserializePoolMember,
-  merkleRoot: deserializeMerkleRoot,
-  userOperation: deserializeUserOperation,
+  transaction: deserializeTransaction,
   networkInfo: deserializeNetworkInfo,
 };

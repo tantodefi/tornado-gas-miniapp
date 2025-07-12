@@ -19,24 +19,22 @@ export type {
   PaymasterContract,
   Pool,
   PoolMember,
-  MerkleRoot,
-  UserOperation,
+  Transaction,
   NetworkMetadata,
-  SubgraphResponse,
   PaymasterType,
 } from "./types/subgraph.js";
 
-// Event types
+// Serialized type definitions
 export type {
-  ChainId,
-  NetworkName,
-  PoolCreatedEvent,
-  MemberAddedEvent,
-  MembersAddedEvent,
-  UserOpSponsoredEvent,
-  RevenueWithdrawnEvent,
-  OwnershipTransferredEvent,
+  SerializedPaymasterContract,
+  SerializedPool,
+  SerializedPoolMember,
+  SerializedNetworkInfo,
+  SerializedTransaction,
 } from "./types/subgraph.js";
+
+// Event types
+export type { ChainId, NetworkName } from "./types/subgraph.js";
 
 /**
  * ========================================
@@ -44,45 +42,8 @@ export type {
  * ========================================
  */
 
-// Client configuration and interfaces
-export type {
-  PaginationOptions,
-  PoolQueryOptions,
-  PaymasterQueryOptions,
-  UserOperationQueryOptions,
-  AnalyticsQueryOptions,
-} from "./client/subgraph-client.js";
-
 // Main client class
 export { SubgraphClient } from "./client/subgraph-client.js";
-
-/**
- * ========================================
- * DATA TRANSFORMERS (for BigInt serialization)
- * ========================================
- */
-// Serialized type definitions
-export type {
-  SerializedPaymasterContract,
-  SerializedPool,
-  SerializedPoolMember,
-  SerializedMerkleRoot,
-  SerializedUserOperation,
-} from "./types/subgraph.js";
-
-// Serialization functions
-export {
-  serializePaymasterContract,
-  deserializePaymasterContract,
-  serializePool,
-  deserializePool,
-  serializePoolMember,
-  deserializePoolMember,
-  serializeMerkleRoot,
-  deserializeMerkleRoot,
-  serializeUserOperation,
-  deserializeUserOperation,
-} from "./transformers/index.js";
 
 /**
  * ========================================
@@ -142,55 +103,11 @@ export { PoolQueryBuilder } from "./query/builders/pool-query-builder.js";
 
 export { PoolMemberQueryBuilder } from "./query/builders/member-query-builder.js";
 
-export { UserOperationQueryBuilder } from "./query/builders/user-operation-query-builder.js";
+export { TransactionQueryBuilder } from "./query/builders/transaction-query-builder.js";
+
+export { NetworkInfoQueryBuilder } from "./query/builders/network-info-query-builder.js";
 
 export { BaseQueryBuilder } from "./query/builders/base-query-builder.js";
-
-/**
- * ========================================
- * QUERY CONFIGURATION AND FIELD TYPES
- * ========================================
- */
-
-// Query configuration
-export type { QueryConfig } from "./query/types.js";
-
-// Field type definitions
-export type {
-  PaymasterContractFields,
-  PoolFields,
-  PoolMemberFields,
-  MerkleRootFields,
-  UserOperationFields,
-} from "./query/types.js";
-
-// Where condition types
-export type { WhereCondition } from "./query/types.js";
-
-// Entity-specific where input types
-export type {
-  PaymasterContractWhereInput,
-  PoolWhereInput,
-  PoolMemberWhereInput,
-  MerkleRootWhereInput,
-  UserOperationWhereInput,
-  RevenueWithdrawalWhereInput,
-  NullifierUsageWhereInput,
-  DailyPoolStatsWhereInput,
-  DailyGlobalStatsWhereInput,
-} from "./query/types.js";
-
-// Utility types
-export type {
-  RootHistoryItem,
-  UserOperationItem,
-  RevenueWithdrawalItem,
-  DailyStatsItem,
-  GlobalStatsItem,
-  DateRangeFilter,
-  CursorPaginationOptions,
-  PaginatedResponse,
-} from "./query/types.js";
 
 // Package version
 export const VERSION = "2.0.0";

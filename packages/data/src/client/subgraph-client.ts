@@ -45,9 +45,9 @@ export interface PaymasterQueryOptions extends PaginationOptions {
 }
 
 /**
- * Options for user operation queries with field selection
+ * Options for transaction queries with field selection
  */
-export interface UserOperationQueryOptions extends PaginationOptions {
+export interface TransactionQueryOptions extends PaginationOptions {
   /** Specific fields to fetch */
   fields?: string[];
   /** Filter by paymaster address */
@@ -56,20 +56,6 @@ export interface UserOperationQueryOptions extends PaginationOptions {
   poolId?: string;
   /** Filter by sender address */
   senderAddress?: string;
-}
-
-/**
- * Options for analytics queries
- */
-export interface AnalyticsQueryOptions extends PaginationOptions {
-  /** Start date for time range (YYYY-MM-DD) */
-  startDate?: string;
-  /** End date for time range (YYYY-MM-DD) */
-  endDate?: string;
-  /** Specific pool ID to filter by */
-  poolId?: string;
-  /** Specific paymaster address to filter by */
-  paymasterAddress?: string;
 }
 
 /**

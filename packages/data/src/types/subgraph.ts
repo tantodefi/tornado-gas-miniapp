@@ -49,8 +49,8 @@ export interface PaymasterContract {
   deployedAtTimestamp: bigint;
   /** Pools managed by this paymaster */
   pools: Pool[];
-  /** User operations sponsored by this paymaster */
-  userOperations: UserOperation[];
+  /** Transactions  by this paymaster */
+  Transactions: Transaction[];
   /** Last updated block */
   lastUpdatedBlock: bigint;
   /** Last updated timestamp */
@@ -92,10 +92,8 @@ export interface Pool {
   createdAtTimestamp: bigint;
   /** Pool members */
   members: PoolMember[];
-  /** User operations from this pool */
-  userOperations: UserOperation[];
-  /** Merkle root history */
-  merkleRoots: MerkleRoot[];
+  /**  transactions from this pool */
+  transactions: Transaction[];
   /** Last updated block */
   lastUpdatedBlock: bigint;
   /** Last updated timestamp */
@@ -138,40 +136,15 @@ export interface PoolMember {
 }
 
 /**
- * MerkleRoot entity
- * Represents a Merkle root in a pool's history
+ * Transaction entity
+ * Represents a  user operation
  */
-export interface MerkleRoot {
-  /** Pool ID + Root Index as ID (network-prefixed) */
-  id: string;
-  /** Pool this root belongs to */
-  pool: Pool;
-  /** Network/Chain identifier */
-  network: string;
-  /** Chain ID */
-  chainId: bigint;
-  /** Root value */
-  root: bigint;
-  /** Index in the history */
-  rootIndex: number;
-  /** Block when root was created */
-  createdAtBlock: bigint;
-  /** Transaction hash when root was created */
-  createdAtTransaction: string;
-  /** Timestamp when root was created */
-  createdAtTimestamp: bigint;
-}
-
-/**
- * UserOperation entity
- * Represents a sponsored user operation
- */
-export interface UserOperation {
+export interface Transaction {
   /** User operation hash as ID (network-prefixed) */
   id: string;
   /** User operation hash */
   userOpHash: string;
-  /** Paymaster that sponsored this operation */
+  /** Paymaster that  this operation */
   paymaster: PaymasterContract;
   /** Pool used for this operation */
   pool: Pool;
@@ -214,8 +187,8 @@ export interface NetworkInfo {
   totalPools: bigint;
   /** Total members across all pools */
   totalMembers: bigint;
-  /** Total user operations */
-  totalUserOperations: bigint;
+  /** Total  transactions */
+  totalTransactions: bigint;
   /** Total gas spent */
   totalGasSpent: bigint;
   /** Total revenue generated */
@@ -228,144 +201,6 @@ export interface NetworkInfo {
   lastActivityBlock: bigint;
   /** Last activity timestamp */
   lastActivityTimestamp: bigint;
-}
-
-/**
- * ========================================
- * EVENT TYPES (based on mapping files)
- * ========================================
- */
-
-/**
- * Pool creation event
- */
-export interface PoolCreatedEvent {
-  /** Pool ID */
-  poolId: bigint;
-  /** Joining fee for the pool */
-  joiningFee: bigint;
-  /** Block information */
-  block: {
-    number: bigint;
-    timestamp: bigint;
-  };
-  /** Transaction information */
-  transaction: {
-    hash: string;
-  };
-}
-
-/**
- * Member addition event
- */
-export interface MemberAddedEvent {
-  /** Pool ID */
-  poolId: bigint;
-  /** Member index */
-  memberIndex: bigint;
-  /** Identity commitment */
-  identityCommitment: bigint;
-  /** Merkle tree root */
-  merkleTreeRoot: bigint;
-  /** Merkle root index */
-  merkleRootIndex: bigint;
-  /** Block information */
-  block: {
-    number: bigint;
-    timestamp: bigint;
-  };
-  /** Transaction information */
-  transaction: {
-    hash: string;
-  };
-}
-
-/**
- * Multiple members addition event
- */
-export interface MembersAddedEvent {
-  /** Pool ID */
-  poolId: bigint;
-  /** Starting member index */
-  startIndex: bigint;
-  /** Array of identity commitments */
-  identityCommitments: bigint[];
-  /** Merkle tree root */
-  merkleTreeRoot: bigint;
-  /** Merkle root index */
-  merkleRootIndex: bigint;
-  /** Block information */
-  block: {
-    number: bigint;
-    timestamp: bigint;
-  };
-  /** Transaction information */
-  transaction: {
-    hash: string;
-  };
-}
-
-/**
- * User operation sponsored event
- */
-export interface UserOpSponsoredEvent {
-  /** User operation hash */
-  userOpHash: string;
-  /** Pool ID */
-  poolId: bigint;
-  /** Sender address */
-  sender: string;
-  /** Actual gas cost */
-  actualGasCost: bigint;
-  /** Nullifier used */
-  nullifier: bigint;
-  /** Block information */
-  block: {
-    number: bigint;
-    timestamp: bigint;
-  };
-  /** Transaction information */
-  transaction: {
-    hash: string;
-  };
-}
-
-/**
- * Revenue withdrawal event
- */
-export interface RevenueWithdrawnEvent {
-  /** Recipient address */
-  recipient: string;
-  /** Amount withdrawn */
-  amount: bigint;
-  /** Block information */
-  block: {
-    number: bigint;
-    timestamp: bigint;
-  };
-  /** Transaction information */
-  transaction: {
-    hash: string;
-  };
-}
-
-/**
- * Ownership transfer event
- */
-export interface OwnershipTransferredEvent {
-  /** Previous owner */
-  previousOwner: string;
-  /** New owner */
-  newOwner: string;
-  /** Block information */
-  block: {
-    number: bigint;
-    timestamp: bigint;
-  };
-  /** Transaction information */
-  transaction: {
-    hash: string;
-  };
 }
 
 /**
@@ -390,7 +225,7 @@ export interface SerializedPaymasterContract {
   deployedAtTransaction: string;
   deployedAtTimestamp: string;
   pools: SerializedPool[];
-  userOperations: SerializedUserOperation[];
+  transactions: SerializedTransaction[];
   lastUpdatedBlock: string;
   lastUpdatedTimestamp: string;
 }
@@ -414,8 +249,7 @@ export interface SerializedPool {
   createdAtTransaction: string;
   createdAtTimestamp: string;
   members: SerializedPoolMember[];
-  userOperations: SerializedUserOperation[];
-  merkleRoots: SerializedMerkleRoot[];
+  transactions: SerializedTransaction[];
   lastUpdatedBlock: string;
   lastUpdatedTimestamp: string;
 }
@@ -441,24 +275,9 @@ export interface SerializedPoolMember {
 }
 
 /**
- * Serialized MerkleRoot (BigInt -> string)
+ * Serialized Transaction (BigInt -> string)
  */
-export interface SerializedMerkleRoot {
-  id: string;
-  pool: SerializedPool;
-  network: string;
-  chainId: string;
-  root: string;
-  rootIndex: number;
-  createdAtBlock: string;
-  createdAtTransaction: string;
-  createdAtTimestamp: string;
-}
-
-/**
- * Serialized UserOperation (BigInt -> string)
- */
-export interface SerializedUserOperation {
+export interface SerializedTransaction {
   id: string;
   userOpHash: string;
   paymaster: SerializedPaymasterContract;
@@ -485,7 +304,7 @@ export interface SerializedNetworkInfo {
   totalPaymasters: string;
   totalPools: string;
   totalMembers: string;
-  totalUserOperations: string;
+  totalTransactions: string;
   totalGasSpent: string;
   totalRevenue: string;
   firstDeploymentBlock: string;
@@ -499,21 +318,6 @@ export interface SerializedNetworkInfo {
  * RESPONSE WRAPPER TYPES
  * ========================================
  */
-
-/**
- * Standard subgraph response wrapper
- */
-export interface SubgraphResponse<T> {
-  data: T;
-  errors?: Array<{
-    message: string;
-    locations?: Array<{
-      line: number;
-      column: number;
-    }>;
-    path?: Array<string | number>;
-  }>;
-}
 
 /**
  * Network metadata for client configuration
@@ -563,35 +367,9 @@ export type EntityType =
   | "Pool"
   | "PoolMember"
   | "MerkleRoot"
-  | "UserOperation"
+  | "Transaction"
   | "RevenueWithdrawal"
   | "NullifierUsage"
   | "DailyPoolStats"
   | "DailyGlobalStats"
   | "NetworkInfo";
-
-/**
- * Common entity fields
- */
-export interface BaseEntity {
-  id: string;
-  network: string;
-  chainId: bigint;
-}
-
-/**
- * Timestamped entity fields
- */
-export interface TimestampedEntity extends BaseEntity {
-  lastUpdatedBlock: bigint;
-  lastUpdatedTimestamp: bigint;
-}
-
-/**
- * Created entity fields
- */
-export interface CreatedEntity extends BaseEntity {
-  createdAtBlock: bigint;
-  createdAtTransaction: string;
-  createdAtTimestamp: bigint;
-}

@@ -511,21 +511,21 @@ export class PaymasterContractQueryBuilder extends BaseQueryBuilder<
    */
 
   /**
-   * Get paymaster with related data (pools, user operations, withdrawals)
+   * Get paymaster with related data (pools, transactions, withdrawals)
    *
    * @param poolsLimit - Maximum number of pools to fetch
-   * @param userOpsLimit - Maximum number of user operations to fetch
+   * @param transactionsLimit - Maximum number of transactions to fetch
    * @param withdrawalsLimit - Maximum number of withdrawals to fetch
    * @returns Promise resolving to paymaster with related data
    */
   async withRelated(
     poolsLimit: number = 10,
-    userOpsLimit: number = 10,
+    transactionsLimit: number = 10,
     withdrawalsLimit: number = 10,
   ): Promise<
     | (PaymasterContract & {
         pools: any[];
-        userOperations: any[];
+        transactions: any[];
         revenueWithdrawals: any[];
       })
     | null
@@ -541,13 +541,13 @@ export class PaymasterContractQueryBuilder extends BaseQueryBuilder<
     const result = await this.client.executeQuery<{
       paymasterContract: PaymasterContract & {
         pools: any[];
-        userOperations: any[];
+        transactions: any[];
         revenueWithdrawals: any[];
       };
     }>(GET_PAYMASTER_WITH_RELATED, {
       id,
       poolsFirst: poolsLimit,
-      userOpsFirst: userOpsLimit,
+      transactionsFirst: transactionsLimit,
       withdrawalsFirst: withdrawalsLimit,
     });
 
