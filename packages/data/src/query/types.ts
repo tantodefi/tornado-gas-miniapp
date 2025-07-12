@@ -173,8 +173,8 @@ export interface PoolMemberWhereInput {
   pool_?: {
     id?: string;
     poolId?: string; // GraphQL expects BigInt as string for poolId
-    paymaster_?: { address?: string };
   };
+  paymaster_?: { address?: string };
   memberIndex?: string; // GraphQL expects BigInt as string
   identityCommitment?: string; // GraphQL expects BigInt as string
   gasUsed_gte?: string;
@@ -192,6 +192,7 @@ export interface PoolMemberWhereInput {
 export interface MerkleRootWhereInput {
   id?: string; // MerkleRoot's ID is often composite (e.g., poolId-rootIndex)
   pool?: string; // Directly filter by pool ID
+  paymaster_?: { address?: string };
   pool_in?: string[]; // For filtering by multiple pool IDs
   network?: NetworkName; // Directly filter by network
   network_in?: NetworkName[]; // For filtering by multiple networks
