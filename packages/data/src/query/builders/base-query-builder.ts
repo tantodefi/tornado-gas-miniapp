@@ -102,8 +102,30 @@ export abstract class BaseQueryBuilder<
       throw new Error("Where conditions must be an object");
     }
 
-    this.config.where = { ...this.config.where, ...where };
+    this.config.where = this.deepMergeWhereConditions(
+      this.config.where || {},
+      where,
+    );
     return this;
+  }
+
+  private deepMergeWhereConditions(existing: any, newWhere: any): any {
+    const result = { ...existing };
+
+    for (const [key, value] of Object.entries(newWhere)) {
+      if (key.endsWith("_") && typeof value === "object" && value !== null) {
+        // Deep merge for GraphQL relationship fields (pool_, paymaster_, etc.)
+        if (typeof result[key] === "object" && result[key] !== null) {
+          result[key] = { ...result[key], ...value };
+        } else {
+          result[key] = value;
+        }
+      } else {
+        result[key] = value;
+      }
+    }
+
+    return result;
   }
 
   /**

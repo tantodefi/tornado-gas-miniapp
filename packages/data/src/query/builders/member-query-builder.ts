@@ -142,6 +142,11 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
         case "rootIndexWhenAdded":
           declarations.push("$rootIndexWhenAdded: Int");
           break;
+        case "paymaster_":
+          if (typeof value === "object" && value && "address" in value) {
+            declarations.push("$paymasterAddress: String");
+          }
+          break;
         case "pool_":
           if (typeof value === "object" && value) {
             if ("id" in value) {
@@ -149,15 +154,6 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
             }
             if ("poolId" in value) {
               declarations.push("$poolIdValue: String");
-            }
-            if (
-              "paymaster_" in value &&
-              typeof value.paymaster_ === "object" &&
-              value.paymaster_
-            ) {
-              if ("address" in value.paymaster_) {
-                declarations.push("$paymasterAddress: String");
-              }
             }
           }
           break;
@@ -205,15 +201,11 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
             if ("poolId" in value) {
               variables.poolIdValue = value.poolId;
             }
-            if (
-              "paymaster_" in value &&
-              typeof value.paymaster_ === "object" &&
-              value.paymaster_
-            ) {
-              if ("address" in value.paymaster_) {
-                variables.paymasterAddress = value.paymaster_.address;
-              }
-            }
+          }
+          break;
+        case "paymaster_":
+          if (typeof value === "object" && value && "address" in value) {
+            variables.paymasterAddress = value.address;
           }
           break;
       }
@@ -255,6 +247,11 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
         case "rootIndexWhenAdded":
           conditions.push("rootIndexWhenAdded: $rootIndexWhenAdded");
           break;
+        case "paymaster_":
+          if (typeof value === "object" && value && "address" in value) {
+            conditions.push("paymaster_: { address: $paymasterAddress }");
+          }
+          break;
         case "pool_":
           if (typeof value === "object" && value) {
             const nestedConditions: string[] = [];
@@ -263,17 +260,6 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
             }
             if ("poolId" in value) {
               nestedConditions.push("poolId: $poolIdValue");
-            }
-            if (
-              "paymaster_" in value &&
-              typeof value.paymaster_ === "object" &&
-              value.paymaster_
-            ) {
-              if ("address" in value.paymaster_) {
-                nestedConditions.push(
-                  "paymaster_: { address: $paymasterAddress }",
-                );
-              }
             }
             if (nestedConditions.length > 0) {
               conditions.push(`pool_: { ${nestedConditions.join(", ")} }`);
@@ -309,11 +295,11 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
         poolId
         network
         chainId
-        paymaster {
+      }
+      paymaster {
           id
           address
-        }
-      }
+        }  
     `;
   }
 
@@ -430,7 +416,7 @@ export class PoolMemberQueryBuilder extends BaseQueryBuilder<
    * ```
    */
   byPaymaster(paymaster: string): this {
-    this.where({ pool_: { paymaster_: { address: paymaster } } });
+    this.where({ paymaster_: { address: paymaster } });
     return this;
   }
 

@@ -1,22 +1,22 @@
 /**
- * Query builder for UserOperation entities
+ * Query builder for Transaction entities
  * Updated for the new network-aware schema structure
  */
 
 import type { SubgraphClient } from "../../client/subgraph-client.js";
 import type {
-  UserOperation,
+  Transaction,
   NetworkName,
   PaymasterType,
-  SerializedUserOperation,
+  SerializedTransaction,
 } from "../../types/subgraph.js";
 
-import { UserOperationFields, UserOperationWhereInput } from "../types.js";
+import { TransactionFields, TransactionWhereInput } from "../types.js";
 import { BaseQueryBuilder } from "./base-query-builder.js";
-import { serializeUserOperation } from "../../transformers/index.js";
+import { serializeTransaction } from "../../transformers/index.js";
 
-// Define specific types for UserOperationQueryBuilder
-export type UserOperationOrderBy =
+// Define specific types for TransactionQueryBuilder
+export type TransactionOrderBy =
   | "executedAtTimestamp"
   | "actualGasCost"
   | "gasPrice"
@@ -25,20 +25,20 @@ export type UserOperationOrderBy =
   | "sender";
 
 /**
- * Query builder for UserOperation entities
+ * Query builder for Transaction entities
  *
  * Provides a fluent interface for building complex user operation queries
  * with support for paymaster filtering, gas analysis, and transaction tracking.
  */
-export class UserOperationQueryBuilder extends BaseQueryBuilder<
-  UserOperation,
-  SerializedUserOperation,
-  UserOperationFields,
-  UserOperationWhereInput,
-  UserOperationOrderBy
+export class TransactionQueryBuilder extends BaseQueryBuilder<
+  Transaction,
+  SerializedTransaction,
+  TransactionFields,
+  TransactionWhereInput,
+  TransactionOrderBy
 > {
   constructor(private subgraphClient: SubgraphClient) {
-    super(subgraphClient, "userOperations", "executedAtTimestamp", "desc");
+    super(subgraphClient, "transactions", "executedAtTimestamp", "desc");
   }
 
   protected buildDynamicQuery(): string {
@@ -63,11 +63,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
       .filter(Boolean)
       .join(", ");
 
-    const queryName = `GetUserOperations`;
+    const queryName = `GetTransactions`;
 
     return `
       query ${queryName}(${variables}) {
-        userOperations(${args}) {
+        transactions(${args}) {
           ${fields}
         }
       }
@@ -96,10 +96,8 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
     return conditions.length > 0 ? `where: { ${conditions.join(", ")} }` : "";
   }
 
-  protected getSerializer(): (
-    entity: UserOperation,
-  ) => SerializedUserOperation {
-    return serializeUserOperation;
+  protected getSerializer(): (entity: Transaction) => SerializedTransaction {
+    return serializeTransaction;
   }
 
   private getVariableDeclarations(): string {
@@ -113,7 +111,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   }
 
   private addVariableDeclarations(
-    where: Partial<UserOperationWhereInput>,
+    where: Partial<TransactionWhereInput>,
     declarations: string[],
   ): void {
     for (const [key, value] of Object.entries(where)) {
@@ -124,8 +122,8 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
         case "id":
           declarations.push("$id: ID");
           break;
-        case "userOpHash":
-          declarations.push("$userOpHash: String");
+        case "transactionHash":
+          declarations.push("$transactionHash: String");
           break;
         case "sender":
           declarations.push("$sender: String");
@@ -179,7 +177,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   }
 
   private addWhereVariables(
-    where: Partial<UserOperationWhereInput>,
+    where: Partial<TransactionWhereInput>,
     variables: Record<string, any>,
   ): void {
     for (const [key, value] of Object.entries(where)) {
@@ -190,8 +188,8 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
         case "id":
           variables.id = value;
           break;
-        case "userOpHash":
-          variables.userOpHash = value;
+        case "transactionHash":
+          variables.transactionHash = value;
           break;
         case "sender":
           variables.sender = value;
@@ -239,7 +237,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   }
 
   private buildWhereConditions(
-    where: Partial<UserOperationWhereInput>,
+    where: Partial<TransactionWhereInput>,
   ): string[] {
     const conditions: string[] = [];
 
@@ -251,8 +249,8 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
         case "id":
           conditions.push("id: $id");
           break;
-        case "userOpHash":
-          conditions.push("userOpHash: $userOpHash");
+        case "transactionHash":
+          conditions.push("transactionHash: $transactionHash");
           break;
         case "sender":
           conditions.push("sender: $sender");
@@ -316,12 +314,12 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   }
 
   /**
-   * Override default fields for UserOperation entity.
+   * Override default fields for Transaction entity.
    */
   protected getDefaultFields(): string {
     return `
       id
-      userOpHash
+      transactionHash
       sender
       nonce
       initCode
@@ -369,11 +367,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by network
    *
    * @param network - Network identifier
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const userOps = await client.query().userOperations()
+   * const transactions = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .execute();
    * ```
@@ -386,34 +384,34 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Filter by user operation hash
    *
-   * @param userOpHash - User operation hash
-   * @returns UserOperationQueryBuilder for method chaining
+   * @param transactionHash - User operation hash
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const userOp = await client.query().userOperations()
+   * const transaction = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .byHash("0x123...")
    *   .first();
    * ```
    */
-  byHash(userOpHash: string): this {
-    this.where({ userOpHash: userOpHash });
+  byHash(transactionHash: string): this {
+    this.where({ transactionHash: transactionHash });
     return this;
   }
 
   /**
-   * Filter by composite ID (network-userOpHash)
+   * Filter by composite ID (network-transactionHash)
    * This is for direct lookup of a single user operation.
    *
    * @param network - Network identifier
-   * @param userOpHash - User operation hash
-   * @returns UserOperationQueryBuilder for method chaining
+   * @param transactionHash - User operation hash
+   * @returns TransactionQueryBuilder for method chaining
    */
-  byId(network: NetworkName, userOpHash: string): this {
-    this.where({ id: `${network}-${userOpHash}` });
+  byId(network: NetworkName, transactionHash: string): this {
+    this.where({ id: `${network}-${transactionHash}` });
     this.byNetwork(network);
-    this.byHash(userOpHash);
+    this.byHash(transactionHash);
     return this;
   }
 
@@ -421,11 +419,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by paymaster address
    *
    * @param paymaster - Paymaster contract address
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const paymasterOps = await client.query().userOperations()
+   * const paymasterOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .byPaymaster("0x3BEeC075aC5A77fFE0F9ee4bbb3DCBd07fA93fbf")
    *   .execute();
@@ -440,11 +438,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by paymaster type
    *
    * @param type - Paymaster type
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const gasLimitedOps = await client.query().userOperations()
+   * const gasLimitedOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .byPaymasterType("GasLimited")
    *   .execute();
@@ -459,11 +457,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by pool ID
    *
    * @param poolId - Pool ID
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const poolOps = await client.query().userOperations()
+   * const poolOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .byPool("123")
    *   .execute();
@@ -478,11 +476,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by sender address
    *
    * @param sender - Sender address
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const userOps = await client.query().userOperations()
+   * const transactions = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .bySender("0x456...")
    *   .execute();
@@ -497,11 +495,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by nullifier
    *
    * @param nullifier - Nullifier value
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const nullifierOps = await client.query().userOperations()
+   * const nullifierOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .byNullifier("0x789...")
    *   .execute();
@@ -516,11 +514,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by minimum gas cost
    *
    * @param minGasCost - Minimum gas cost in wei (as string)
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const expensiveOps = await client.query().userOperations()
+   * const expensiveOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .withMinGasCost("1000000000000000000") // 1 ETH
    *   .execute();
@@ -535,7 +533,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by maximum gas cost
    *
    * @param maxGasCost - Maximum gas cost in wei (as string)
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   withMaxGasCost(maxGasCost: string): this {
     this.where({ actualGasCost_lte: maxGasCost });
@@ -546,11 +544,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by minimum gas price
    *
    * @param minGasPrice - Minimum gas price in wei (as string)
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const highGasPriceOps = await client.query().userOperations()
+   * const highGasPriceOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .withMinGasPrice("20000000000") // 20 gwei
    *   .execute();
@@ -565,7 +563,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by maximum gas price
    *
    * @param maxGasPrice - Maximum gas price in wei (as string)
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   withMaxGasPrice(maxGasPrice: string): this {
     this.where({ gasPrice_lte: maxGasPrice });
@@ -576,11 +574,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by execution date (after)
    *
    * @param timestamp - Timestamp string or number
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const recentOps = await client.query().userOperations()
+   * const recentOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .executedAfter("1704067200") // 2024-01-01
    *   .execute();
@@ -595,7 +593,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by execution date (before)
    *
    * @param timestamp - Timestamp string or number
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   executedBefore(timestamp: string | number): this {
     this.where({ executedAtTimestamp_lte: timestamp.toString() });
@@ -606,11 +604,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by block number
    *
    * @param blockNumber - Block number
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const blockOps = await client.query().userOperations()
+   * const blockOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .atBlock("12345678")
    *   .execute();
@@ -625,11 +623,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
    * Filter by transaction hash
    *
    * @param transaction - Transaction hash
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const txOps = await client.query().userOperations()
+   * const txOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .inTransaction("0xabc...")
    *   .execute();
@@ -649,11 +647,11 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Order by execution timestamp (newest first)
    *
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    *
    * @example
    * ```typescript
-   * const recentOps = await client.query().userOperations()
+   * const recentOps = await client.query().transactions()
    *   .byNetwork("base-sepolia")
    *   .orderByTimestamp()
    *   .limit(10)
@@ -668,7 +666,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Order by gas cost (highest first)
    *
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   orderByGasCost(direction: "asc" | "desc" = "desc"): this {
     this.orderBy("actualGasCost", direction);
@@ -678,7 +676,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Order by gas price (highest first)
    *
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   orderByGasPrice(direction: "asc" | "desc" = "desc"): this {
     this.orderBy("gasPrice", direction);
@@ -688,7 +686,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Order by total gas used
    *
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   orderByGasUsed(direction: "asc" | "desc" = "desc"): this {
     this.orderBy("totalGasUsed", direction);
@@ -698,7 +696,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Order by block number
    *
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   orderByBlock(direction: "asc" | "desc" = "desc"): this {
     this.orderBy("executedAtBlock", direction);
@@ -708,7 +706,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Order by sender address
    *
-   * @returns UserOperationQueryBuilder for method chaining
+   * @returns TransactionQueryBuilder for method chaining
    */
   orderBySender(direction: "asc" | "desc" = "asc"): this {
     this.orderBy("sender", direction);
@@ -724,15 +722,15 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
   /**
    * Get user operation by hash
    *
-   * @param userOpHash - User operation hash
+   * @param transactionHash - User operation hash
    * @param network - Network identifier
    * @returns Promise resolving to user operation or null
    */
-  async getUserOperationByHash(
-    userOpHash: string,
+  async getTransactionByHash(
+    transactionHash: string,
     network: NetworkName,
-  ): Promise<UserOperation | null> {
-    return this.clone().byId(network, userOpHash).first();
+  ): Promise<Transaction | null> {
+    return this.clone().byId(network, transactionHash).first();
   }
 
   /**
@@ -952,7 +950,7 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
 
 /**
  * ========================================
- * CONVENIENCE FUNCTIONS (updated to use new UserOperationQueryBuilder)
+ * CONVENIENCE FUNCTIONS (updated to use new TransactionQueryBuilder)
  * ========================================
  */
 
@@ -960,17 +958,17 @@ export class UserOperationQueryBuilder extends BaseQueryBuilder<
  * Get user operation by hash
  *
  * @param client - SubgraphClient instance
- * @param userOpHash - User operation hash
+ * @param transactionHash - User operation hash
  * @param network - Network identifier
  * @returns Promise resolving to user operation or null
  */
-export async function getUserOperationByHash(
+export async function getTransactionByHash(
   client: SubgraphClient,
-  userOpHash: string,
+  transactionHash: string,
   network: NetworkName,
-): Promise<UserOperation | null> {
-  return new UserOperationQueryBuilder(client).getUserOperationByHash(
-    userOpHash,
+): Promise<Transaction | null> {
+  return new TransactionQueryBuilder(client).getTransactionByHash(
+    transactionHash,
     network,
   );
 }
@@ -983,12 +981,12 @@ export async function getUserOperationByHash(
  * @param limit - Maximum number of results
  * @returns Promise resolving to array of recent user operations
  */
-export async function getRecentUserOperations(
+export async function getRecentTransactions(
   client: SubgraphClient,
   network: NetworkName,
   limit: number = 10,
-): Promise<UserOperation[]> {
-  return new UserOperationQueryBuilder(client)
+): Promise<Transaction[]> {
+  return new TransactionQueryBuilder(client)
     .byNetwork(network)
     .orderByTimestamp()
     .limit(limit)
@@ -1003,12 +1001,12 @@ export async function getRecentUserOperations(
  * @param network - Network identifier
  * @returns Promise resolving to array of user operations
  */
-export async function getUserOperationsBySender(
+export async function getTransactionsBySender(
   client: SubgraphClient,
   sender: string,
   network: NetworkName,
-): Promise<UserOperation[]> {
-  return new UserOperationQueryBuilder(client)
+): Promise<Transaction[]> {
+  return new TransactionQueryBuilder(client)
     .byNetwork(network)
     .bySender(sender)
     .orderByTimestamp()
@@ -1023,12 +1021,12 @@ export async function getUserOperationsBySender(
  * @param network - Network identifier
  * @returns Promise resolving to array of user operations
  */
-export async function getUserOperationsByPaymaster(
+export async function getTransactionsByPaymaster(
   client: SubgraphClient,
   paymaster: string,
   network: NetworkName,
-): Promise<UserOperation[]> {
-  return new UserOperationQueryBuilder(client)
+): Promise<Transaction[]> {
+  return new TransactionQueryBuilder(client)
     .byNetwork(network)
     .byPaymaster(paymaster)
     .orderByTimestamp()
@@ -1044,13 +1042,13 @@ export async function getUserOperationsByPaymaster(
  * @param limit - Maximum number of results
  * @returns Promise resolving to array of expensive user operations
  */
-export async function getExpensiveUserOperations(
+export async function getExpensiveTransactions(
   client: SubgraphClient,
   network: NetworkName,
   minGasCost: string,
   limit: number = 10,
-): Promise<UserOperation[]> {
-  return new UserOperationQueryBuilder(client)
+): Promise<Transaction[]> {
+  return new TransactionQueryBuilder(client)
     .byNetwork(network)
     .withMinGasCost(minGasCost)
     .orderByGasCost()

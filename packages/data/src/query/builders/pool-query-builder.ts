@@ -37,8 +37,8 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
 > {
   private includeMembers: boolean = false;
   private membersLimit: number = 10;
-  private includeUserOperations: boolean = false;
-  private userOperationsLimit: number = 10;
+  private includeTransactions: boolean = false;
+  private transactionsLimit: number = 10;
 
   constructor(client: SubgraphClient) {
     super(client, "pools", "poolId", "desc");
@@ -320,17 +320,18 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
       `;
     }
 
-    if (this.includeUserOperations) {
+    if (this.includeTransactions) {
       baseFields =
         baseFields +
         `
-      userOperations (first: ${this.userOperationsLimit}, orderBy: executedAtTimestamp, orderDirection: desc) {
+      transactions (first: ${this.transactionsLimit}, orderBy: executedAtTimestamp, orderDirection: desc) {
         id
         userOpHash
         sender
         actualGasCost
         executedAtTimestamp
         nullifier
+        executedAtTransaction
       }
       `;
     }
@@ -544,7 +545,7 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
   }
 
   /**
-   * Include userOperations in pools
+   * Include transactions in pools
    *
    * @returns PoolQueryBuilder for method chaining
    *
@@ -552,13 +553,13 @@ export class PoolQueryBuilder extends BaseQueryBuilder<
    * ```typescript
    * const activePools = await client.query().pools()
    *   .byNetwork("base-sepolia")
-   *   .withUserOperations(20)  // Include up to 20 userOperations
+   *   .withTransactions(20)  // Include up to 20 transactions
    *   .execute();
    * ```
    */
-  withUserOperations(limit: number = 10): this {
-    this.includeUserOperations = true;
-    this.userOperationsLimit = limit;
+  withTransactions(limit: number = 10): this {
+    this.includeTransactions = true;
+    this.transactionsLimit = limit;
     return this;
   }
 

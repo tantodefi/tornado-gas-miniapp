@@ -8,12 +8,10 @@
  */
 
 import type { SubgraphClient } from "../client/subgraph-client.js";
-import type { NetworkName } from "../types/subgraph.js";
 import { PaymasterContractQueryBuilder } from "./builders/paymaster-query-builder.js";
 import { PoolQueryBuilder } from "./builders/pool-query-builder.js";
 import { PoolMemberQueryBuilder } from "./builders/member-query-builder.js";
-import { MerkleRootQueryBuilder } from "./builders/merkle-root-query-builder.js";
-import { UserOperationQueryBuilder } from "./builders/user-operation-query-builder.js";
+import { TransactionQueryBuilder } from "./builders/transaction-query-builder.js";
 import { NetworkInfoQueryBuilder } from "./builders/network-info-query-builder.js";
 
 /**
@@ -95,34 +93,14 @@ export class QueryBuilder {
   }
 
   /**
-   * Start building a query for merkle roots
-   *
-   * @returns MerkleRootQueryBuilder for fluent query building
-   *
-   * @example
-   * ```typescript
-   * const roots = await client.query()
-   *   .merkleRoots()
-   *   .byNetwork("base-sepolia")
-   *   .byPool("123")
-   *   .orderByIndex()
-   *   .limit(100)
-   *   .execute();
-   * ```
-   */
-  merkleRoots(): MerkleRootQueryBuilder {
-    return new MerkleRootQueryBuilder(this.client);
-  }
-
-  /**
    * Start building a query for user operations
    *
-   * @returns UserOperationQueryBuilder for fluent query building
+   * @returns TransactionQueryBuilder for fluent query building
    *
    * @example
    * ```typescript
-   * const userOps = await client.query()
-   *   .userOperations()
+   * const transactions = await client.query()
+   *   .transactions()
    *   .byNetwork("base-sepolia")
    *   .byPaymaster("0x456...")
    *   .bySender("0x789...")
@@ -131,8 +109,8 @@ export class QueryBuilder {
    *   .execute();
    * ```
    */
-  userOperations(): UserOperationQueryBuilder {
-    return new UserOperationQueryBuilder(this.client);
+  transactions(): TransactionQueryBuilder {
+    return new TransactionQueryBuilder(this.client);
   }
 
   /**

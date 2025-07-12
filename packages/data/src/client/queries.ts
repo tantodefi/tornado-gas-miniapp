@@ -9,7 +9,7 @@
  * Get paymaster with related data (pools, user operations, withdrawals)
  */
 export const GET_PAYMASTER_WITH_RELATED = `
-  query GetPaymasterWithRelated($id: ID!, $poolsFirst: Int!, $userOpsFirst: Int!, $withdrawalsFirst: Int!) {
+  query GetPaymasterWithRelated($id: ID!, $poolsFirst: Int!, $transactionsFirst: Int!, $withdrawalsFirst: Int!) {
     paymasterContract(id: $id) {
       id
       contractType
@@ -32,7 +32,7 @@ export const GET_PAYMASTER_WITH_RELATED = `
         totalDeposits
         createdAtTimestamp
       }
-      userOperations(first: $userOpsFirst, orderBy: executedAtTimestamp, orderDirection: desc) {
+      transactions(first: $transactionsFirst, orderBy: executedAtTimestamp, orderDirection: desc) {
         id
         userOpHash
         sender

@@ -254,6 +254,7 @@ export class PrepaidGasPaymaster {
     const members = await this.subgraphClient
       .query()
       .poolMembers()
+      .byPaymaster(parsedContext.paymasterAddress)
       .byPool(parsedContext.poolId.toString())
       .orderBy("memberIndex", "asc")
       .execute();

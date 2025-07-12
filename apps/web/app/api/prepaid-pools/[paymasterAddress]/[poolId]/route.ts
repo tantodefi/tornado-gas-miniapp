@@ -9,7 +9,7 @@ import {
 } from "@/lib/api/response";
 import {
   SerializedPoolMember,
-  SerializedUserOperation,
+  SerializedTransaction,
   SubgraphClient,
 } from "@workspace/data";
 import type {
@@ -43,24 +43,24 @@ function transformMembersToActivity(
 }
 
 /**
- * Transform user operations into activity items
+ * Transform transactions into activity items
  */
 function transformTransactionsToActivity(
-  userOperations: SerializedUserOperation[],
+  transactions: SerializedTransaction[],
 ): TransactionActivity[] {
-  return userOperations.map((op) => ({
-    id: `transaction-${op.id}`,
+  return transactions.map((transaction) => ({
+    id: `transaction-${transaction.id}`,
     type: "transaction" as const,
-    timestamp: op.executedAtTimestamp,
-    blockNumber: op.executedAtBlock,
-    transactionHash: op.executedAtTransaction,
-    network: op.network,
+    timestamp: transaction.executedAtTimestamp,
+    blockNumber: transaction.executedAtBlock,
+    transactionHash: transaction.executedAtTransaction,
+    network: transaction.network,
     transaction: {
-      userOpHash: op.userOpHash,
-      sender: op.sender,
-      actualGasCost: op.actualGasCost,
-      nullifier: op.nullifier,
-      gasPrice: op.gasPrice,
+      userOpHash: transaction.userOpHash,
+      sender: transaction.sender,
+      actualGasCost: transaction.actualGasCost,
+      nullifier: transaction.nullifier,
+      gasPrice: transaction.gasPrice,
     },
   }));
 }
@@ -70,11 +70,11 @@ function transformTransactionsToActivity(
  */
 function createUnifiedActivity(
   members: SerializedPoolMember[],
-  userOperations: SerializedUserOperation[],
+  transactions: SerializedTransaction[],
   limit: number = 50,
 ): ActivityItem[] {
   const memberActivities = transformMembersToActivity(members);
-  const transactionActivities = transformTransactionsToActivity(userOperations);
+  const transactionActivities = transformTransactionsToActivity(transactions);
 
   // Combine all activities
   const allActivities: ActivityItem[] = [
@@ -139,7 +139,7 @@ export async function GET(
 
     // Include members and userOperations for activity
     poolQuery = poolQuery.withMembers(memberLimit);
-    poolQuery = poolQuery.withUserOperations(activityLimit);
+    poolQuery = poolQuery.withTransactions(activityLimit);
 
     // Execute basic pool query
     const serializedPools = await poolQuery.executeAndSerialize();
@@ -165,12 +165,12 @@ export async function GET(
     }
 
     const members = poolData.members || [];
-    const userOperations = poolData.userOperations || [];
+    const transactions = poolData.transactions || [];
 
     // Create unified activity array
     const activity = createUnifiedActivity(
       members,
-      userOperations,
+      transactions,
       activityLimit,
     );
 
@@ -190,7 +190,7 @@ export async function GET(
       timestamp: new Date().toISOString(),
       activityCount: activity.length,
       memberCount: members.length,
-      transactionCount: userOperations.length,
+      transactionCount: transactions.length,
     };
 
     // Construct pagination info
