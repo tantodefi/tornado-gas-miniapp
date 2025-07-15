@@ -2,9 +2,6 @@
 const nextConfig = {
   transpilePackages: [
     "@workspace/ui",
-    "@prepaid-gas/core",
-    "@prepaid-gas/data",
-    "@prepaid-gas/constants"
   ],
   webpack: (config, { isServer }) => {
     // Help webpack resolve the symlinked packages
