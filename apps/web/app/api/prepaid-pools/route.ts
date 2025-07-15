@@ -6,7 +6,7 @@ import {
   handleApiError,
   setCacheHeaders,
 } from "@/lib/api/response";
-import { SubgraphClient } from "@workspace/data";
+import { SubgraphClient } from "@prepaid-gas/data";
 
 // Environment validation
 const CACHE_TTL = parseInt(process.env.POOLS_CACHE_TTL || "300", 10);
@@ -59,6 +59,15 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
 
   try {
+    // During build time, return empty data
+    if (!process.env.SUBGRAPH_URL) {
+      return createSuccessResponse(
+        [],
+        { requestId, processingTime: 0, cached: false },
+        { page: 0, limit: 100, total: 0, hasMore: false },
+        requestId,
+      );
+    }
     const { searchParams } = new URL(request.url);
 
     // Parse query parameters
@@ -96,13 +105,31 @@ export async function GET(request: NextRequest) {
       poolQuery = poolQuery.skip(skip);
     }
 
-    // Execute query and get serialized results
-    // No network transformation needed - data package already includes network info
-    const serializedPools = await poolQuery.executeAndSerialize();
+    // Execute query with timeout and fallback
+    let serializedPools: any[] = [];
+    try {
+      // Add timeout for subgraph calls
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Subgraph timeout")), 3000),
+      );
+
+      const result = await Promise.race([
+        poolQuery.executeAndSerialize(),
+        timeoutPromise,
+      ]);
+      
+      serializedPools = Array.isArray(result) ? result : [];
+    } catch (subgraphError) {
+      console.warn(
+        "Subgraph query failed, returning empty results:",
+        subgraphError,
+      );
+      serializedPools = [];
+    }
 
     // Construct response metadata using ClientFactory
     const meta = {
-      ...SubgraphClient.getNetworkPreset(84532),
+      // ...SubgraphClient.getNetworkPreset(84532),
       requestId,
       processingTime: Date.now() - startTime,
       cached: false,

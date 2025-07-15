@@ -14,9 +14,12 @@ async function getPoolDataSSR(paymasterAddress: string, poolId: string) {
   try {
     // Call our updated API route internally
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/prepaid-pools/${paymasterAddress}/${poolId}`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${baseUrl}/api/prepaid-pools/${paymasterAddress}/${poolId}`,
+      {
+        cache: "no-store",
+      },
+    );
 
     if (!response.ok) {
       return null;
@@ -25,7 +28,10 @@ async function getPoolDataSSR(paymasterAddress: string, poolId: string) {
     const data = await response.json();
     return data.success ? data.data : null;
   } catch (error) {
-    console.error(`SSR: Failed to fetch pool ${paymasterAddress}/${poolId}:`, error);
+    console.error(
+      `SSR: Failed to fetch pool ${paymasterAddress}/${poolId}:`,
+      error,
+    );
     return null;
   }
 }
@@ -78,11 +84,13 @@ export default async function PoolPage({ params }: PoolPageProps) {
   }
 
   // Pass to existing component with SSR data
-  return <PoolDetailsPage 
-    paymasterAddress={paymasterAddress}
-    poolId={poolId} 
-    initialData={initialPoolData} 
-  />;
+  return (
+    <PoolDetailsPage
+      paymasterAddress={paymasterAddress}
+      poolId={poolId}
+      initialData={initialPoolData}
+    />
+  );
 }
 
 export const revalidate = 60;

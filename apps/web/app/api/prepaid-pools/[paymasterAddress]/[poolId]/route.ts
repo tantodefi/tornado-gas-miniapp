@@ -11,7 +11,7 @@ import {
   SerializedPoolMember,
   SerializedTransaction,
   SubgraphClient,
-} from "@workspace/data";
+} from "@prepaid-gas/data";
 import type {
   ActivityItem,
   MemberAddedActivity,
@@ -182,7 +182,6 @@ export async function GET(
 
     // Construct response metadata using ClientFactory
     const enhancedMeta = {
-      ...SubgraphClient.getNetworkPreset(84532),
       requestId,
       processingTime: Date.now() - startTime,
       paymasterAddress,

@@ -31,7 +31,7 @@ const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
 
   const { displayError, retry, isRetrying } = useApiError(error, refetch);
 
-  const handleCardClick = (poolId: string, paymasterAddress: string) => 
+  const handleCardClick = (poolId: string, paymasterAddress: string) =>
     router.push(`/pools/${paymasterAddress}/${poolId}`);
   const handleRetry = () => !isRetrying && retry();
   const handleResetFilters = () => resetFilters();
@@ -120,18 +120,25 @@ const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
 
         {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
-            {filteredPools.map((pool) => (
-              pool.paymaster.contractType === "GasLimited" ? <MultiUsePoolCard
-                key={`${pool.paymaster.address}-${pool.poolId}`}
-                pool={pool}
-                onCardClick={() => handleCardClick(pool.poolId, pool.paymaster.address)}
-              />
-              : <OneTimeUsePoolCard
-              key={`${pool.paymaster.address}-${pool.poolId}`}
-              pool={pool}
-              onCardClick={() => handleCardClick(pool.poolId, pool.paymaster.address)}
-            />
-            ))}
+            {filteredPools.map((pool) =>
+              pool.paymaster.contractType === "GasLimited" ? (
+                <MultiUsePoolCard
+                  key={`${pool.paymaster.address}-${pool.poolId}`}
+                  pool={pool}
+                  onCardClick={() =>
+                    handleCardClick(pool.poolId, pool.paymaster.address)
+                  }
+                />
+              ) : (
+                <OneTimeUsePoolCard
+                  key={`${pool.paymaster.address}-${pool.poolId}`}
+                  pool={pool}
+                  onCardClick={() =>
+                    handleCardClick(pool.poolId, pool.paymaster.address)
+                  }
+                />
+              ),
+            )}
           </div>
         )}
 

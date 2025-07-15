@@ -6,7 +6,7 @@ import { useCallback } from "react";
 import { Identity } from "@semaphore-protocol/identity";
 import { encodeFunctionData } from "viem";
 import { getPaymentProvider } from "@/components/providers/payment-provider-wrapper";
-import { GAS_LIMITED_PAYMASTER_ABI } from "@workspace/core";
+import { GAS_LIMITED_PAYMASTER_ABI } from "@prepaid-gas/constants";
 import { DaimoButton } from "./daimo-button";
 import { RainbowButton } from "./rainbow-button";
 import { PoolCard } from "@/lib/storage/indexed-db";
@@ -83,7 +83,6 @@ function PaymentManager({ pool, card, callbacks }: PaymentManagerProps) {
 
   const handlePaymentSuccess = useCallback(
     (transactionHash: string) => {
-
       const successDetails: PaymentSuccessDetails = {
         transactionHash,
         pool,
