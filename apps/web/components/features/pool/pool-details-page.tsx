@@ -31,7 +31,11 @@ interface PoolDetailsPageProps {
 /**
  * Pool Details Page Component
  */
-function PoolDetailsPage({ paymasterAddress, poolId, initialData }: PoolDetailsPageProps) {
+function PoolDetailsPage({
+  paymasterAddress,
+  poolId,
+  initialData,
+}: PoolDetailsPageProps) {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -65,7 +69,8 @@ function PoolDetailsPage({ paymasterAddress, poolId, initialData }: PoolDetailsP
     if (joinError) {
       toast.error(joinError, {
         duration: 5000,
-        description: "Please try again or contact support if the issue persists",
+        description:
+          "Please try again or contact support if the issue persists",
       });
     }
   }, [joinError]);
@@ -93,9 +98,12 @@ function PoolDetailsPage({ paymasterAddress, poolId, initialData }: PoolDetailsP
   const breadcrumbItems = [
     { label: "Home", href: "/" },
     { label: "Pools", href: "/pools" },
-    { 
-      label: pool?.paymaster.contractType === "GasLimited" ? "Multi-Use" : "One-Time", 
-      isCurrentPage: false 
+    {
+      label:
+        pool?.paymaster.contractType === "GasLimited"
+          ? "Multi-Use"
+          : "One-Time",
+      isCurrentPage: false,
     },
     { label: `Pool ${poolId}`, isCurrentPage: true },
   ];
@@ -123,7 +131,11 @@ function PoolDetailsPage({ paymasterAddress, poolId, initialData }: PoolDetailsP
           <AppHeader />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <PageBreadcrumb items={breadcrumbItems} className="mb-8" />
-            <ErrorState error={poolError} onBack={handleBack} onRetry={refetch} />
+            <ErrorState
+              error={poolError}
+              onBack={handleBack}
+              onRetry={refetch}
+            />
           </div>
         </div>
       </PaymentProviderWrapper>

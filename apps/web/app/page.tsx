@@ -94,63 +94,69 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 
 // Hero Section
 const Hero: React.FC = () => {
-  
   const scrollToHowItWorks = () => {
-    const element = document.getElementById('how-it-works');
+    const element = document.getElementById("how-it-works");
     if (element) {
-      element.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start',
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
       });
     }
   };
   return (
-  <section className="section-prepaid text-center relative z-10">
-    <motion.div
-      className="badge-prepaid mb-6 sm:mb-8"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      ✨ Anonymous Gas Payments • ERC-4337 + Semaphore Protocol
-    </motion.div>
+    <section className="section-prepaid text-center relative z-10">
+      <motion.div
+        className="badge-prepaid mb-6 sm:mb-8"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        ✨ Anonymous Gas Payments • ERC-4337 + Semaphore Protocol
+      </motion.div>
 
-    <motion.h1
-      className="heading-prepaid-hero mb-4 sm:mb-6"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.2 }}
-    >
-      <div className="text-prepaid-gradient-white">Prepaid Gas</div>
-      <div className="text-prepaid-gradient-brand">Credits</div>
-    </motion.h1>
+      <motion.h1
+        className="heading-prepaid-hero mb-4 sm:mb-6"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+      >
+        <div className="text-prepaid-gradient-white">Prepaid Gas</div>
+        <div className="text-prepaid-gradient-brand">Credits</div>
+      </motion.h1>
 
-    <motion.p
-      className="text-base sm:text-lg lg:text-xl text-slate-300 max-w-xl lg:max-w-2xl mx-auto mb-8 lg:mb-10 leading-relaxed px-4"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.4 }}
-    >
-      Join a pool by paying upfront gas. Prove pool membership with zero-knowledge
-      proofs to spend gas credits anonymously through an ERC-4337 + Semaphore powered
-      paymaster — unlinkable and private by design.
-    </motion.p>
+      <motion.p
+        className="text-base sm:text-lg lg:text-xl text-slate-300 max-w-xl lg:max-w-2xl mx-auto mb-8 lg:mb-10 leading-relaxed px-4"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.4 }}
+      >
+        Join a pool by paying upfront gas. Prove pool membership with
+        zero-knowledge proofs to spend gas credits anonymously through an
+        ERC-4337 + Semaphore powered paymaster — unlinkable and private by
+        design.
+      </motion.p>
 
-    <motion.div
-      className="flex-prepaid-responsive mb-8 sm:mb-12 px-4"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.6 }}
-    >
-      <Link href="/pools">
-        <Button className="btn-prepaid-primary btn-lg">
-          Browse Gas Pools →
+      <motion.div
+        className="flex-prepaid-responsive mb-8 sm:mb-12 px-4"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.6 }}
+      >
+        <Link href="/pools">
+          <Button className="btn-prepaid-primary btn-lg">
+            Browse Gas Pools →
+          </Button>
+        </Link>
+        <Button
+          className="btn-prepaid-outline btn-lg"
+          onClick={scrollToHowItWorks}
+        >
+          How It Works
         </Button>
-      </Link>
-      <Button className="btn-prepaid-outline btn-lg" onClick={scrollToHowItWorks} >How It Works</Button>
-    </motion.div>
-  </section>
-)};
+      </motion.div>
+    </section>
+  );
+};
 
 // Features Section
 const Features: React.FC = () => {
@@ -249,8 +255,11 @@ const LandingPage: React.FC = () => (
     </section>
 
     {/* Features */}
-    <section id="how-it-works" className="min-h-screen snap-start flex flex-col justify-center">
-      <Features  />
+    <section
+      id="how-it-works"
+      className="min-h-screen snap-start flex flex-col justify-center"
+    >
+      <Features />
       <Stats />
       <CTA />
     </section>

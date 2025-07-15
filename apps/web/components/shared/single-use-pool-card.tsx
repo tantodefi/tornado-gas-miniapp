@@ -8,7 +8,7 @@ import { formatJoiningFee, formatMembersCount } from "@/utils";
 
 const SingleUsePoolCard: React.FC<{
   pool?: Pool;
-  onCardClick?: (paymasterAddress:string,poolId: string) => void;
+  onCardClick?: (paymasterAddress: string, poolId: string) => void;
 }> = ({ pool, onCardClick }) => {
   const handleCardClick = () => {
     if (pool && onCardClick) {

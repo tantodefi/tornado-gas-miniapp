@@ -8,7 +8,7 @@ import {
   deleteCard,
   PoolCard,
 } from "@/lib/storage/indexed-db";
-import { encodePaymasterContext } from "@workspace/core";
+import { encodePaymasterContext } from "@prepaid-gas/core";
 import { Pool } from "@/types/pool";
 import { PaymentSuccessDetails } from "@/components/features/payment/payment-manager";
 

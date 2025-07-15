@@ -5,7 +5,7 @@
 import React from "react";
 import MultiUsePoolCard from "../../shared/multi-use-pool-card";
 import SingleUsePoolCard from "@/components/shared/single-use-pool-card";
-import { SerializedPool } from "@workspace/data";
+import { SerializedPool } from "@prepaid-gas/data";
 
 interface JoinPoolSectionProps {
   pool: SerializedPool;

@@ -1,10 +1,10 @@
 //file:prepaid-gas-website/apps/web/types/pool.ts
 /**
  * Pool-related type definitions
- * Simplified to directly use @workspace/data package types
+ * Simplified to directly use @prepaid-gas/data package types
  */
 
-import type { SerializedPool, SerializedPoolMember } from "@workspace/data";
+import type { SerializedPool, SerializedPoolMember } from "@prepaid-gas/data";
 
 export type Pool = SerializedPool;
 

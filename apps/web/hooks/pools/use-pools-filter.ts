@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/hooks/pools/use-pools-filter.ts
 import { useState, useMemo } from "react";
 import type { Pool } from "@/types/pool";
-import { PaymasterType } from "@workspace/data";
+import { PaymasterType } from "@prepaid-gas/data";
 
 /**
  * Filter state for pool filtering and sorting
