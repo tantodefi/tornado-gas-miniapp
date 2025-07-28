@@ -98,13 +98,13 @@ function DaimoButton({
       <DaimoPayButton
         // Required props
         appId={process.env.NEXT_PUBLIC_DAIMO_APP_ID || "pay-demo"}
-        toAddress={pool.paymaster.address as `0x${string}`}
+        toAddress={pool.address as `0x${string}`}
         toChain={base.id}
-        toUnits={formatJoiningFee(pool.joiningFee)}
+        toUnits={formatJoiningFee(pool.joiningAmount)}
         toToken={zeroAddress}
         // Tracking & Metadata
         metadata={{
-          poolId: pool.poolId,
+          poolId: pool.address,
           cardId: card.id,
           purchaseTimestamp: Date.now().toString(),
         }}

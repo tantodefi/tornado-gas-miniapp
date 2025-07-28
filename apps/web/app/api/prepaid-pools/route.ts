@@ -6,7 +6,7 @@ import {
   handleApiError,
   setCacheHeaders,
 } from "@/lib/api/response";
-import { SubgraphClient } from "@prepaid-gas/data";
+import { SerializedPaymasterContract, SubgraphClient } from "@prepaid-gas/data";
 
 // Environment validation
 const CACHE_TTL = parseInt(process.env.POOLS_CACHE_TTL || "300", 10);
@@ -98,26 +98,28 @@ export async function GET(request: NextRequest) {
     const skip = paginated ? page * limit : 0;
     const effectiveLimit = maxResults ? Math.min(limit, maxResults) : limit;
     // Build query using the query builder pattern
-    let poolQuery = subgraphClient.query().pools().limit(effectiveLimit);
+    let paymasterPoolQuery = subgraphClient
+      .query()
+      .paymasters()
+      .limit(effectiveLimit);
 
     // Add skip for pagination
     if (skip > 0) {
-      poolQuery = poolQuery.skip(skip);
+      paymasterPoolQuery = paymasterPoolQuery.skip(skip);
     }
 
     // Execute query with timeout and fallback
-    let serializedPools: any[] = [];
+    let serializedPools: SerializedPaymasterContract[] = [];
     try {
       // Add timeout for subgraph calls
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Subgraph timeout")), 3000),
       );
-
       const result = await Promise.race([
-        poolQuery.executeAndSerialize(),
+        paymasterPoolQuery.executeAndSerialize(),
         timeoutPromise,
       ]);
-      
+
       serializedPools = Array.isArray(result) ? result : [];
     } catch (subgraphError) {
       console.warn(

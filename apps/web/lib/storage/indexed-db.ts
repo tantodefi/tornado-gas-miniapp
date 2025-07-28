@@ -1,5 +1,7 @@
 //file:prepaid-gas-website/apps/web/lib/storage/indexed-db.ts
 
+import { PaymasterType } from "@prepaid-gas/constants";
+
 // Import types from card.ts
 export type PoolCard = {
   id: string;
@@ -7,7 +9,7 @@ export type PoolCard = {
     poolId: string;
     joiningFee: string;
     network: string;
-    paymasterType: "GasLimited" | "OneTimeUse";
+    paymasterType: PaymasterType;
   };
   identity: {
     mnemonic: string;

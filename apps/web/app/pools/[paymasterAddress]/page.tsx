@@ -4,18 +4,18 @@ import { notFound } from "next/navigation";
 import PoolDetailsPage from "@/components/features/pool/pool-details-page";
 
 interface PoolPageProps {
-  params: Promise<{ paymasterAddress: string; poolId: string }>;
+  params: Promise<{ paymasterAddress: string; }>;
 }
 
 /**
  * Reuse the existing API route logic server-side
  */
-async function getPoolDataSSR(paymasterAddress: string, poolId: string) {
+async function getPoolDataSSR(paymasterAddress: string) {
   try {
     // Call our updated API route internally
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const response = await fetch(
-      `${baseUrl}/api/prepaid-pools/${paymasterAddress}/${poolId}`,
+      `${baseUrl}/api/prepaid-pools/${paymasterAddress}`,
       {
         cache: "no-store",
       },
@@ -29,7 +29,7 @@ async function getPoolDataSSR(paymasterAddress: string, poolId: string) {
     return data.success ? data.data : null;
   } catch (error) {
     console.error(
-      `SSR: Failed to fetch pool ${paymasterAddress}/${poolId}:`,
+      `SSR: Failed to fetch pool ${paymasterAddress}:`,
       error,
     );
     return null;
@@ -42,24 +42,24 @@ async function getPoolDataSSR(paymasterAddress: string, poolId: string) {
 export async function generateMetadata({
   params,
 }: PoolPageProps): Promise<Metadata> {
-  const { paymasterAddress, poolId } = await params;
+  const { paymasterAddress } = await params;
 
-  const pool = await getPoolDataSSR(paymasterAddress, poolId);
+  const pool = await getPoolDataSSR(paymasterAddress);
 
   if (!pool) {
     return {
-      title: `Pool ${poolId} - Not Found`,
-      description: `Pool ${poolId} could not be found`,
+      title: `Pool ${paymasterAddress} - Not Found`,
+      description: `Pool ${paymasterAddress} could not be found`,
     };
   }
 
   const joiningFeeEth = (parseInt(pool.joiningFee) / 1e18).toFixed(4);
 
   return {
-    title: `Pool ${poolId} - ${joiningFeeEth} ETH - Prepaid Gas`,
-    description: `Join gas pool ${poolId} for ${joiningFeeEth} ETH. ${pool.memberCount} members. Anonymous gas payments.`,
+    title: `Pool ${paymasterAddress} - ${joiningFeeEth} ETH - Prepaid Gas`,
+    description: `Join gas pool ${paymasterAddress} for ${joiningFeeEth} ETH. ${pool.memberCount} members. Anonymous gas payments.`,
     openGraph: {
-      title: `Gas Pool ${poolId}`,
+      title: `Gas Pool ${paymasterAddress}`,
       description: `Join for ${joiningFeeEth} ETH • ${pool.memberCount} members`,
       type: "website",
     },
@@ -70,14 +70,14 @@ export async function generateMetadata({
  * Server component - fetch data and pass to existing component
  */
 export default async function PoolPage({ params }: PoolPageProps) {
-  const { paymasterAddress, poolId } = await params;
+  const { paymasterAddress } = await params;
 
-  if (!paymasterAddress || !poolId) {
+  if (!paymasterAddress ) {
     notFound();
   }
 
   // Fetch data server-side
-  const initialPoolData = await getPoolDataSSR(paymasterAddress, poolId);
+  const initialPoolData = await getPoolDataSSR(paymasterAddress);
 
   if (!initialPoolData) {
     notFound();
@@ -87,7 +87,6 @@ export default async function PoolPage({ params }: PoolPageProps) {
   return (
     <PoolDetailsPage
       paymasterAddress={paymasterAddress}
-      poolId={poolId}
       initialData={initialPoolData}
     />
   );

@@ -5,10 +5,10 @@
 import React from "react";
 import MultiUsePoolCard from "../../shared/multi-use-pool-card";
 import SingleUsePoolCard from "@/components/shared/single-use-pool-card";
-import { SerializedPool } from "@prepaid-gas/data";
+import { SerializedPaymasterContract } from "@prepaid-gas/data";
 
 interface JoinPoolSectionProps {
-  pool: SerializedPool;
+  pool: SerializedPaymasterContract;
   onJoin: () => void;
   buttonText: string;
   buttonDisabled: boolean;
@@ -30,12 +30,12 @@ function JoinPoolSection({
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm font-mono mb-3">
           <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
-          Pool {pool.poolId}
+          Pool 
         </div>
       </div>
 
       {/* Visual Pool Card */}
-      {pool.paymaster.contractType === "GasLimited" ? (
+      {pool.contractType === "GasLimited" ? (
         <MultiUsePoolCard pool={pool} />
       ) : (
         <SingleUsePoolCard pool={pool} />

@@ -167,16 +167,6 @@ function CardReceipt({
                 </p>
               </div>
 
-              {/* Pool ID */}
-              <div>
-                <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
-                  Pool ID
-                </p>
-                <p className="text-lg font-semibold text-white">
-                  {card.poolInfo.poolId}
-                </p>
-              </div>
-
               {/* Amount */}
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
@@ -240,7 +230,15 @@ function CardReceipt({
                 </p>
               </div>
             </div>
-
+              {/* Pool ID */}
+              <div>
+                <p className="text-slate-400 text-sm uppercase tracking-wide mb-1">
+                  Pool Address
+                </p>
+                <p className="text-sm font-semibold text-white">
+                  {card.poolInfo.poolId}
+                </p>
+              </div>
             {/* Recovery Phrase Section - Conditional */}
             {showRecoveryPhrase && (
               <div className="border-t border-slate-600/50 pt-6">

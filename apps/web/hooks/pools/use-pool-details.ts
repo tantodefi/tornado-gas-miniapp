@@ -1,18 +1,15 @@
 //file: apps/web/hooks/pools/use-pool-details.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { prepaidPoolsApi } from "@/lib/api/api-client";
-import type { PoolWithActivity } from "@/types/pool";
+import type { Pool } from "@/types/pool";
 import { ApiError } from "@/lib/api/type";
 
 // Add initialData parameter to the hook
 export const usePoolDetails = (
   paymasterAddress: string,
-  poolId: string,
-  initialData?: PoolWithActivity,
+  initialData?: Pool,
 ) => {
-  const [pool, setPool] = useState<PoolWithActivity | null>(
-    initialData || null,
-  );
+  const [pool, setPool] = useState<Pool | null>(initialData || null);
   const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,12 +18,12 @@ export const usePoolDetails = (
   const currentRequest = useRef<string | null>(null);
 
   const loadPoolDetails = useCallback(async () => {
-    const requestKey = `${poolId}`;
+    const requestKey = `${paymasterAddress}`;
 
     // Prevent duplicate requests
     if (isRequestInProgress.current && currentRequest.current === requestKey) {
       console.log(
-        `🔄 Request for pool ${poolId} already in progress, skipping...`,
+        `🔄 Request for pool ${paymasterAddress} already in progress, skipping...`,
       );
       return;
     }
@@ -37,16 +34,13 @@ export const usePoolDetails = (
       setIsLoading(true);
       setError(null);
 
-      const response = await prepaidPoolsApi.getPoolDetails(
-        paymasterAddress,
-        poolId,
-      );
+      const response = await prepaidPoolsApi.getPoolDetails(paymasterAddress);
 
       if (!response.success || !response.data) {
-        throw new Error(`Pool ${poolId} not found`);
+        throw new Error(`Pool ${paymasterAddress} not found`);
       }
 
-      setPool(response.data as PoolWithActivity);
+      setPool(response.data as Pool);
     } catch (err) {
       let errorMessage = "Failed to load pool details. Please try again.";
 
@@ -57,7 +51,7 @@ export const usePoolDetails = (
               "Unable to connect to server. Please check your internet connection.";
             break;
           case "NOT_FOUND":
-            errorMessage = `Pool ${poolId} not found. It may have been removed or the ID is incorrect.`;
+            errorMessage = `Pool ${paymasterAddress} not found. It may have been removed or the ID is incorrect.`;
             break;
           case "REQUEST_TIMEOUT":
             errorMessage = "Request timed out. Please try again.";
@@ -69,21 +63,21 @@ export const usePoolDetails = (
         errorMessage = err.message;
       }
 
-      console.error(`❌ Error loading pool ${poolId}:`, err);
+      console.error(`❌ Error loading pool ${paymasterAddress}:`, err);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
       isRequestInProgress.current = false;
     }
-  }, [paymasterAddress, poolId]);
+  }, [paymasterAddress]);
 
   // Only load if we don't have initial data
   useEffect(() => {
-    if (paymasterAddress && poolId && !initialData) {
+    if (paymasterAddress && !initialData) {
       currentRequest.current = null; // Reset to allow new request
       loadPoolDetails();
     }
-  }, [paymasterAddress, poolId, loadPoolDetails, initialData]);
+  }, [paymasterAddress, loadPoolDetails, initialData]);
 
   // Refetch function for retry functionality
   const refetch = useCallback(() => {
@@ -92,15 +86,15 @@ export const usePoolDetails = (
 
   // Helper functions for working with BigInt strings
   const getJoiningFeeAsNumber = useCallback(() => {
-    return pool ? parseInt(pool.joiningFee) : 0;
+    return pool ? parseInt(pool.joiningAmount) : 0;
   }, [pool]);
 
   const getMembersCountAsNumber = useCallback(() => {
-    return pool ? parseInt(pool.memberCount) : 0;
+    return pool ? parseInt(pool.treeSize) : 0;
   }, [pool]);
 
   const getTotalDepositsAsNumber = useCallback(() => {
-    return pool ? parseInt(pool.totalDeposits) : 0;
+    return pool ? parseInt(pool.totalDeposit) : 0;
   }, [pool]);
 
   return {
@@ -113,12 +107,12 @@ export const usePoolDetails = (
     getMembersCountAsNumber,
     getTotalDepositsAsNumber,
     // Direct access to members and metadata
-    members: pool?.members || [],
-    hasMembers: (pool?.members?.length || 0) > 0,
-    memberCount: pool?.members?.length || 0,
+    // members: pool?.members || [],
+    // hasMembers: (pool?.members?.length || 0) > 0,
+    // memberCount: pool?.members?.length || 0,
     // Direct access to activity
-    activity: pool?.activity || [],
-    hasActivity: (pool?.activity?.length || 0) > 0,
-    activityCount: pool?.activity?.length || 0,
+    // activity: pool?.activity || [],
+    // hasActivity: (pool?.activity?.length || 0) > 0,
+    // activityCount: pool?.activity?.length || 0,
   };
 };

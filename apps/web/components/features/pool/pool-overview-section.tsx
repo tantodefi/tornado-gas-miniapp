@@ -16,20 +16,17 @@ interface PoolOverviewProps {
  * PoolOverview Component
  */
 const PoolOverviewSection: React.FC<PoolOverviewProps> = ({ pool }) => {
-  const joiningFeeEth = formatEther(BigInt(pool.joiningFee || "0"));
+  const joiningFeeEth = formatEther(BigInt(pool.joiningAmount || "0"));
   const totalDepositsEth = parseFloat(
-    formatEther(BigInt(pool.totalDeposits || "0")),
+    formatEther(BigInt(pool.totalDeposit || "0")),
   ).toFixed(6);
-  const createdDate = new Date(parseInt(pool.createdAtTimestamp) * 1000);
+  const createdDate = new Date(parseInt(pool.deployedTimestamp) * 1000);
 
   return (
     <div className="card-prepaid-glass card-content-md">
       <div className="flex justify-between">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           📋 Pool Overview
-        </h3>
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          Pool {pool.poolId}
         </h3>
       </div>
 
@@ -49,7 +46,7 @@ const PoolOverviewSection: React.FC<PoolOverviewProps> = ({ pool }) => {
         </div>
         <div className="bg-slate-800/30 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-400">
-            {pool.memberCount}
+            {pool.treeSize}
           </div>
           <div className="text-xs text-slate-400">Members</div>
         </div>
@@ -75,7 +72,7 @@ const PoolOverviewSection: React.FC<PoolOverviewProps> = ({ pool }) => {
         <div className="flex justify-between">
           <span className="text-slate-400">Paymaster Address</span>
           <span className="text-blue-400">
-            {`${pool.paymaster.address.slice(0, 6)}...${pool.paymaster.address.slice(-4)}`}
+            {`${pool.address.slice(0, 6)}...${pool.address.slice(-4)}`}
           </span>
         </div>
       </div>

@@ -1,7 +1,7 @@
 //file:prepaid-gas-website/apps/web/hooks/pools/use-pools-filter.ts
 import { useState, useMemo } from "react";
-import type { Pool } from "@/types/pool";
-import { PaymasterType } from "@prepaid-gas/data";
+import { SerializedPaymasterContract } from "@prepaid-gas/data";
+import { PaymasterType } from "@prepaid-gas/constants";
 
 /**
  * Filter state for pool filtering and sorting
@@ -16,7 +16,7 @@ export interface FilterState {
  * Custom hook for filtering and sorting pools
  * Updated to use new field names from data package
  */
-export const usePoolsFilter = (pools: Pool[]) => {
+export const usePoolsFilter = (pools: SerializedPaymasterContract[]) => {
   const [filters, setFilters] = useState<FilterState>({
     network: "all",
     poolType: "all",
@@ -51,8 +51,8 @@ export const usePoolsFilter = (pools: Pool[]) => {
       switch (filters.sortBy) {
         case "newest":
           return (
-            new Date(b.createdAtTimestamp).getTime() -
-            new Date(a.createdAtTimestamp).getTime()
+            new Date(b.deployedTimestamp).getTime() -
+            new Date(a.deployedTimestamp).getTime()
           );
 
         default:
@@ -62,7 +62,7 @@ export const usePoolsFilter = (pools: Pool[]) => {
 
     if (filters.poolType !== "all") {
       filtered = filtered.filter(
-        (pool) => pool.paymaster.contractType === filters.poolType,
+        (pool) => pool.contractType === filters.poolType,
       );
     }
 

@@ -77,7 +77,7 @@ function usePoolJoinFlow(pool: Pool | null): UsePoolJoinFlowResult {
     try {
       setState("preparing");
       setError(null);
-      console.log(`🚀 Starting join flow for pool: ${pool.poolId}`);
+      console.log(`🚀 Starting join flow for pool: ${pool.address}`);
 
       // Generate identity
       const { cardId, identity, mnemonic, privateKey } =
@@ -85,8 +85,7 @@ function usePoolJoinFlow(pool: Pool | null): UsePoolJoinFlowResult {
 
       // Generate paymaster context
       const paymasterContext = encodePaymasterContext(
-        pool.paymaster.address as `0x${string}`,
-        pool.poolId,
+        pool.address as `0x${string}`,
         identity.export(),
       );
 
@@ -94,16 +93,16 @@ function usePoolJoinFlow(pool: Pool | null): UsePoolJoinFlowResult {
       const newCard: PoolCard = {
         id: cardId,
         poolInfo: {
-          poolId: pool.poolId,
-          joiningFee: pool.joiningFee,
+          poolId: pool.address,
+          joiningFee: pool.joiningAmount,
           network: pool.network,
-          paymasterType: pool.paymaster.contractType,
+          paymasterType: pool.contractType,
         },
         identity: {
           mnemonic,
           privateKey,
         },
-        paymasterContract: pool.paymaster.address,
+        paymasterContract: pool.address,
         paymasterContext,
         transactionHash: "",
         chainId: pool.chainId,

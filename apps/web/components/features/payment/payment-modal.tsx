@@ -35,7 +35,7 @@ function PaymentModal({
 }: PaymentModalProps) {
   if (!isVisible) return null;
 
-  const joiningFeeEth = formatEther(BigInt(pool.joiningFee));
+  const joiningFeeEth = formatEther(BigInt(pool.joiningAmount));
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -46,7 +46,7 @@ function PaymentModal({
             Complete Payment
           </h2>
           <p className="text-slate-400">
-            Join Pool {pool.poolId} with {joiningFeeEth} ETH
+            Join Pool {pool.address} with {joiningFeeEth} ETH
           </p>
         </div>
 
