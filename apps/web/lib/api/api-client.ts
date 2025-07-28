@@ -151,11 +151,10 @@ export const prepaidPoolsApi = {
    */
   async getPoolDetails(
     paymasterAddress: string,
-    poolId: string,
     includeMembers: boolean = true,
     memberLimit: number = 100,
   ) {
-    return apiClient.get(`/api/prepaid-pools/${paymasterAddress}/${poolId}`, {
+    return apiClient.get(`/api/prepaid-pools/${paymasterAddress}`, {
       includeMembers: includeMembers.toString(),
       memberLimit: memberLimit.toString(),
     });

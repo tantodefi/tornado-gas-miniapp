@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { PoolWithActivity, ActivityItem } from "@/types/pool";
+import { Pool,Activity } from "@/types/pool";
 import { getExplorerUrl, getTimeAgo } from "@/utils";
 import { formatEther, formatGwei } from "viem";
 import {
@@ -15,7 +15,7 @@ import {
 } from "@workspace/ui/components/table";
 
 interface PoolActivitySectionProps {
-  pool: PoolWithActivity;
+  pool: Pool;
 }
 
 /**
@@ -23,35 +23,35 @@ interface PoolActivitySectionProps {
  * Displays individual activity information (member additions or transactions)
  */
 const ActivityRow: React.FC<{
-  activity: ActivityItem;
-  pool: PoolWithActivity;
+  activity: Activity;
+  pool: Pool;
 }> = ({ activity, pool }) => {
   const explorerUrl = pool.chainId
-    ? getExplorerUrl(pool.chainId, activity.transactionHash)
+    ? getExplorerUrl(pool.chainId, activity.transaction)
     : null;
 
-  const isMemberJoin = activity.type === "member_added";
-  const rowTint = isMemberJoin ? "bg-green-300/3" : "bg-red-400/4";
+  const isDeposit = activity.type === "DEPOSIT";
+  const rowTint = isDeposit ? "bg-green-300/3" : "bg-red-400/4";
 
   const renderAction = () => (
     <div className="flex items-center gap-2">
-      <span className="text-xl">{isMemberJoin ? "👤" : "⛽"}</span>
+      <span className="text-xl">{isDeposit ? "👤" : "⛽"}</span>
       <span className="text-white">
-        {isMemberJoin ? "Member Joined" : "Gas Payment"}
+        {isDeposit ? "Deposit" : "Gas Payment"}
       </span>
     </div>
   );
 
   const renderValue = () => {
-    if (isMemberJoin) {
+    if (isDeposit) {
       return (
         <span className="text-green-400 font-medium">
-          + {formatEther(BigInt(pool.joiningFee))} ETH
+          + {formatEther(BigInt(pool.joiningAmount))} ETH
         </span>
       );
     } else {
       const gasCost = parseFloat(
-        formatGwei(BigInt(activity.transaction.actualGasCost || "0")),
+        formatGwei(BigInt(activity.actualGasCost || "0")),
       ).toFixed(3);
       return <span className="text-red-400 font-medium">- {gasCost} Gwei</span>;
     }
@@ -86,7 +86,7 @@ const ActivityRow: React.FC<{
  * PoolActivitySection Component
  */
 const PoolActivitySection: React.FC<PoolActivitySectionProps> = ({ pool }) => {
-  const activities = pool?.activity || [];
+  const activities = pool?.activities || [];
 
   return (
     <>

@@ -56,17 +56,17 @@ function usePaymentDataGenerator(pool: Pool, card: PoolCard) {
     // Generate calldata for addMember function
     const calldata = encodeFunctionData({
       abi: GAS_LIMITED_PAYMASTER_ABI,
-      functionName: "addMember",
-      args: [BigInt(pool.poolId), identity.commitment],
+      functionName: "deposit",
+      args: [identity.commitment],
     });
 
     return {
       calldata,
       identity,
-      poolId: pool.poolId,
+      poolId: pool.address,
       cardId: card.id,
     };
-  }, [pool.poolId, card.identity.privateKey, card.id]);
+  }, [pool.address, card.identity.privateKey, card.id]);
 }
 
 /**

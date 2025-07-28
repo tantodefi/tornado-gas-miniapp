@@ -98,9 +98,9 @@ function RainbowButton({
       const paymentData = getPaymentData();
 
       sendTransaction({
-        to: pool.paymaster.address as `0x${string}`,
+        to: pool.address as `0x${string}`,
         data: paymentData.calldata,
-        value: BigInt(pool.joiningFee),
+        value: BigInt(pool.joiningAmount),
       });
     } catch (error) {
       const errorMessage =
@@ -149,7 +149,7 @@ function RainbowButton({
         {isConfirming && "Confirming Transaction..."}
         {!isProcessing &&
           !isConfirming &&
-          `Pay ${formatJoiningFee(pool.joiningFee)} ETH`}
+          `Pay ${formatJoiningFee(pool.joiningAmount)} ETH`}
       </motion.button>
 
       <div className="text-center">

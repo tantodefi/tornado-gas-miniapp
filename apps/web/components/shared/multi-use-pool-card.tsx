@@ -8,20 +8,20 @@ import { formatJoiningFee, formatMembersCount } from "@/utils";
 
 const MultiUsePoolCard: React.FC<{
   pool?: Pool;
-  onCardClick?: (paymasterAddress: string, poolId: string) => void;
+  onCardClick?: (paymasterAddress: string) => void;
 }> = ({ pool, onCardClick }) => {
   const handleCardClick = () => {
     if (pool && onCardClick) {
-      onCardClick(pool.paymaster.address, pool.poolId);
+      onCardClick(pool.address);
     }
   };
   const isDummy = !pool;
   const accountNumber = isDummy
     ? `**** **** **** 4337`
-    : `**** **** **** ${pool.poolId.slice(-4).padStart(4, "0")}`;
+    : `**** **** **** ${'4337'.padStart(4, "0")}`;
   const network = isDummy ? "ETHEREUM" : pool.network.toUpperCase();
-  const joiningFee = isDummy ? "0.001" : formatJoiningFee(pool.joiningFee);
-  const memberCount = isDummy ? "847" : formatMembersCount(pool.memberCount);
+  const joiningFee = isDummy ? "0.001" : formatJoiningFee(pool.joiningAmount);
+  const memberCount = isDummy ? "847" : formatMembersCount(pool.treeSize);
 
   return (
     <motion.div

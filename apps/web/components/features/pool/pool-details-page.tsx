@@ -20,12 +20,11 @@ import PoolOverviewSection from "./pool-overview-section";
 import PoolActivitySection from "./pool-activity-section";
 import { PaymentModal } from "../payment/payment-modal";
 import CardReceipt from "../cards/card-receipt";
-import type { PoolWithActivity } from "@/types/pool";
+import type { Pool } from "@/types/pool";
 
 interface PoolDetailsPageProps {
   paymasterAddress: string;
-  poolId: string;
-  initialData?: PoolWithActivity;
+  initialData?: Pool;
 }
 
 /**
@@ -33,7 +32,6 @@ interface PoolDetailsPageProps {
  */
 function PoolDetailsPage({
   paymasterAddress,
-  poolId,
   initialData,
 }: PoolDetailsPageProps) {
   const router = useRouter();
@@ -45,7 +43,7 @@ function PoolDetailsPage({
     isLoading,
     error: poolError,
     refetch,
-  } = usePoolDetails(paymasterAddress, poolId, initialData);
+  } = usePoolDetails(paymasterAddress, initialData);
 
   // Join flow state management
   const {
@@ -100,12 +98,10 @@ function PoolDetailsPage({
     { label: "Pools", href: "/pools" },
     {
       label:
-        pool?.paymaster.contractType === "GasLimited"
-          ? "Multi-Use"
-          : "One-Time",
+        pool?.contractType || "Unknown Pool Type",
       isCurrentPage: false,
     },
-    { label: `Pool ${poolId}`, isCurrentPage: true },
+    { label: `${paymasterAddress}`, isCurrentPage: true },
   ];
 
   // Loading state (only shows if no initial data)
