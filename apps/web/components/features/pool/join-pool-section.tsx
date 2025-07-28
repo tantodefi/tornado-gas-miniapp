@@ -5,6 +5,7 @@
 import React from "react";
 import MultiUsePoolCard from "../../shared/multi-use-pool-card";
 import SingleUsePoolCard from "@/components/shared/single-use-pool-card";
+import CacheEnabledPoolCard from "@/components/shared/cache-enabled-pool-card";
 import { SerializedPaymasterContract } from "@prepaid-gas/data";
 
 interface JoinPoolSectionProps {
@@ -35,7 +36,9 @@ function JoinPoolSection({
       </div>
 
       {/* Visual Pool Card */}
-      {pool.contractType === "GasLimited" ? (
+      {pool.contractType === "CacheEnabledGasLimited" ? (
+        <CacheEnabledPoolCard pool={pool} />
+      ) : pool.contractType === "GasLimited" ? (
         <MultiUsePoolCard pool={pool} />
       ) : (
         <SingleUsePoolCard pool={pool} />

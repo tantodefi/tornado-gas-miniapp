@@ -11,6 +11,7 @@ import { Button } from "@workspace/ui/components/button";
 import { RefreshCw } from "lucide-react";
 import MultiUsePoolCard from "../../shared/multi-use-pool-card";
 import OneTimeUsePoolCard from "../../shared/single-use-pool-card";
+import CacheEnabledPoolCard from "../../shared/cache-enabled-pool-card";
 import FilterBar from "./pool-filters";
 import { useRouter } from "next/navigation";
 import type { Pool } from "@/types/pool";
@@ -120,25 +121,39 @@ const PoolsPage: React.FC<PoolsPageProps> = ({ initialPools }) => {
 
         {!isLoading && !displayError && filteredPools.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
-            {filteredPools.map((pool) =>
-              pool.contractType === "GasLimited" ? (
-                <MultiUsePoolCard
-                  key={`${pool.address}`}
-                  pool={pool}
-                  onCardClick={() =>
-                    handleCardClick(pool.address)
-                  }
-                />
-              ) : (
-                <OneTimeUsePoolCard
-                  key={`${pool.address}`}
-                  pool={pool}
-                  onCardClick={() =>
-                    handleCardClick( pool.address)
-                  }
-                />
-              ),
-            )}
+            {filteredPools.map((pool) => {
+              if (pool.contractType === "CacheEnabledGasLimited") {
+                return (
+                  <CacheEnabledPoolCard
+                    key={`${pool.address}`}
+                    pool={pool}
+                    onCardClick={() =>
+                      handleCardClick(pool.address)
+                    }
+                  />
+                );
+              } else if (pool.contractType === "GasLimited") {
+                return (
+                  <MultiUsePoolCard
+                    key={`${pool.address}`}
+                    pool={pool}
+                    onCardClick={() =>
+                      handleCardClick(pool.address)
+                    }
+                  />
+                );
+              } else {
+                return (
+                  <OneTimeUsePoolCard
+                    key={`${pool.address}`}
+                    pool={pool}
+                    onCardClick={() =>
+                      handleCardClick(pool.address)
+                    }
+                  />
+                );
+              }
+            })}
           </div>
         )}
 
