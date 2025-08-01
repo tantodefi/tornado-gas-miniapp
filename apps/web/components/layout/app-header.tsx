@@ -37,6 +37,16 @@ export const AppHeader: React.FC = () => {
 
       {/* Right side - Navigation and Wallet */}
       <div className="flex items-center space-x-4">
+        {/* Docs Link */}
+        <Link
+          href="https://docs.prepaidgas.xyz"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-slate-400 hover:text-purple-400 transition-colors text-sm font-mono flex items-center gap-2"
+        >
+          📚 Docs
+        </Link>
+
         {/* My Cards Link */}
         <Link
           href="/cards/my-cards"
