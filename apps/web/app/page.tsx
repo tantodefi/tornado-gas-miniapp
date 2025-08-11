@@ -120,8 +120,8 @@ const Hero: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.2 }}
       >
-        <div className="text-prepaid-gradient-white">Prepaid Gas</div>
-        <div className="text-prepaid-gradient-brand">Credits</div>
+        <div className="text-prepaid-gradient-white">🌪️ Tornado</div>
+        <div className="text-prepaid-gradient-brand">Gas</div>
       </motion.h1>
 
       <motion.p
@@ -130,10 +130,9 @@ const Hero: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.4 }}
       >
-        Join a pool by paying upfront gas. Prove pool membership with
-        zero-knowledge proofs to spend gas credits anonymously through an
-        ERC-4337 + Semaphore powered paymaster — unlinkable and private by
-        design.
+        Mix your gas payments in anonymous pools. Pay upfront, spend privately
+        with zero-knowledge proofs through ERC-4337 + Semaphore powered
+        paymaster. Unlinkable transactions by design.
       </motion.p>
 
       <motion.div

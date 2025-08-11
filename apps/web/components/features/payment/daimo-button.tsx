@@ -1,4 +1,4 @@
-//file:prepaid-gas-website/apps/web/components/features/payment/daimo-button.tsx
+//file:tornado-gas-miniapp/apps/web/components/features/payment/daimo-button.tsx
 
 "use client";
 
@@ -10,6 +10,7 @@ import { formatJoiningFee } from "@/utils";
 import { PoolCard } from "@/lib/storage/indexed-db";
 import { PaymentData } from "./payment-manager";
 import { Pool } from "@/types/pool";
+import { useFarcaster } from "../../../context/farcaster/FarcasterProvider";
 
 // Daimo payment event
 interface DaimoPaymentEvent {
@@ -40,6 +41,7 @@ function DaimoButton({
   onPaymentError,
 }: DaimoButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { user: fcUser, isAuthenticated: fcAuthenticated } = useFarcaster();
 
   // Handle payment started
   const handlePaymentStarted = () => {
@@ -102,14 +104,21 @@ function DaimoButton({
         toChain={base.id}
         toUnits={formatJoiningFee(pool.joiningAmount)}
         toToken={zeroAddress}
-        // Tracking & Metadata
+        // Tracking & Metadata - Include Farcaster context
         metadata={{
           poolId: pool.address,
           cardId: card.id,
           purchaseTimestamp: Date.now().toString(),
+          // Farcaster user context for Mini App
+          ...(fcAuthenticated &&
+            fcUser && {
+              farcasterFid: fcUser.fid.toString(),
+              farcasterUsername: fcUser.username || fcUser.displayName,
+              source: "tornado-gas-miniapp",
+            }),
         }}
-        // Optional customization
-        intent="Join Gas Pool"
+        // Optional customization - Enhanced for Mini App
+        intent={`Join Tornado Gas Pool ${fcUser ? `(${fcUser.displayName || fcUser.username || `FID ${fcUser.fid}`})` : ""}`}
         closeOnSuccess={true}
         resetOnSuccess={false}
         // Event handlers
@@ -122,12 +131,21 @@ function DaimoButton({
         <p className="text-xs text-slate-400">
           Powered by{" "}
           <span className="font-medium text-purple-400">DaimoPay</span>
+          {fcAuthenticated && fcUser && (
+            <span className="ml-2">• 🌪️ Tornado Gas Mini App</span>
+          )}
         </p>
         <p className="text-xs text-slate-400 mt-1">
           {isProcessing
             ? "Processing payment..."
             : "Pay with Coinbase, Binance, or any wallet"}
         </p>
+        {fcAuthenticated && fcUser && (
+          <p className="text-xs text-slate-500 mt-1">
+            Joining as{" "}
+            {fcUser.displayName || fcUser.username || `FID ${fcUser.fid}`}
+          </p>
+        )}
       </div>
     </div>
   );

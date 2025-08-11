@@ -1,0 +1,4 @@
+# This is a placeholder for the splash screen image
+# In a real implementation, you would place a PNG file here
+# The image should be 3:2 aspect ratio (e.g., 1200x800px)
+# This shows while the Mini App is loading

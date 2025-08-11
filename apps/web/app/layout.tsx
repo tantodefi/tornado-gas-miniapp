@@ -17,8 +17,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prepaid Gas Cards",
-  description: "Prepaid Gas Cards",
+  title: "Tornado Gas Mini App",
+  description:
+    "Anonymous gas payments through prepaid pools. Pay upfront, spend privately with zero-knowledge proofs.",
+  other: {
+    "fc:miniapp": JSON.stringify({
+      version: "1",
+      imageUrl: "https://tornado-gas-miniapp.vercel.app/embed-image.png",
+      button: {
+        title: "🌪️ Tornado Gas",
+        action: {
+          type: "launch",
+          url: "https://tornado-gas-miniapp.vercel.app",
+        },
+      },
+    }),
+  },
 };
 
 export default function RootLayout({
@@ -28,6 +42,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://auth.farcaster.xyz" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >

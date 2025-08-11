@@ -1,8 +1,9 @@
-//file:prepaid-gas-website/apps/web/components/providers/payment-provider-wrapper.tsx
+//file:tornado-gas-miniapp/apps/web/components/providers/payment-provider-wrapper.tsx
 "use client";
 
 import { DaimoProvider } from "../../context/daimo/DaimoProvider";
 import { RainbowProvider } from "../../context/rainbow/RainbowProvider";
+import { FarcasterProvider } from "../../context/farcaster/FarcasterProvider";
 
 // Environment-based provider detection
 export function getPaymentProvider(): "daimo" | "rainbow" {
@@ -30,9 +31,13 @@ export function PaymentProviderWrapper({
 }) {
   const provider = getPaymentProvider();
 
-  if (provider === "daimo") {
-    return <DaimoProvider>{children}</DaimoProvider>;
-  }
-
-  return <RainbowProvider>{children}</RainbowProvider>;
+  return (
+    <FarcasterProvider>
+      {provider === "daimo" ? (
+        <DaimoProvider>{children}</DaimoProvider>
+      ) : (
+        <RainbowProvider>{children}</RainbowProvider>
+      )}
+    </FarcasterProvider>
+  );
 }

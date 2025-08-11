@@ -13,11 +13,26 @@ export const formatJoiningFee = (joiningFeeStr: string): string => {
   }
 };
 
-// Helper function to format members count (already a string from API)
+// Helper function to format members count with anonymity rules
 export const formatMembersCount = (membersCountStr: string): string => {
   try {
     const count = parseInt(membersCountStr);
-    return count.toLocaleString();
+
+    // Anonymity rules for Tornado Gas - obfuscate exact member counts
+    if (count === 0) return "0";
+    if (count < 5) return "2-5"; // Small pools show range
+    if (count < 10) return "5-10";
+    if (count < 25) return "10-25";
+    if (count < 50) return "25-50";
+    if (count < 100) return "50-100";
+    if (count < 250) return "100-250";
+    if (count < 500) return "250-500";
+    if (count < 1000) return "500-1K";
+    if (count < 2500) return "1K-2.5K";
+    if (count < 5000) return "2.5K-5K";
+
+    // For very large pools, show approximate ranges
+    return "5K+";
   } catch {
     return "0";
   }

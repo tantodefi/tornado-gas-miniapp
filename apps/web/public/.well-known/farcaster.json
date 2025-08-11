@@ -1,0 +1,20 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEyMzQ1NiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDEyMzQ1NiJ9",
+    "payload": "eyJkb21haW4iOiJ0b3JuYWRvLWdhcy5taW5pYXBwcy5mYXJjYXN0ZXIueHl6In0",
+    "signature": "MHg5ODc2NTQzMjEwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVm"
+  },
+  "name": "🌪️ Tornado Gas",
+  "description": "Anonymous gas payments through prepaid pools. Mix your gas payments with zero-knowledge privacy.",
+  "iconUrl": "https://tornado-gas-miniapp.vercel.app/tornado-icon.png",
+  "homeUrl": "https://tornado-gas-miniapp.vercel.app",
+  "imageUrl": "https://tornado-gas-miniapp.vercel.app/embed-image.png",
+  "splashImageUrl": "https://tornado-gas-miniapp.vercel.app/splash-image.png",
+  "splashBackgroundColor": "#0f0f23",
+  "webhookUrl": "https://tornado-gas-miniapp.vercel.app/api/webhook",
+  "launchButton": {
+    "text": "Enter Tornado",
+    "backgroundColor": "#7c3aed",
+    "textColor": "#ffffff"
+  }
+}

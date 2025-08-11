@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@daimo/pay": "^1.11.2",
+    "@farcaster/miniapp-sdk": "^0.1.8",
     "@noble/hashes": "^1.8.0",
     "@prepaid-gas/constants": "0.0.5",
     "@prepaid-gas/core": "0.0.5",

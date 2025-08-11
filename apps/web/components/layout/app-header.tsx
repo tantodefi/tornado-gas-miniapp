@@ -1,4 +1,4 @@
-//file:prepaid-gas-website/apps/web/components/layout/app-header.tsx
+//file:tornado-gas-miniapp/apps/web/components/layout/app-header.tsx
 "use client";
 
 import React from "react";
@@ -6,18 +6,25 @@ import Link from "next/link";
 import { useAccount, useDisconnect } from "wagmi";
 import { LogOut } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
+import { useFarcaster } from "../../context/farcaster/FarcasterProvider";
 
 /**
- * Simplified App Header Component
+ * Tornado Gas Mini App Header Component
  * Left: App Name
- * Right: My Cards + Wallet Connection + Disconnect
+ * Right: My Cards + Farcaster User + Disconnect
  */
 export const AppHeader: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
+  const {
+    user: fcUser,
+    isAuthenticated: fcAuthenticated,
+    logout: fcLogout,
+  } = useFarcaster();
 
   const handleDisconnect = () => {
     disconnect();
+    fcLogout();
   };
 
   // Format address for display
@@ -32,7 +39,7 @@ export const AppHeader: React.FC = () => {
         href="/"
         className="font-semibold text-slate-200 font-mono text-sm sm:text-base hover:text-purple-400 transition-colors"
       >
-        Prepaid Gas
+        🌪️ Tornado Gas
       </Link>
 
       {/* Right side - Navigation and Wallet */}
@@ -55,23 +62,43 @@ export const AppHeader: React.FC = () => {
           💳 My Cards
         </Link>
 
+        {/* Farcaster User Info */}
+        {fcAuthenticated && fcUser && (
+          <div className="flex items-center space-x-2">
+            {fcUser.pfpUrl && (
+              <img
+                src={fcUser.pfpUrl}
+                alt={
+                  fcUser.displayName || fcUser.username || `FID ${fcUser.fid}`
+                }
+                className="w-6 h-6 rounded-full"
+              />
+            )}
+            <span className="text-xs text-slate-400 font-mono">
+              {fcUser.displayName || fcUser.username || `FID ${fcUser.fid}`}
+            </span>
+          </div>
+        )}
+
         {/* Wallet Info - only show when connected */}
         {isConnected && address && (
-          <>
-            <div className="text-xs text-slate-500 font-mono">
-              {formatAddress(address)}
-            </div>
-            <Button
-              onClick={handleDisconnect}
-              variant="ghost"
-              size="sm"
-              className="text-red-400 hover:text-red-300 hover:bg-red-400/10 font-mono"
-              title="Disconnect Wallet"
-            >
-              <LogOut className="w-4 h-4" />
-              Disconnect
-            </Button>
-          </>
+          <div className="text-xs text-slate-500 font-mono">
+            {formatAddress(address)}
+          </div>
+        )}
+
+        {/* Disconnect Button - show if either wallet or Farcaster is connected */}
+        {(isConnected || fcAuthenticated) && (
+          <Button
+            onClick={handleDisconnect}
+            variant="ghost"
+            size="sm"
+            className="text-red-400 hover:text-red-300 hover:bg-red-400/10 font-mono"
+            title="Disconnect"
+          >
+            <LogOut className="w-4 h-4" />
+            Disconnect
+          </Button>
         )}
       </div>
     </header>

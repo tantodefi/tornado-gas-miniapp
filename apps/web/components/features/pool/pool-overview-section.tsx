@@ -1,9 +1,10 @@
-//file:prepaid-gas-website/apps/web/components/features/pools/pool-overview.tsx
+//file:tornado-gas-miniapp/apps/web/components/features/pool/pool-overview-section.tsx
 "use client";
 
 import React from "react";
 import { Pool } from "@/types/pool";
 import { formatEther } from "viem";
+import { formatMembersCount } from "@/utils";
 
 /**
  * Props for PoolOverview component
@@ -46,7 +47,7 @@ const PoolOverviewSection: React.FC<PoolOverviewProps> = ({ pool }) => {
         </div>
         <div className="bg-slate-800/30 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-blue-400">
-            {pool.treeSize}
+            {formatMembersCount(pool.treeSize)}
           </div>
           <div className="text-xs text-slate-400">Members</div>
         </div>
